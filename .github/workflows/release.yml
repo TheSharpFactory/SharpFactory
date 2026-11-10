@@ -1,0 +1,85 @@
+name: Release
+
+# Push a tag like v1.2.0.0 (it must match VERSION) to build the app and the command line for every OS and publish a
+# GitHub release. The release text is that version's section of CHANGELOG.md; the downloads are attached under it.
+on:
+  push:
+    tags:
+      - 'v*'
+
+permissions:
+  contents: write
+
+jobs:
+  publish:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      # before the long build: the tag must match VERSION and CHANGELOG.md must have that version's section
+      - name: Check the tag and read the release notes
+        id: notes
+        run: |
+          set -e
+          version=$(tr -d '\r\n' < VERSION)
+          if [ "$GITHUB_REF_NAME" != "v$version" ]; then
+            echo "::error::The tag $GITHUB_REF_NAME does not match VERSION ($version)"
+            exit 1
+          fi
+          python3 .github/scripts/release_notes.py "$version" CHANGELOG.md > "$RUNNER_TEMP/release-notes.md"
+          echo "version=$version" >> "$GITHUB_OUTPUT"
+
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: 10.0.x
+
+      - name: Publish for every OS
+        run: |
+          set -e
+          version=${{ steps.notes.outputs.version }}
+          mkdir -p dist
+          for rid in win-x64 win-arm64 linux-x64 osx-x64 osx-arm64; do
+            dotnet publish App/SF.App/SF.App.csproj -c Release -r $rid --self-contained \
+              -p:PublishSingleFile=true -p:IncludeNativeLibrariesForSelfExtract=true -p:EnableCompressionInSingleFile=true \
+              -o out/app-$rid
+            python3 .github/scripts/collect_licenses.py out/app-$rid/licenses App/SF.App/obj/project.assets.json
+            dotnet publish App/SF.Cli/SF.Cli.csproj -c Release -r $rid --self-contained \
+              -p:PublishSingleFile=true -p:EnableCompressionInSingleFile=true \
+              -o out/cli-$rid
+            python3 .github/scripts/collect_licenses.py out/cli-$rid/licenses App/SF.Cli/obj/project.assets.json
+            rm -f out/app-$rid/*.pdb out/cli-$rid/*.pdb
+            cp LICENSE THIRD-PARTY-NOTICES.md out/app-$rid/
+            cp LICENSE THIRD-PARTY-NOTICES.md out/cli-$rid/
+          done
+
+          # Windows: zip
+          for rid in win-x64 win-arm64; do
+            (cd out/app-$rid && zip -r ../../dist/TheSharpFactory-$rid.zip .)
+            (cd out/cli-$rid && zip -r ../../dist/sharpfactory-cli-$rid.zip .)
+          done
+
+          # Linux: tar.gz keeps the executable bit
+          tar -czf dist/TheSharpFactory-linux-x64.tar.gz -C out/app-linux-x64 .
+          tar -czf dist/sharpfactory-cli-linux-x64.tar.gz -C out/cli-linux-x64 .
+
+          # macOS: an .app bundle (unsigned: the first time, right-click the app and choose Open);
+          # the license files go to Contents/Resources
+          for rid in osx-x64 osx-arm64; do
+            bundle=out/bundle-$rid/TheSharpFactory.app
+            mkdir -p $bundle/Contents/MacOS $bundle/Contents/Resources
+            cp -R out/app-$rid/. $bundle/Contents/MacOS/
+            mv $bundle/Contents/MacOS/LICENSE $bundle/Contents/MacOS/THIRD-PARTY-NOTICES.md $bundle/Contents/MacOS/licenses \
+              $bundle/Contents/Resources/
+            chmod +x $bundle/Contents/MacOS/TheSharpFactory
+            sed "s/{VERSION}/$version/g" App/SF.App/Packaging/macOS/Info.plist > $bundle/Contents/Info.plist
+            (cd out/bundle-$rid && zip -r -y ../../dist/TheSharpFactory-$rid.zip TheSharpFactory.app)
+            tar -czf dist/sharpfactory-cli-$rid.tar.gz -C out/cli-$rid .
+          done
+
+          ls -la dist
+
+      - uses: softprops/action-gh-release@v2
+        with:
+          name: The Sharp Factory ${{ steps.notes.outputs.version }}
+          body_path: ${{ runner.temp }}/release-notes.md
+          files: dist/*

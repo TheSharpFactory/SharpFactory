@@ -1,0 +1,41 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:vm="using:SF.App.ViewModels"
+             x:Class="SF.App.Views.DocumentationPage"
+             x:ClassModifier="internal"
+             x:DataType="vm:DocumentationPageViewModel">
+  <ScrollViewer>
+    <StackPanel Margin="28,22" Spacing="16">
+      <StackPanel>
+        <TextBlock Classes="pageTitle" Text="Documentation" />
+        <TextBlock Classes="pageSubtitle" Text="The guides on thesharpfactory.com open in your browser." />
+      </StackPanel>
+      <ItemsControl ItemsSource="{Binding Sections}">
+        <ItemsControl.ItemsPanel>
+          <ItemsPanelTemplate><UniformGrid Columns="3" /></ItemsPanelTemplate>
+        </ItemsControl.ItemsPanel>
+        <ItemsControl.ItemTemplate>
+          <DataTemplate x:DataType="vm:DocSection">
+            <Border Classes="card" Margin="0,0,16,16" Padding="12,16">
+              <StackPanel Spacing="2">
+                <TextBlock Classes="sectionTitle" Text="{Binding Header}" Margin="10,0,0,8" />
+                <ItemsControl ItemsSource="{Binding Links}">
+                  <ItemsControl.ItemTemplate>
+                    <DataTemplate x:DataType="vm:DocLink">
+                      <HyperlinkButton Classes="docLink" NavigateUri="{Binding Uri}" HorizontalAlignment="Stretch" HorizontalContentAlignment="Stretch" ToolTip.Tip="{Binding Uri}">
+                        <Grid ColumnDefinitions="*,Auto">
+                          <TextBlock Text="{Binding Text}" />
+                          <PathIcon Grid.Column="1" Classes="linkIcon" Data="{StaticResource IconLink}" Width="12" Height="12" />
+                        </Grid>
+                      </HyperlinkButton>
+                    </DataTemplate>
+                  </ItemsControl.ItemTemplate>
+                </ItemsControl>
+              </StackPanel>
+            </Border>
+          </DataTemplate>
+        </ItemsControl.ItemTemplate>
+      </ItemsControl>
+    </StackPanel>
+  </ScrollViewer>
+</UserControl>

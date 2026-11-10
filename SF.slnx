@@ -1,0 +1,30 @@
+<Solution>
+  <Configurations>
+    <Platform Name="Any CPU" />
+    <Platform Name="x64" />
+    <Platform Name="x86" />
+  </Configurations>
+  <Folder Name="/App/">
+    <Project Path="App/SF.App/SF.App.csproj" />
+    <Project Path="App/SF.Cli/SF.Cli.csproj" />
+  </Folder>
+  <Folder Name="/Common/">
+    <Project Path="Common/SF.Common/SF.Common.csproj" />
+  </Folder>
+  <Folder Name="/Dependencies/">
+    <Project Path="Dependencies/SF.CodeGenerator/SF.CodeGenerator.csproj" />
+    <Project Path="Dependencies/SF.CSharpGenerator/SF.CSharpGenerator.csproj" />
+    <Project Path="Dependencies/SF.Db/SF.Db.csproj" />
+    <Project Path="Dependencies/SF.Engine/SF.Engine.csproj" />
+    <Project Path="Dependencies/SF.Models/SF.Models.csproj" />
+    <Project Path="Dependencies/SF.Utils/SF.Utils.csproj" />
+  </Folder>
+  <Folder Name="/Tests/">
+    <Project Path="Tests/SF.App.Tests/SF.App.Tests.csproj" />
+    <Project Path="Tests/SF.Tests/SF.Tests.csproj" />
+  </Folder>
+  <Folder Name="/Tools/">
+    <Project Path="Tools/SF.GenCheck/SF.GenCheck.csproj" />
+    <Project Path="Tools/SF.SchemaCheck/SF.SchemaCheck.csproj" />
+  </Folder>
+</Solution>

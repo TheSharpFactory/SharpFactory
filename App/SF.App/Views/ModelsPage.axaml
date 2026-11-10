@@ -1,0 +1,236 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:vm="using:SF.App.ViewModels"
+             xmlns:services="using:SF.App.Services"
+             xmlns:models="using:SF.Models"
+             xmlns:ae="using:AvaloniaEdit"
+             xmlns:views="using:SF.App.Views"
+             x:Class="SF.App.Views.ModelsPage"
+             x:ClassModifier="internal"
+             x:DataType="vm:ModelsPageViewModel">
+  <Grid RowDefinitions="Auto,*" Margin="28,22,28,20">
+    <!-- header -->
+    <Grid ColumnDefinitions="*,Auto" Margin="0,0,0,16">
+      <StackPanel>
+        <TextBlock Classes="pageTitle" Text="{Binding Shell.SelectedModel.Name, FallbackValue='Models'}" />
+        <TextBlock Classes="pageSubtitle" Text="{Binding Summary}" IsVisible="{Binding HasModels}" />
+        <TextBlock Classes="subtle" FontSize="12" Text="{Binding ConnectionText}" IsVisible="{Binding HasModels}" />
+      </StackPanel>
+      <StackPanel Grid.Column="1" Orientation="Horizontal" Spacing="8" VerticalAlignment="Top">
+        <Button Classes="action accent" Name="AddModelButton" Command="{Binding AddModelCommand}" IsEnabled="{Binding !Shell.IsBusy}">
+          <StackPanel Orientation="Horizontal" Spacing="6"><PathIcon Data="{StaticResource IconAdd}" /><TextBlock Text="Add model" /></StackPanel>
+        </Button>
+        <Button Classes="action" Name="UpdateModelButton" Command="{Binding UpdateModelCommand}" IsVisible="{Binding HasModels}" IsEnabled="{Binding !Shell.IsBusy}">
+          <StackPanel Orientation="Horizontal" Spacing="6"><PathIcon Data="{StaticResource IconRefresh}" /><TextBlock Text="Update" /></StackPanel>
+        </Button>
+        <Button Classes="action dangerOutline" Name="DeleteModelButton" Margin="8,0,0,0" Command="{Binding DeleteModelCommand}" IsVisible="{Binding HasModels}" IsEnabled="{Binding !Shell.IsBusy}">
+          <StackPanel Orientation="Horizontal" Spacing="6"><PathIcon Data="{StaticResource IconDelete}" /><TextBlock Text="Delete" /></StackPanel>
+        </Button>
+      </StackPanel>
+    </Grid>
+
+    <!-- no models yet -->
+    <Border Grid.Row="1" Classes="card" IsVisible="{Binding !HasModels}" VerticalAlignment="Top" HorizontalAlignment="Left" MaxWidth="520">
+      <StackPanel Spacing="10">
+        <TextBlock Classes="sectionTitle" Text="No models yet" />
+        <TextBlock Classes="subtle" TextWrapping="Wrap" Text="Add a model to read a database's tables, views, procedures, functions and sequences." />
+      </StackPanel>
+    </Border>
+
+    <Grid Grid.Row="1" Name="ModelsGrid" IsVisible="{Binding HasModels}">
+      <Grid.ColumnDefinitions>
+        <ColumnDefinition Width="340" MinWidth="240" />
+        <ColumnDefinition Width="Auto" />
+        <ColumnDefinition Width="*" MinWidth="360" />
+      </Grid.ColumnDefinitions>
+      <!-- tree -->
+      <Border Classes="card" Padding="0">
+        <DockPanel>
+          <Border DockPanel.Dock="Top" Padding="12" BorderBrush="{DynamicResource CardBorder}" BorderThickness="0,0,0,1">
+            <StackPanel>
+            <TextBox Name="ModelSearch" Text="{Binding SearchText}" PlaceholderText="Search tables, views, columns…">
+              <TextBox.InnerLeftContent>
+                <PathIcon Data="{StaticResource IconSearch}" Width="14" Height="14" Margin="10,0,0,0" Opacity="0.6" />
+              </TextBox.InnerLeftContent>
+              <TextBox.InnerRightContent>
+                <Button Classes="toolbar" Command="{Binding ClearSearchCommand}" Padding="6" Margin="0,0,4,0" ToolTip.Tip="Clear the search"
+                        IsVisible="{Binding SearchText, Converter={x:Static StringConverters.IsNotNullOrEmpty}}">
+                  <PathIcon Data="{StaticResource IconDismiss}" Width="10" Height="10" />
+                </Button>
+              </TextBox.InnerRightContent>
+            </TextBox>
+            <TextBlock Name="MatchCount" Classes="subtle" FontSize="12" Margin="4,8,0,0" Text="{Binding MatchText}"
+                       IsVisible="{Binding MatchText, Converter={x:Static ObjectConverters.IsNotNull}}" />
+            </StackPanel>
+          </Border>
+          <TreeView Name="ModelTree" Classes="dense" ItemsSource="{Binding Roots}" SelectedItem="{Binding SelectedNode}" Margin="4">
+            <TreeView.Styles>
+              <Style Selector="TreeViewItem" x:DataType="vm:ModelTreeNode">
+                <Setter Property="IsExpanded" Value="{Binding IsExpanded}" />
+              </Style>
+            </TreeView.Styles>
+            <TreeView.ItemTemplate>
+              <TreeDataTemplate DataType="vm:ModelTreeNode" ItemsSource="{Binding Children}">
+                <StackPanel Orientation="Horizontal" Spacing="8">
+                  <PathIcon Classes="nodeIcon" Data="{Binding IconKey, Converter={x:Static views:IconConverter.Instance}}" />
+                  <TextBlock VerticalAlignment="Center">
+                    <Run Text="{Binding TitleBefore}" /><Run Text="{Binding TitleMatch}" FontWeight="SemiBold" Foreground="{DynamicResource SearchMatchText}" Background="{DynamicResource SearchMatchBackground}" /><Run Text="{Binding TitleAfter}" />
+                  </TextBlock>
+                  <TextBlock Classes="subtle" FontSize="12" Text="{Binding ShownDetail}" VerticalAlignment="Center" />
+                  <TextBlock Classes="subtle" FontSize="12" Text="{Binding Note}" VerticalAlignment="Center" Opacity="0.75"
+                             IsVisible="{Binding Note, Converter={x:Static ObjectConverters.IsNotNull}}" />
+                </StackPanel>
+              </TreeDataTemplate>
+            </TreeView.ItemTemplate>
+          </TreeView>
+        </DockPanel>
+      </Border>
+
+      <GridSplitter Grid.Column="1" Classes="grip" Width="16" ResizeDirection="Columns" DragCompleted="OnSplitterDragCompleted" />
+
+      <!-- details and code -->
+      <Border Grid.Column="2" Classes="card" Padding="0">
+        <Panel>
+          <TextBlock Classes="subtle" Text="Select a table, view, procedure, function or column to see its details." Margin="24" IsVisible="{Binding Details, Converter={x:Static ObjectConverters.IsNull}}" />
+          <TabControl Name="DetailsTabs" Margin="8,4" IsVisible="{Binding Details, Converter={x:Static ObjectConverters.IsNotNull}}">
+            <TabItem Header="Details">
+              <ScrollViewer>
+                <StackPanel Margin="12" Spacing="18" DataContext="{Binding Details}" x:DataType="vm:DetailsViewModel">
+                  <StackPanel Orientation="Horizontal" Spacing="10">
+                    <TextBlock Classes="sectionTitle" FontSize="20" Text="{Binding Title}" Margin="0" />
+                    <Border Classes="badge" VerticalAlignment="Center"><TextBlock FontSize="12" Text="{Binding Kind}" /></Border>
+                  </StackPanel>
+
+                  <!-- a table's or view's columns -->
+                  <StackPanel Spacing="8" IsVisible="{Binding HasEntityColumns}">
+                    <TextBlock FontWeight="SemiBold" Text="{Binding EntityColumnsHeader}" />
+                    <Border BorderBrush="{DynamicResource CardBorder}" BorderThickness="1" CornerRadius="8" ClipToBounds="True">
+                      <StackPanel>
+                        <Grid Classes="columnsHeader" ColumnDefinitions="2*,1.6*,1.3*,90,1.4*" Margin="10,7">
+                          <TextBlock Text="NAME" />
+                          <TextBlock Grid.Column="1" Text="SQL TYPE" />
+                          <TextBlock Grid.Column="2" Text=".NET TYPE" />
+                          <TextBlock Grid.Column="3" Text="NULLABLE" />
+                          <TextBlock Grid.Column="4" Text="NOTES" />
+                        </Grid>
+                        <ItemsControl Name="EntityColumns" ItemsSource="{Binding EntityColumns}">
+                          <ItemsControl.ItemTemplate>
+                            <DataTemplate x:DataType="vm:ColumnRow">
+                              <Border Classes="columnRow">
+                                <Grid ColumnDefinitions="2*,1.6*,1.3*,90,1.4*">
+                                  <StackPanel Orientation="Horizontal" Spacing="6">
+                                    <SelectableTextBlock Text="{Binding Name}" FontWeight="SemiBold" />
+                                    <Border Classes="keyMark" IsVisible="{Binding IsKey}" VerticalAlignment="Center"><TextBlock Text="PK" /></Border>
+                                  </StackPanel>
+                                  <TextBlock Grid.Column="1" Classes="mono" Text="{Binding StoreType}" VerticalAlignment="Center" TextTrimming="CharacterEllipsis" />
+                                  <TextBlock Grid.Column="2" Classes="mono" Text="{Binding DotNetType}" VerticalAlignment="Center" TextTrimming="CharacterEllipsis" />
+                                  <TextBlock Grid.Column="3" Classes="subtle" FontSize="12" Text="{Binding NullableText}" VerticalAlignment="Center" />
+                                  <TextBlock Grid.Column="4" Classes="subtle" FontSize="12" Text="{Binding Notes}" VerticalAlignment="Center" TextTrimming="CharacterEllipsis" ToolTip.Tip="{Binding Notes}" />
+                                </Grid>
+                              </Border>
+                            </DataTemplate>
+                          </ItemsControl.ItemTemplate>
+                        </ItemsControl>
+                      </StackPanel>
+                    </Border>
+                  </StackPanel>
+
+                  <ItemsControl Name="DetailRows" ItemsSource="{Binding Rows}">
+                    <ItemsControl.ItemTemplate>
+                      <DataTemplate x:DataType="vm:DetailRow">
+                        <Grid ColumnDefinitions="160,*" Margin="0,3">
+                          <TextBlock Classes="subtle" Text="{Binding Label}" />
+                          <SelectableTextBlock Grid.Column="1" Text="{Binding Value}" TextWrapping="Wrap" />
+                        </Grid>
+                      </DataTemplate>
+                    </ItemsControl.ItemTemplate>
+                  </ItemsControl>
+
+                  <ItemsControl ItemsSource="{Binding Lists}">
+                    <ItemsControl.ItemTemplate>
+                      <DataTemplate x:DataType="vm:DetailList">
+                        <StackPanel Margin="0,0,0,14" Spacing="4">
+                          <TextBlock FontWeight="SemiBold" Text="{Binding Header}" />
+                          <TextBlock Classes="subtle" Text="None" IsVisible="{Binding IsEmpty}" />
+                          <ItemsControl ItemsSource="{Binding Items}">
+                            <ItemsControl.ItemTemplate>
+                              <DataTemplate x:DataType="x:String">
+                                <TextBlock Text="{Binding}" Margin="12,1,0,1" />
+                              </DataTemplate>
+                            </ItemsControl.ItemTemplate>
+                          </ItemsControl>
+                        </StackPanel>
+                      </DataTemplate>
+                    </ItemsControl.ItemTemplate>
+                  </ItemsControl>
+
+                  <StackPanel Spacing="8" IsVisible="{Binding HasColumns}">
+                    <TextBlock FontWeight="SemiBold" Text="{Binding ColumnsHeader}" />
+                    <ComboBox Name="ReturnColumns" MinWidth="320" ItemsSource="{Binding Columns}" SelectedItem="{Binding SelectedColumn}">
+                      <ComboBox.ItemTemplate>
+                        <DataTemplate x:DataType="models:Property">
+                          <TextBlock Text="{Binding N}" />
+                        </DataTemplate>
+                      </ComboBox.ItemTemplate>
+                    </ComboBox>
+                  </StackPanel>
+                  <ItemsControl ItemsSource="{Binding ColumnRows}" IsVisible="{Binding HasColumnRows}">
+                    <ItemsControl.ItemTemplate>
+                      <DataTemplate x:DataType="vm:DetailRow">
+                        <Grid ColumnDefinitions="160,*" Margin="0,3">
+                          <TextBlock Classes="subtle" Text="{Binding Label}" />
+                          <SelectableTextBlock Grid.Column="1" Text="{Binding Value}" />
+                        </Grid>
+                      </DataTemplate>
+                    </ItemsControl.ItemTemplate>
+                  </ItemsControl>
+                </StackPanel>
+              </ScrollViewer>
+            </TabItem>
+            <TabItem Header="Generated code" IsVisible="{Binding HasCode}">
+              <Border Margin="4,4,4,8" BorderBrush="{DynamicResource CardBorder}" BorderThickness="1" CornerRadius="8" ClipToBounds="True">
+                <DockPanel>
+                  <!-- the files of the object: one scrolling row of tabs -->
+                  <Border DockPanel.Dock="Top" Background="{DynamicResource RailBackground}" BorderBrush="{DynamicResource CardBorder}" BorderThickness="0,0,0,1">
+                    <Panel>
+                    <ListBox Name="CodeFileTabs" Classes="fileTabs" ItemsSource="{Binding CodeFiles}" SelectedItem="{Binding SelectedCodeFile}"
+                             ScrollViewer.HorizontalScrollBarVisibility="Auto" ScrollViewer.VerticalScrollBarVisibility="Disabled">
+                      <ListBox.ItemsPanel>
+                        <ItemsPanelTemplate><StackPanel Orientation="Horizontal" /></ItemsPanelTemplate>
+                      </ListBox.ItemsPanel>
+                      <ListBox.ItemTemplate>
+                        <DataTemplate x:DataType="services:CodeFileViewModel">
+                          <StackPanel Orientation="Horizontal" Spacing="6">
+                            <PathIcon Data="{StaticResource IconDocument}" Width="12" Height="12" />
+                            <TextBlock Text="{Binding FileName}" FontSize="12" />
+                          </StackPanel>
+                        </DataTemplate>
+                      </ListBox.ItemTemplate>
+                    </ListBox>
+                    <!-- more tabs to a side: that edge fades and shows an arrow (the wheel scrolls the row) -->
+                    <Border Name="TabsMoreLeft" HorizontalAlignment="Left" Width="44" Background="{DynamicResource TabsFadeLeft}" IsHitTestVisible="False" IsVisible="False">
+                      <PathIcon Data="{StaticResource IconChevronDown}" Width="11" Height="11" HorizontalAlignment="Left" Margin="8,0,0,0">
+                        <PathIcon.RenderTransform><RotateTransform Angle="90" /></PathIcon.RenderTransform>
+                      </PathIcon>
+                    </Border>
+                    <Border Name="TabsMoreRight" HorizontalAlignment="Right" Width="44" Background="{DynamicResource TabsFadeRight}" IsHitTestVisible="False" IsVisible="False">
+                      <PathIcon Data="{StaticResource IconChevronDown}" Width="11" Height="11" HorizontalAlignment="Right" Margin="0,0,8,0">
+                        <PathIcon.RenderTransform><RotateTransform Angle="-90" /></PathIcon.RenderTransform>
+                      </PathIcon>
+                    </Border>
+                    </Panel>
+                  </Border>
+                  <!-- code is not wrapped, as in an IDE: long lines (the file banner) scroll sideways -->
+                  <ae:TextEditor Name="CodeEditor" IsReadOnly="True" ShowLineNumbers="True" FontSize="12.5" Padding="0,4,0,0" WordWrap="False"
+                                 Background="{DynamicResource CodeBackground}"
+                                 FontFamily="Cascadia Mono,Consolas,Menlo,DejaVu Sans Mono,monospace"
+                                 HorizontalScrollBarVisibility="Auto" VerticalScrollBarVisibility="Auto" />
+                </DockPanel>
+              </Border>
+            </TabItem>
+          </TabControl>
+        </Panel>
+      </Border>
+    </Grid>
+  </Grid>
+</UserControl>

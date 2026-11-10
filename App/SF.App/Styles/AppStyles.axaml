@@ -1,0 +1,514 @@
+<Styles xmlns="https://github.com/avaloniaui"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
+
+  <!-- page title and subtitle -->
+  <Style Selector="TextBlock.pageTitle">
+    <Setter Property="FontSize" Value="26" />
+    <Setter Property="FontWeight" Value="SemiBold" />
+    <Setter Property="Margin" Value="0,0,0,4" />
+  </Style>
+  <Style Selector="TextBlock.pageSubtitle">
+    <Setter Property="FontSize" Value="14" />
+    <Setter Property="Foreground" Value="{DynamicResource SubtleText}" />
+    <Setter Property="TextWrapping" Value="Wrap" />
+  </Style>
+  <Style Selector="TextBlock.sectionTitle">
+    <Setter Property="FontSize" Value="16" />
+    <Setter Property="FontWeight" Value="SemiBold" />
+    <Setter Property="Margin" Value="0,0,0,8" />
+  </Style>
+  <Style Selector="TextBlock.subtle">
+    <Setter Property="Foreground" Value="{DynamicResource SubtleText}" />
+  </Style>
+  <Style Selector="TextBlock.error">
+    <Setter Property="Foreground" Value="{DynamicResource ErrorText}" />
+    <Setter Property="TextWrapping" Value="Wrap" />
+  </Style>
+  <Style Selector="TextBlock.label">
+    <Setter Property="Foreground" Value="{DynamicResource SubtleText}" />
+    <Setter Property="FontSize" Value="12" />
+    <Setter Property="Margin" Value="0,0,0,4" />
+  </Style>
+  <Style Selector="TextBlock.mono, SelectableTextBlock.mono">
+    <Setter Property="FontFamily" Value="Consolas,Cascadia Mono,Menlo,DejaVu Sans Mono,monospace" />
+    <Setter Property="FontSize" Value="12.5" />
+  </Style>
+
+  <!-- cards -->
+  <Style Selector="Border.card">
+    <Setter Property="Background" Value="{DynamicResource CardBackground}" />
+    <Setter Property="BorderBrush" Value="{DynamicResource CardBorder}" />
+    <Setter Property="BorderThickness" Value="1" />
+    <Setter Property="CornerRadius" Value="10" />
+    <Setter Property="Padding" Value="20" />
+  </Style>
+  <Style Selector="Border.badge">
+    <Setter Property="Background" Value="{DynamicResource BadgeBackground}" />
+    <Setter Property="CornerRadius" Value="10" />
+    <Setter Property="Padding" Value="8,2" />
+  </Style>
+
+  <!-- navigation rail -->
+  <Style Selector="ListBox.nav">
+    <Setter Property="Background" Value="Transparent" />
+  </Style>
+  <Style Selector="ListBox.nav > ListBoxItem">
+    <Setter Property="Padding" Value="12,10" />
+    <Setter Property="Margin" Value="8,2" />
+    <Setter Property="CornerRadius" Value="8" />
+  </Style>
+
+  <!-- icon buttons in the toolbar -->
+  <Style Selector="Button.toolbar">
+    <Setter Property="Background" Value="Transparent" />
+    <Setter Property="BorderThickness" Value="0" />
+    <Setter Property="Padding" Value="10,6" />
+  </Style>
+  <Style Selector="Button.toolbar PathIcon">
+    <Setter Property="Foreground" Value="{DynamicResource SubtleText}" />
+  </Style>
+
+  <!-- destructive actions: filled red in dialogs, red outline on pages -->
+  <Style Selector="Button.danger /template/ ContentPresenter#PART_ContentPresenter">
+    <Setter Property="Background" Value="{DynamicResource DangerBackground}" />
+    <Setter Property="BorderBrush" Value="{DynamicResource DangerBackground}" />
+    <Setter Property="Foreground" Value="White" />
+  </Style>
+  <Style Selector="Button.danger:pointerover /template/ ContentPresenter#PART_ContentPresenter">
+    <Setter Property="Background" Value="{DynamicResource DangerBackgroundPointerOver}" />
+    <Setter Property="BorderBrush" Value="{DynamicResource DangerBackgroundPointerOver}" />
+  </Style>
+  <Style Selector="Button.danger:pressed /template/ ContentPresenter#PART_ContentPresenter">
+    <Setter Property="Background" Value="{DynamicResource DangerBackgroundPressed}" />
+    <Setter Property="BorderBrush" Value="{DynamicResource DangerBackgroundPressed}" />
+  </Style>
+  <Style Selector="Button.dangerOutline /template/ ContentPresenter#PART_ContentPresenter">
+    <Setter Property="Foreground" Value="{DynamicResource ErrorText}" />
+    <Setter Property="BorderBrush" Value="{DynamicResource DangerBorder}" />
+  </Style>
+  <Style Selector="Button.dangerOutline:pointerover /template/ ContentPresenter#PART_ContentPresenter">
+    <Setter Property="BorderBrush" Value="{DynamicResource ErrorText}" />
+  </Style>
+  <Style Selector="Button.dangerOutline:disabled /template/ ContentPresenter#PART_ContentPresenter">
+    <Setter Property="Foreground" Value="{DynamicResource ButtonForegroundDisabled}" />
+    <Setter Property="BorderBrush" Value="{DynamicResource ButtonBorderBrushDisabled}" />
+  </Style>
+
+  <!-- cards that are buttons (Home): a border highlight on hover -->
+  <Style Selector="Button.cardButton">
+    <Setter Property="Padding" Value="0" />
+    <Setter Property="Background" Value="Transparent" />
+    <Setter Property="BorderThickness" Value="0" />
+  </Style>
+  <Style Selector="Button.cardButton /template/ ContentPresenter#PART_ContentPresenter">
+    <Setter Property="Background" Value="Transparent" />
+  </Style>
+  <Style Selector="Button.cardButton:pointerover Border.card">
+    <Setter Property="BorderBrush" Value="{DynamicResource SystemAccentColor}" />
+  </Style>
+
+  <!-- rows in a list that are buttons (recent files) -->
+  <Style Selector="Button.row">
+    <Setter Property="Background" Value="Transparent" />
+    <Setter Property="BorderThickness" Value="0" />
+    <Setter Property="CornerRadius" Value="8" />
+  </Style>
+
+  <!-- a field with an error: red border, message underneath -->
+  <Style Selector="TextBox.invalid /template/ Border#PART_BorderElement">
+    <Setter Property="BorderBrush" Value="{DynamicResource ErrorText}" />
+    <Setter Property="Background" Value="{DynamicResource FieldErrorBackground}" />
+  </Style>
+  <Style Selector="ComboBox.invalid /template/ Border#Background">
+    <Setter Property="BorderBrush" Value="{DynamicResource ErrorText}" />
+  </Style>
+  <Style Selector="TextBlock.fieldError">
+    <Setter Property="Foreground" Value="{DynamicResource ErrorText}" />
+    <Setter Property="FontSize" Value="12" />
+    <Setter Property="Margin" Value="0,4,0,0" />
+    <Setter Property="TextWrapping" Value="Wrap" />
+  </Style>
+
+  <!-- log lists: dense mono lines -->
+  <Style Selector="ListBox.log > ListBoxItem">
+    <Setter Property="Padding" Value="12,0" />
+    <Setter Property="MinHeight" Value="0" />
+  </Style>
+  <Style Selector="ListBox.log TextBlock">
+    <Setter Property="LineHeight" Value="18" />
+    <Setter Property="FontSize" Value="12" />
+    <Setter Property="FontWeight" Value="Normal" />
+    <Setter Property="Foreground" Value="{DynamicResource LogText}" />
+  </Style>
+  <Style Selector="ListBox.log TextBlock.logTime">
+    <Setter Property="Foreground" Value="{DynamicResource SubtleText}" />
+    <Setter Property="Opacity" Value="0.7" />
+  </Style>
+  <!-- the bar above a log: how many lines, and Copy -->
+  <Style Selector="Border.logHead">
+    <Setter Property="Padding" Value="14,6,8,6" />
+    <Setter Property="BorderBrush" Value="{DynamicResource CardBorder}" />
+    <Setter Property="BorderThickness" Value="0,0,0,1" />
+  </Style>
+  <Style Selector="Button.copyLog">
+    <Setter Property="Padding" Value="8,4" />
+  </Style>
+  <Style Selector="Button.toolbar PathIcon, Button.action PathIcon">
+    <Setter Property="Width" Value="16" />
+    <Setter Property="Height" Value="16" />
+  </Style>
+  <Style Selector="Button.action">
+    <Setter Property="Padding" Value="14,8" />
+  </Style>
+
+  <!-- wizards: one width, height from the step -->
+  <Style Selector="Border.wizard">
+    <Setter Property="Width" Value="780" />
+  </Style>
+
+  <!-- a note that needs attention (amber) -->
+  <Style Selector="Border.callout">
+    <Setter Property="Background" Value="{DynamicResource WarningBackground}" />
+    <Setter Property="BorderBrush" Value="{DynamicResource WarningBorder}" />
+    <Setter Property="BorderThickness" Value="1" />
+    <Setter Property="CornerRadius" Value="8" />
+    <Setter Property="Padding" Value="12,10" />
+  </Style>
+
+  <!-- wizard step indicator: future steps are outlined, the current one is filled, done ones are green -->
+  <Style Selector="Border.step">
+    <Setter Property="Width" Value="26" />
+    <Setter Property="Height" Value="26" />
+    <Setter Property="CornerRadius" Value="13" />
+    <Setter Property="Background" Value="Transparent" />
+    <Setter Property="BorderBrush" Value="{DynamicResource ButtonBorderBrush}" />
+    <Setter Property="BorderThickness" Value="1.5" />
+  </Style>
+  <Style Selector="Border.step TextBlock">
+    <Setter Property="Foreground" Value="{DynamicResource SubtleText}" />
+  </Style>
+  <Style Selector="Border.step.current">
+    <Setter Property="Background" Value="{DynamicResource SystemAccentColor}" />
+    <Setter Property="BorderBrush" Value="{DynamicResource SystemAccentColor}" />
+  </Style>
+  <Style Selector="Border.step.current TextBlock">
+    <Setter Property="Foreground" Value="White" />
+  </Style>
+  <!-- the numbered steps of Home's getting started -->
+  <Style Selector="Border.step.number">
+    <Setter Property="BorderBrush" Value="{DynamicResource SystemAccentColor}" />
+  </Style>
+  <Style Selector="Border.step.number TextBlock">
+    <Setter Property="Foreground" Value="{DynamicResource SystemAccentColor}" />
+    <Setter Property="FontWeight" Value="SemiBold" />
+  </Style>
+  <Style Selector="Border.step.done">
+    <Setter Property="Background" Value="{DynamicResource SuccessText}" />
+    <Setter Property="BorderBrush" Value="{DynamicResource SuccessText}" />
+  </Style>
+
+  <!-- tabs -->
+  <Style Selector="TabItem">
+    <Setter Property="FontSize" Value="15" />
+    <Setter Property="MinHeight" Value="36" />
+    <Setter Property="Padding" Value="12,4" />
+  </Style>
+
+  <!-- log lines -->
+  <Style Selector="TextBlock.logError">
+    <Setter Property="Foreground" Value="{DynamicResource ErrorText}" />
+  </Style>
+
+  <!-- Sync: status chips (A, M, D) -->
+  <Style Selector="Border.chip">
+    <Setter Property="Width" Value="20" />
+    <Setter Property="Height" Value="20" />
+    <Setter Property="CornerRadius" Value="4" />
+    <Setter Property="Background" Value="{DynamicResource BadgeBackground}" />
+  </Style>
+  <Style Selector="Border.chip TextBlock">
+    <Setter Property="FontSize" Value="11" />
+    <Setter Property="FontWeight" Value="Bold" />
+    <Setter Property="HorizontalAlignment" Value="Center" />
+    <Setter Property="VerticalAlignment" Value="Center" />
+  </Style>
+  <Style Selector="Border.chip.added">
+    <Setter Property="Background" Value="{DynamicResource InsertedBackground}" />
+  </Style>
+  <Style Selector="Border.chip.added TextBlock">
+    <Setter Property="Foreground" Value="{DynamicResource SuccessText}" />
+  </Style>
+  <Style Selector="Border.chip.changed">
+    <Setter Property="Background" Value="{DynamicResource WarningBackground}" />
+  </Style>
+  <Style Selector="Border.chip.changed TextBlock">
+    <Setter Property="Foreground" Value="{DynamicResource WarningText}" />
+  </Style>
+  <Style Selector="Border.chip.deleted">
+    <Setter Property="Background" Value="{DynamicResource DeletedBackground}" />
+  </Style>
+  <Style Selector="Border.chip.deleted TextBlock">
+    <Setter Property="Foreground" Value="{DynamicResource ErrorText}" />
+  </Style>
+  <Style Selector="ListBox.changes > ListBoxItem">
+    <Setter Property="Padding" Value="10,5" />
+    <Setter Property="MinHeight" Value="0" />
+  </Style>
+
+  <!-- an empty list: a quiet icon and one sentence, centred -->
+  <Style Selector="StackPanel.emptyState">
+    <Setter Property="HorizontalAlignment" Value="Center" />
+    <Setter Property="VerticalAlignment" Value="Center" />
+    <Setter Property="Spacing" Value="10" />
+    <Setter Property="MaxWidth" Value="360" />
+  </Style>
+  <Style Selector="StackPanel.emptyState PathIcon">
+    <Setter Property="Foreground" Value="{DynamicResource SubtleText}" />
+    <Setter Property="Opacity" Value="0.7" />
+  </Style>
+  <Style Selector="StackPanel.emptyState TextBlock">
+    <Setter Property="Foreground" Value="{DynamicResource SubtleText}" />
+    <Setter Property="TextWrapping" Value="Wrap" />
+    <Setter Property="TextAlignment" Value="Center" />
+  </Style>
+
+  <!-- recent files: the remove button shows on hover (and for files that are gone) -->
+  <Style Selector="Grid.recentRow Button.removeRecent">
+    <Setter Property="Opacity" Value="0" />
+  </Style>
+  <Style Selector="Grid.recentRow:pointerover Button.removeRecent">
+    <Setter Property="Opacity" Value="1" />
+  </Style>
+
+  <!-- the outcome of a long operation -->
+  <Style Selector="Border.outcome">
+    <Setter Property="CornerRadius" Value="8" />
+    <Setter Property="Padding" Value="12,10" />
+    <Setter Property="BorderThickness" Value="1" />
+  </Style>
+  <Style Selector="Border.outcome.success">
+    <Setter Property="Background" Value="{DynamicResource InsertedBackground}" />
+    <Setter Property="BorderBrush" Value="{DynamicResource SuccessBorder}" />
+  </Style>
+  <Style Selector="Border.outcome.failure">
+    <Setter Property="Background" Value="{DynamicResource FieldErrorBackground}" />
+    <Setter Property="BorderBrush" Value="{DynamicResource DangerBorder}" />
+  </Style>
+
+  <!-- Details: the columns grid -->
+  <Style Selector="Grid.columnsHeader TextBlock">
+    <Setter Property="Foreground" Value="{DynamicResource SubtleText}" />
+    <Setter Property="FontSize" Value="11" />
+    <Setter Property="FontWeight" Value="SemiBold" />
+  </Style>
+  <Style Selector="Border.columnRow">
+    <Setter Property="BorderBrush" Value="{DynamicResource CardBorder}" />
+    <Setter Property="BorderThickness" Value="0,1,0,0" />
+    <Setter Property="Padding" Value="10,5" />
+  </Style>
+  <Style Selector="Border.columnRow:pointerover">
+    <Setter Property="Background" Value="{DynamicResource RailBackground}" />
+  </Style>
+  <Style Selector="Border.keyMark">
+    <Setter Property="Background" Value="{DynamicResource WarningBackground}" />
+    <Setter Property="CornerRadius" Value="4" />
+    <Setter Property="Padding" Value="5,0" />
+  </Style>
+  <Style Selector="Border.keyMark TextBlock">
+    <Setter Property="Foreground" Value="{DynamicResource WarningText}" />
+    <Setter Property="FontSize" Value="10" />
+    <Setter Property="FontWeight" Value="Bold" />
+  </Style>
+
+  <!-- links that look like list rows (Documentation), and quiet links (About) -->
+  <Style Selector="HyperlinkButton.docLink">
+    <Setter Property="Padding" Value="10,6" />
+    <Setter Property="CornerRadius" Value="6" />
+  </Style>
+  <Style Selector="HyperlinkButton.docLink:pointerover /template/ ContentPresenter#PART_ContentPresenter">
+    <Setter Property="Background" Value="{DynamicResource RailBackground}" />
+  </Style>
+  <Style Selector="HyperlinkButton.docLink PathIcon.linkIcon">
+    <Setter Property="Foreground" Value="{DynamicResource SubtleText}" />
+    <Setter Property="Opacity" Value="0.45" />
+  </Style>
+  <Style Selector="HyperlinkButton.docLink:pointerover PathIcon.linkIcon">
+    <Setter Property="Opacity" Value="1" />
+  </Style>
+  <Style Selector="HyperlinkButton.docLink TextBlock, HyperlinkButton.plainLink TextBlock">
+    <Setter Property="TextDecorations" Value="{x:Null}" />
+  </Style>
+
+  <!-- trees: IDE-like row height, a small icon per kind of object -->
+  <Style Selector="TreeView.dense TreeViewItem">
+    <Setter Property="MinHeight" Value="26" />
+    <Setter Property="Padding" Value="4,1" />
+  </Style>
+  <Style Selector="PathIcon.nodeIcon">
+    <Setter Property="Width" Value="14" />
+    <Setter Property="Height" Value="14" />
+    <Setter Property="Foreground" Value="{DynamicResource SubtleText}" />
+    <Setter Property="VerticalAlignment" Value="Center" />
+  </Style>
+
+  <!-- lists sit on the card: no theme fill behind them -->
+  <Style Selector="ListBox">
+    <Setter Property="Background" Value="Transparent" />
+  </Style>
+
+  <!-- primary buttons: one blue, white text; disabled ones fade like the others -->
+  <Style Selector="Button.accent /template/ ContentPresenter#PART_ContentPresenter">
+    <Setter Property="Background" Value="{DynamicResource PrimaryBackground}" />
+    <Setter Property="BorderBrush" Value="{DynamicResource PrimaryBackground}" />
+    <Setter Property="Foreground" Value="White" />
+  </Style>
+  <Style Selector="Button.accent:pointerover /template/ ContentPresenter#PART_ContentPresenter">
+    <Setter Property="Background" Value="{DynamicResource PrimaryBackgroundPointerOver}" />
+    <Setter Property="BorderBrush" Value="{DynamicResource PrimaryBackgroundPointerOver}" />
+  </Style>
+  <Style Selector="Button.accent:pressed /template/ ContentPresenter#PART_ContentPresenter">
+    <Setter Property="Background" Value="{DynamicResource PrimaryBackgroundPressed}" />
+    <Setter Property="BorderBrush" Value="{DynamicResource PrimaryBackgroundPressed}" />
+  </Style>
+  <Style Selector="Button.accent:disabled /template/ ContentPresenter#PART_ContentPresenter, Button.danger:disabled /template/ ContentPresenter#PART_ContentPresenter">
+    <Setter Property="Background" Value="{DynamicResource ButtonBackgroundDisabled}" />
+    <Setter Property="BorderBrush" Value="{DynamicResource ButtonBorderBrushDisabled}" />
+    <Setter Property="Foreground" Value="{DynamicResource ButtonForegroundDisabled}" />
+  </Style>
+
+  <!-- small caps label above a value ("SYNC INTO") -->
+  <Style Selector="TextBlock.overline">
+    <Setter Property="FontSize" Value="10.5" />
+    <Setter Property="FontWeight" Value="SemiBold" />
+    <Setter Property="LetterSpacing" Value="0.6" />
+    <Setter Property="Foreground" Value="{DynamicResource SubtleText}" />
+  </Style>
+
+  <!-- pills: small rounded labels; coloured ones for added, changed and deleted counts -->
+  <Style Selector="Border.pill">
+    <Setter Property="Background" Value="{DynamicResource BadgeBackground}" />
+    <Setter Property="CornerRadius" Value="10" />
+    <Setter Property="Padding" Value="8,2" />
+  </Style>
+  <Style Selector="Border.pill TextBlock">
+    <Setter Property="FontSize" Value="11.5" />
+  </Style>
+  <Style Selector="Border.pill.added">
+    <Setter Property="Background" Value="{DynamicResource InsertedBackground}" />
+  </Style>
+  <Style Selector="Border.pill.added TextBlock">
+    <Setter Property="Foreground" Value="{DynamicResource SuccessText}" />
+  </Style>
+  <Style Selector="Border.pill.changed">
+    <Setter Property="Background" Value="{DynamicResource WarningBackground}" />
+  </Style>
+  <Style Selector="Border.pill.changed TextBlock">
+    <Setter Property="Foreground" Value="{DynamicResource WarningText}" />
+  </Style>
+  <Style Selector="Border.pill.deleted">
+    <Setter Property="Background" Value="{DynamicResource DeletedBackground}" />
+  </Style>
+  <Style Selector="Border.pill.deleted TextBlock">
+    <Setter Property="Foreground" Value="{DynamicResource ErrorText}" />
+  </Style>
+
+  <!-- a path shown read-only, with an ellipsis in the middle -->
+  <Style Selector="Border.pathBox">
+    <Setter Property="BorderBrush" Value="{DynamicResource TextControlBorderBrush}" />
+    <Setter Property="BorderThickness" Value="1" />
+    <Setter Property="CornerRadius" Value="4" />
+    <Setter Property="Padding" Value="10,0" />
+    <Setter Property="MinHeight" Value="32" />
+  </Style>
+
+  <!-- Sync summary bar: blue for a preview, green for a Sync, red for a failure -->
+  <Style Selector="Border.summaryBar">
+    <Setter Property="Padding" Value="16,10" />
+    <Setter Property="BorderBrush" Value="{DynamicResource CardBorder}" />
+    <Setter Property="BorderThickness" Value="0,0,0,1" />
+  </Style>
+  <Style Selector="Border.summaryBar.preview">
+    <Setter Property="Background" Value="{DynamicResource PreviewTint}" />
+  </Style>
+  <Style Selector="Border.summaryBar.preview PathIcon.summaryIcon">
+    <Setter Property="Foreground" Value="{DynamicResource SystemAccentColor}" />
+  </Style>
+  <Style Selector="Border.summaryBar.success">
+    <Setter Property="Background" Value="{DynamicResource SuccessTint}" />
+  </Style>
+  <Style Selector="Border.summaryBar.success PathIcon.summaryIcon">
+    <Setter Property="Foreground" Value="{DynamicResource SuccessText}" />
+  </Style>
+  <Style Selector="Border.summaryBar.failure">
+    <Setter Property="Background" Value="{DynamicResource ErrorTint}" />
+  </Style>
+  <Style Selector="Border.summaryBar.failure PathIcon.summaryIcon">
+    <Setter Property="Foreground" Value="{DynamicResource ErrorText}" />
+  </Style>
+
+  <!-- a segmented control: a horizontal ListBox -->
+  <Style Selector="ListBox.segmented">
+    <Setter Property="BorderBrush" Value="{DynamicResource ButtonBorderBrush}" />
+    <Setter Property="BorderThickness" Value="1" />
+    <Setter Property="CornerRadius" Value="6" />
+    <Setter Property="Padding" Value="2" />
+    <Setter Property="HorizontalAlignment" Value="Left" />
+  </Style>
+  <Style Selector="ListBox.segmented > ListBoxItem">
+    <Setter Property="Padding" Value="10,3" />
+    <Setter Property="MinHeight" Value="0" />
+    <Setter Property="CornerRadius" Value="4" />
+    <Setter Property="FontSize" Value="12.5" />
+  </Style>
+
+  <!-- the splitter between the changes list and the diff: a visible grip -->
+  <Style Selector="GridSplitter.grip">
+    <Setter Property="Background" Value="Transparent" />
+    <Setter Property="Template">
+      <ControlTemplate>
+        <Border Background="Transparent">
+          <Border Width="3" Height="28" CornerRadius="2" Background="{DynamicResource ButtonBorderBrush}" HorizontalAlignment="Center" VerticalAlignment="Center" />
+        </Border>
+      </ControlTemplate>
+    </Setter>
+  </Style>
+
+  <!-- a toggle that looks like a secondary button; checked shows a quiet accent outline -->
+  <Style Selector="ToggleButton.secondary /template/ ContentPresenter#PART_ContentPresenter">
+    <Setter Property="Background" Value="{DynamicResource ButtonBackground}" />
+    <Setter Property="BorderBrush" Value="{DynamicResource ButtonBorderBrush}" />
+    <Setter Property="BorderThickness" Value="1" />
+    <Setter Property="Foreground" Value="{DynamicResource ButtonForeground}" />
+  </Style>
+  <Style Selector="ToggleButton.secondary:pointerover /template/ ContentPresenter#PART_ContentPresenter">
+    <Setter Property="Background" Value="{DynamicResource ButtonBackgroundPointerOver}" />
+  </Style>
+  <Style Selector="ToggleButton.secondary:checked /template/ ContentPresenter#PART_ContentPresenter">
+    <Setter Property="Background" Value="{DynamicResource BadgeBackground}" />
+    <Setter Property="BorderBrush" Value="{DynamicResource SystemAccentColor}" />
+  </Style>
+
+  <!-- file tabs above a code view: flat, the selected one underlined in the accent -->
+  <Style Selector="ListBox.fileTabs > ListBoxItem">
+    <Setter Property="Padding" Value="12,8" />
+    <Setter Property="MinHeight" Value="0" />
+    <Setter Property="CornerRadius" Value="0" />
+    <Setter Property="BorderThickness" Value="0,0,0,2" />
+    <Setter Property="BorderBrush" Value="Transparent" />
+  </Style>
+  <Style Selector="ListBox.fileTabs > ListBoxItem:selected">
+    <Setter Property="BorderBrush" Value="{DynamicResource SystemAccentColor}" />
+  </Style>
+  <Style Selector="ListBox.fileTabs > ListBoxItem:selected /template/ ContentPresenter#PART_ContentPresenter">
+    <Setter Property="Background" Value="{DynamicResource CodeBackground}" />
+  </Style>
+  <Style Selector="ListBox.fileTabs > ListBoxItem PathIcon">
+    <Setter Property="Foreground" Value="{DynamicResource SubtleText}" />
+  </Style>
+
+  <!-- a selected tree row: the grey details take the selection's text colour -->
+  <Style Selector="TreeViewItem:selected /template/ ContentPresenter#PART_HeaderPresenter TextBlock.subtle">
+    <Setter Property="Foreground" Value="{DynamicResource ButtonForeground}" />
+    <Setter Property="Opacity" Value="0.8" />
+  </Style>
+</Styles>

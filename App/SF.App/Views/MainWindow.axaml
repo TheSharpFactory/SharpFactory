@@ -1,0 +1,123 @@
+<Window xmlns="https://github.com/avaloniaui"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:vm="using:SF.App.ViewModels"
+        xmlns:views="using:SF.App.Views"
+        xmlns:models="using:SF.Models"
+        x:Class="SF.App.Views.MainWindow"
+        x:ClassModifier="internal"
+        x:DataType="vm:MainWindowViewModel"
+        Title="{Binding WindowTitle}"
+        Icon="/Assets/SharpFactory.ico"
+        Width="1280" Height="820" MinWidth="1000" MinHeight="640"
+        WindowStartupLocation="CenterScreen">
+
+  <Window.DataTemplates>
+    <DataTemplate DataType="vm:WelcomePageViewModel"><views:WelcomePage /></DataTemplate>
+    <DataTemplate DataType="vm:ModelsPageViewModel"><views:ModelsPage /></DataTemplate>
+    <DataTemplate DataType="vm:LayersPageViewModel"><views:LayersPage /></DataTemplate>
+    <DataTemplate DataType="vm:SettingsPageViewModel"><views:SettingsPage /></DataTemplate>
+    <DataTemplate DataType="vm:SyncPageViewModel"><views:SyncPage /></DataTemplate>
+    <DataTemplate DataType="vm:DocumentationPageViewModel"><views:DocumentationPage /></DataTemplate>
+    <DataTemplate DataType="vm:AboutPageViewModel"><views:AboutPage /></DataTemplate>
+    <DataTemplate DataType="vm:AddModelWizardViewModel"><views:AddModelWizard /></DataTemplate>
+    <DataTemplate DataType="vm:UpdateModelWizardViewModel"><views:UpdateModelWizard /></DataTemplate>
+    <DataTemplate DataType="vm:DialogViewModel"><views:DialogView /></DataTemplate>
+  </Window.DataTemplates>
+
+  <Grid>
+    <!-- locked while a wizard, message or question is up: the keyboard goes to it only -->
+    <DockPanel IsEnabled="{Binding IsShellEnabled}">
+      <!-- top bar -->
+      <Border DockPanel.Dock="Top" Padding="16,10" BorderBrush="{DynamicResource CardBorder}" BorderThickness="0,0,0,1">
+        <Grid ColumnDefinitions="Auto,*,Auto">
+          <StackPanel Orientation="Horizontal" Spacing="10" VerticalAlignment="Center">
+            <Image Source="/Assets/Logo128.png" Width="30" Height="30" />
+            <StackPanel VerticalAlignment="Center">
+              <TextBlock Text="The Sharp Factory" FontWeight="SemiBold" FontSize="15" />
+              <StackPanel Orientation="Horizontal" Spacing="4" ToolTip.Tip="{Binding Document.FilePath, FallbackValue={x:Null}}">
+                <TextBlock Classes="subtle" FontSize="12" Text="{Binding Document.DisplayName, FallbackValue='No model file open'}" />
+                <TextBlock Name="DirtyMark" FontSize="12" Text="●" Foreground="{DynamicResource WarningText}" ToolTip.Tip="Unsaved changes"
+                           IsVisible="{Binding Document.IsDirty, FallbackValue=False}" />
+              </StackPanel>
+            </StackPanel>
+
+            <!-- the model being worked on: a quiet switcher next to the file it belongs to -->
+            <Border Width="1" Height="28" Margin="10,0,4,0" Background="{DynamicResource CardBorder}" VerticalAlignment="Center" IsVisible="{Binding HasDocument}" />
+            <ComboBox Name="ModelPicker" Classes="modelPicker" MinWidth="180" VerticalAlignment="Center" ItemsSource="{Binding ModelList}" SelectedItem="{Binding SelectedModel}"
+                      PlaceholderText="No models yet" IsEnabled="{Binding !IsBusy}" IsVisible="{Binding HasDocument}" ToolTip.Tip="The model the Models and Layers pages show">
+              <ComboBox.ItemTemplate>
+                <DataTemplate x:DataType="models:Model">
+                  <StackPanel Orientation="Horizontal" Spacing="8">
+                    <PathIcon Data="{StaticResource IconDatabase}" Width="14" Height="14" Foreground="{DynamicResource SubtleText}" />
+                    <TextBlock Text="{Binding Name}" FontWeight="SemiBold" />
+                  </StackPanel>
+                </DataTemplate>
+              </ComboBox.ItemTemplate>
+            </ComboBox>
+          </StackPanel>
+
+          <StackPanel Grid.Column="2" Orientation="Horizontal" Spacing="4">
+            <Button Classes="toolbar" Name="NewButton" Command="{Binding NewCommand}" ToolTip.Tip="New model file" IsEnabled="{Binding !IsBusy}">
+              <StackPanel Orientation="Horizontal" Spacing="6"><PathIcon Data="{StaticResource IconNew}" /><TextBlock Text="New" /></StackPanel>
+            </Button>
+            <Button Classes="toolbar" Name="OpenButton" Command="{Binding OpenCommand}" ToolTip.Tip="Open a model file" IsEnabled="{Binding !IsBusy}">
+              <StackPanel Orientation="Horizontal" Spacing="6"><PathIcon Data="{StaticResource IconOpen}" /><TextBlock Text="Open" /></StackPanel>
+            </Button>
+            <Button Classes="toolbar" Name="SaveButton" Command="{Binding SaveCommand}" ToolTip.Tip="Save" IsVisible="{Binding HasDocument}" IsEnabled="{Binding !IsBusy}">
+              <StackPanel Orientation="Horizontal" Spacing="6"><PathIcon Data="{StaticResource IconSave}" /><TextBlock Text="Save" /></StackPanel>
+            </Button>
+            <Button Classes="toolbar" Name="SaveAsButton" Command="{Binding SaveAsCommand}" ToolTip.Tip="Save as" IsVisible="{Binding HasDocument}" IsEnabled="{Binding !IsBusy}">
+              <StackPanel Orientation="Horizontal" Spacing="6"><PathIcon Data="{StaticResource IconSaveAs}" /><TextBlock Text="Save as" /></StackPanel>
+            </Button>
+          </StackPanel>
+        </Grid>
+      </Border>
+
+      <!-- status bar -->
+      <Border DockPanel.Dock="Bottom" Padding="16,6" BorderBrush="{DynamicResource CardBorder}" BorderThickness="0,1,0,0">
+        <Grid ColumnDefinitions="*,Auto">
+          <StackPanel Orientation="Horizontal" Spacing="6">
+            <PathIcon Data="{StaticResource IconCheck}" Width="12" Height="12" Foreground="{DynamicResource SuccessText}" VerticalAlignment="Center"
+                      IsVisible="{Binding StatusText, Converter={x:Static StringConverters.IsNotNullOrEmpty}}" />
+            <TextBlock Name="StatusLine" Classes="subtle" FontSize="12" Text="{Binding StatusText}" TextTrimming="CharacterEllipsis" ToolTip.Tip="{Binding Document.FilePath, FallbackValue={x:Null}}" />
+          </StackPanel>
+          <TextBlock Grid.Column="1" Classes="subtle" FontSize="12" Text="{Binding Version, StringFormat='v{0}'}" />
+        </Grid>
+      </Border>
+
+      <!-- navigation rail -->
+      <Border DockPanel.Dock="Left" Width="210" Background="{DynamicResource RailBackground}" BorderBrush="{DynamicResource CardBorder}" BorderThickness="0,0,1,0">
+        <!-- locked while a model build or Sync runs: the generator reads the model on a background thread -->
+        <ListBox Classes="nav" Name="NavList" ItemsSource="{Binding NavItems}" SelectedItem="{Binding SelectedNavItem}" Margin="0,10,0,0" IsEnabled="{Binding !IsBusy}">
+          <ListBox.Styles>
+            <Style Selector="ListBoxItem" x:DataType="vm:NavItemViewModel">
+              <Setter Property="IsEnabled" Value="{Binding IsEnabled}" />
+            </Style>
+          </ListBox.Styles>
+          <ListBox.ItemTemplate>
+            <DataTemplate x:DataType="vm:NavItemViewModel">
+              <StackPanel Orientation="Horizontal" Spacing="12">
+                <PathIcon Data="{Binding IconKey, Converter={x:Static views:IconConverter.Instance}}" Width="18" Height="18" />
+                <TextBlock Text="{Binding Title}" VerticalAlignment="Center" FontSize="14" />
+              </StackPanel>
+            </DataTemplate>
+          </ListBox.ItemTemplate>
+        </ListBox>
+      </Border>
+
+      <!-- the page -->
+      <ContentControl Name="PageHost" Content="{Binding CurrentPage}" />
+    </DockPanel>
+
+    <!-- wizards -->
+    <Border Name="OverlayHost" Background="{DynamicResource OverlayBackground}" IsVisible="{Binding Overlay, Converter={x:Static ObjectConverters.IsNotNull}}"
+            IsEnabled="{Binding Dialog, Converter={x:Static ObjectConverters.IsNull}}">
+      <ContentControl Content="{Binding Overlay}" HorizontalAlignment="Center" VerticalAlignment="Top" Margin="40,80,40,40" />
+    </Border>
+
+    <!-- messages and questions -->
+    <Border Name="DialogHost" Background="{DynamicResource OverlayBackground}" IsVisible="{Binding Dialog, Converter={x:Static ObjectConverters.IsNotNull}}">
+      <ContentControl Content="{Binding Dialog}" HorizontalAlignment="Center" VerticalAlignment="Center" />
+    </Border>
+  </Grid>
+</Window>

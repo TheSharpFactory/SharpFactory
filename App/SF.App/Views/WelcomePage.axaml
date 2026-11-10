@@ -1,0 +1,98 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:vm="using:SF.App.ViewModels"
+             x:Class="SF.App.Views.WelcomePage"
+             x:ClassModifier="internal"
+             x:DataType="vm:WelcomePageViewModel">
+  <ScrollViewer>
+    <StackPanel Margin="48,32" Spacing="22" MaxWidth="980" HorizontalAlignment="Left">
+      <StackPanel Orientation="Horizontal" Spacing="20">
+        <Image Source="/Assets/Logo128.png" Width="72" Height="72" />
+        <StackPanel VerticalAlignment="Center">
+          <TextBlock Classes="pageTitle" Text="The Sharp Factory" />
+          <TextBlock Classes="pageSubtitle" Text="C# data access generated from your SQL Server schema. Free and open source." />
+        </StackPanel>
+      </StackPanel>
+
+      <WrapPanel Orientation="Horizontal">
+        <Button Name="WelcomeNewButton" Classes="cardButton" Command="{Binding Shell.NewCommand}" Margin="0,0,16,16">
+          <Border Classes="card" Width="300">
+            <StackPanel Spacing="8">
+              <PathIcon Data="{StaticResource IconNew}" Width="28" Height="28" HorizontalAlignment="Left" Foreground="{DynamicResource SystemAccentColor}" />
+              <TextBlock Classes="sectionTitle" Text="New model file" />
+              <TextBlock Classes="subtle" TextWrapping="Wrap" Text="Choose the common settings, connect to a database and pick its tables, views, procedures, functions and sequences." />
+            </StackPanel>
+          </Border>
+        </Button>
+        <Button Name="WelcomeOpenButton" Classes="cardButton" Command="{Binding Shell.OpenCommand}" Margin="0,0,16,16">
+          <Border Classes="card" Width="300">
+            <StackPanel Spacing="8">
+              <PathIcon Data="{StaticResource IconOpen}" Width="28" Height="28" HorizontalAlignment="Left" Foreground="{DynamicResource SystemAccentColor}" />
+              <TextBlock Classes="sectionTitle" Text="Open a model file" />
+              <TextBlock Classes="subtle" TextWrapping="Wrap" Text="Open an .edmj to browse its models, change layers and settings, and sync the generated code into a solution." />
+            </StackPanel>
+          </Border>
+        </Button>
+      </WrapPanel>
+
+      <!-- first run: the three steps from a database to code -->
+      <Border Name="GettingStarted" Classes="card" MaxWidth="616" HorizontalAlignment="Left" IsVisible="{Binding ShowGettingStarted}">
+        <StackPanel Spacing="16">
+          <StackPanel Spacing="2">
+            <TextBlock Classes="sectionTitle" Text="Getting started" />
+            <TextBlock Classes="subtle" TextWrapping="Wrap" Text="From a database to C# code in your solution, in three steps." />
+          </StackPanel>
+          <Grid ColumnDefinitions="Auto,14,*" RowDefinitions="Auto,10,Auto,10,Auto">
+              <Border Grid.Row="0" Classes="step number" VerticalAlignment="Top"><TextBlock Text="1" HorizontalAlignment="Center" VerticalAlignment="Center" FontSize="12.5" /></Border>
+              <StackPanel Grid.Row="0" Grid.Column="2" Spacing="2">
+                <TextBlock FontWeight="SemiBold" Text="Create a model file" />
+                <TextBlock Classes="subtle" TextWrapping="Wrap" Text="New model file: choose the root namespace, connect to SQL Server and pick the tables, views, procedures, functions and sequences." />
+              </StackPanel>
+              <Border Grid.Row="2" Classes="step number" VerticalAlignment="Top"><TextBlock Text="2" HorizontalAlignment="Center" VerticalAlignment="Center" FontSize="12.5" /></Border>
+              <StackPanel Grid.Row="2" Grid.Column="2" Spacing="2">
+                <TextBlock FontWeight="SemiBold" Text="Shape the code" />
+                <TextBlock Classes="subtle" TextWrapping="Wrap" Text="On Layers, name the project and namespace of each generated layer. The model file keeps every choice." />
+              </StackPanel>
+              <Border Grid.Row="4" Classes="step number" VerticalAlignment="Top"><TextBlock Text="3" HorizontalAlignment="Center" VerticalAlignment="Center" FontSize="12.5" /></Border>
+              <StackPanel Grid.Row="4" Grid.Column="2" Spacing="2">
+                <TextBlock FontWeight="SemiBold" Text="Preview, then Sync" />
+                <TextBlock Classes="subtle" TextWrapping="Wrap" Text="On Sync, pick your .sln or .slnx (or a new one), check every file that would change, then write them in one click." />
+              </StackPanel>
+          </Grid>
+          <Button Name="GettingStartedGuide" Command="{Binding OpenDocumentationCommand}" HorizontalAlignment="Left">
+            <StackPanel Orientation="Horizontal" Spacing="6"><PathIcon Data="{StaticResource IconBook}" Width="14" Height="14" /><TextBlock Text="Read the guide" /></StackPanel>
+          </Button>
+        </StackPanel>
+      </Border>
+
+      <Border Classes="card" Padding="8" MaxWidth="616" HorizontalAlignment="Left" IsVisible="{Binding HasRecentFiles}">
+        <StackPanel Spacing="2">
+          <TextBlock Classes="sectionTitle" Text="Recent" Margin="12,8,12,6" />
+          <ItemsControl Name="RecentList" ItemsSource="{Binding RecentFiles}">
+            <ItemsControl.ItemTemplate>
+              <DataTemplate x:DataType="vm:RecentFileViewModel">
+                <Grid ColumnDefinitions="*,Auto" Classes="recentRow">
+                  <Button Classes="row" Command="{Binding $parent[UserControl].((vm:WelcomePageViewModel)DataContext).Shell.OpenRecentCommand}" CommandParameter="{Binding FilePath}"
+                          HorizontalAlignment="Stretch" HorizontalContentAlignment="Stretch" Padding="12,8" IsEnabled="{Binding Exists}" ToolTip.Tip="{Binding FilePath}">
+                    <Grid ColumnDefinitions="Auto,*,Auto">
+                      <PathIcon Data="{StaticResource IconDocument}" Width="18" Height="18" Foreground="{DynamicResource SystemAccentColor}" VerticalAlignment="Center" />
+                      <StackPanel Grid.Column="1" Margin="12,0,12,0">
+                        <TextBlock Text="{Binding Name}" FontWeight="SemiBold" />
+                        <TextBlock Classes="subtle" FontSize="12" Text="{Binding Folder}" TextTrimming="PathSegmentEllipsis" />
+                      </StackPanel>
+                      <TextBlock Grid.Column="2" Classes="subtle" FontSize="12" Text="{Binding When}" VerticalAlignment="Center" />
+                    </Grid>
+                  </Button>
+                  <Button Grid.Column="1" Classes="toolbar removeRecent" Command="{Binding $parent[UserControl].((vm:WelcomePageViewModel)DataContext).RemoveRecentCommand}" CommandParameter="{Binding FilePath}"
+                          ToolTip.Tip="Remove from the list (the file is not deleted)" VerticalAlignment="Center" Margin="4,0,4,0">
+                    <PathIcon Data="{StaticResource IconDismiss}" Width="12" Height="12" />
+                  </Button>
+                </Grid>
+              </DataTemplate>
+            </ItemsControl.ItemTemplate>
+          </ItemsControl>
+        </StackPanel>
+      </Border>
+    </StackPanel>
+  </ScrollViewer>
+</UserControl>

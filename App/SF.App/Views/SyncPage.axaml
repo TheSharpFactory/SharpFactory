@@ -1,0 +1,282 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:vm="using:SF.App.ViewModels"
+             xmlns:views="using:SF.App.Views"
+             xmlns:ae="using:AvaloniaEdit"
+             x:Class="SF.App.Views.SyncPage"
+             x:ClassModifier="internal"
+             x:DataType="vm:SyncPageViewModel">
+  <!-- the target is chosen once and stays in a strip; the review gets the width -->
+  <Grid RowDefinitions="Auto,Auto,*" Margin="28,22,28,20">
+    <StackPanel Margin="0,0,0,14">
+      <TextBlock Classes="pageTitle" Text="Sync" />
+      <TextBlock Classes="pageSubtitle" Text="Generate every model's code into a solution. Preview shows what would change; nothing is written until you Sync." />
+    </StackPanel>
+
+    <!-- 1. Sync into: the target, and the chooser under it -->
+    <Border Grid.Row="1" Classes="card" Padding="0" Margin="0,0,0,12">
+      <StackPanel>
+        <Grid ColumnDefinitions="Auto,12,*,Auto" Margin="16,12">
+          <Border Width="40" Height="40" CornerRadius="8" Background="{DynamicResource BadgeBackground}">
+            <PathIcon Data="{StaticResource IconDocument}" Width="20" Height="20" Foreground="{DynamicResource SystemAccentColor}" />
+          </Border>
+          <StackPanel Grid.Column="2" VerticalAlignment="Center" Spacing="2">
+            <TextBlock Classes="overline" Text="SYNC INTO" />
+            <StackPanel Orientation="Horizontal" Spacing="8">
+              <TextBlock Name="TargetText" FontWeight="SemiBold" FontSize="15" Text="{Binding TargetName}" TextTrimming="CharacterEllipsis" ToolTip.Tip="{Binding TargetDescription}" />
+              <Border Classes="pill" IsVisible="{Binding HasTargetBadge}" VerticalAlignment="Center"><TextBlock Text="{Binding TargetBadge}" /></Border>
+            </StackPanel>
+            <TextBlock Classes="subtle" FontSize="12" Text="{Binding TargetFolder, FallbackValue='Pick a solution below, browse for one, or create a new one.'}" TextTrimming="PathSegmentEllipsis" ToolTip.Tip="{Binding TargetFolder}" />
+          </StackPanel>
+          <StackPanel Grid.Column="3" Orientation="Horizontal" Spacing="8" VerticalAlignment="Center">
+            <ToggleButton Name="ChangeTargetButton" Classes="secondary" IsChecked="{Binding IsTargetPanelOpen}" IsEnabled="{Binding !IsRunning}">
+              <StackPanel Orientation="Horizontal" Spacing="6"><PathIcon Data="{StaticResource IconChevronDown}" Width="12" Height="12" /><TextBlock Text="Change target" /></StackPanel>
+            </ToggleButton>
+            <Border Width="1" Height="24" Margin="4,0" Background="{DynamicResource CardBorder}" />
+            <Button Classes="action" Name="PreviewButton" Command="{Binding PreviewCommand}" IsEnabled="{Binding CanRun}">
+              <StackPanel Orientation="Horizontal" Spacing="6"><PathIcon Data="{StaticResource IconEye}" /><TextBlock Text="Preview" /></StackPanel>
+            </Button>
+            <Button Classes="action accent" Name="SyncButton" Command="{Binding SyncCommand}" IsEnabled="{Binding CanRun}">
+              <StackPanel Orientation="Horizontal" Spacing="6"><PathIcon Data="{StaticResource IconSync}" /><TextBlock Text="Sync" /></StackPanel>
+            </Button>
+          </StackPanel>
+        </Grid>
+
+        <!-- problems with the target -->
+        <StackPanel Spacing="4" Margin="16,0,16,12" IsVisible="{Binding TargetError, Converter={x:Static ObjectConverters.IsNotNull}}">
+          <TextBlock Classes="error" Text="{Binding TargetError}" />
+        </StackPanel>
+        <TextBlock Classes="error" Margin="16,0,16,12" Text="{Binding SyncedBlockText}" TextWrapping="Wrap" IsVisible="{Binding IsBlockedBySyncedFlag}" />
+
+        <!-- the chooser (locked during a run: the framework choice edits the model the run reads) -->
+        <Border BorderBrush="{DynamicResource CardBorder}" BorderThickness="0,1,0,0" Padding="16,14" IsVisible="{Binding IsTargetPanelOpen}" IsEnabled="{Binding !IsRunning}">
+          <Grid ColumnDefinitions="56*,24,44*">
+            <StackPanel Spacing="8">
+              <Grid ColumnDefinitions="*,Auto">
+                <StackPanel VerticalAlignment="Center">
+                  <TextBlock Name="CandidatesTitle" FontWeight="SemiBold" Text="{Binding CandidatesTitle}" />
+                  <TextBlock Classes="subtle" FontSize="12" Text="Open in an IDE first, then synced before, then near the model file." TextTrimming="CharacterEllipsis" />
+                </StackPanel>
+                <StackPanel Grid.Column="1" Orientation="Horizontal" Spacing="6">
+                  <Button Name="RefreshTargetsButton" Command="{Binding RefreshTargetsCommand}" ToolTip.Tip="Look for open solutions again" IsEnabled="{Binding !IsScanning}">
+                    <PathIcon Data="{StaticResource IconRefresh}" Width="14" Height="14" />
+                  </Button>
+                  <Button Name="BrowseButton" Command="{Binding BrowseCommand}">
+                    <StackPanel Orientation="Horizontal" Spacing="6"><PathIcon Data="{StaticResource IconFolder}" Width="14" Height="14" /><TextBlock Text="Browse…" /></StackPanel>
+                  </Button>
+                </StackPanel>
+              </Grid>
+              <StackPanel Name="ScanningPanel" Spacing="6" IsVisible="{Binding IsScanning}">
+                <ProgressBar IsIndeterminate="True" Height="2" />
+                <TextBlock Classes="subtle" FontSize="12" Text="Looking for open solutions and the ones this model was synced to…" TextWrapping="Wrap" />
+              </StackPanel>
+              <TextBlock Classes="subtle" Text="No solutions found. Browse for one or create a new one." IsVisible="{Binding ShowNoCandidates}" TextWrapping="Wrap" />
+              <ListBox Name="CandidateList" Classes="candidates" ItemsSource="{Binding Candidates}" SelectedItem="{Binding SelectedCandidate}" MaxHeight="190" IsVisible="{Binding HasCandidates}">
+                <ListBox.ItemTemplate>
+                  <DataTemplate x:DataType="vm:SolutionCandidateViewModel">
+                    <Grid ColumnDefinitions="*,Auto">
+                      <StackPanel Spacing="2">
+                        <StackPanel Orientation="Horizontal" Spacing="8">
+                          <TextBlock FontWeight="SemiBold" Text="{Binding Name}" />
+                          <Border Classes="pill"><TextBlock Text="{Binding Extension}" /></Border>
+                        </StackPanel>
+                        <TextBlock Classes="subtle" FontSize="11.5" Text="{Binding SolutionPath}" TextTrimming="PathSegmentEllipsis" ToolTip.Tip="{Binding SolutionPath}" />
+                      </StackPanel>
+                      <TextBlock Grid.Column="1" Classes="subtle" FontSize="12" Text="{Binding Description}" VerticalAlignment="Center" Margin="12,0,0,0" />
+                    </Grid>
+                  </DataTemplate>
+                </ListBox.ItemTemplate>
+              </ListBox>
+            </StackPanel>
+
+            <Border Grid.Column="1" Width="1" Background="{DynamicResource CardBorder}" HorizontalAlignment="Center" />
+
+            <StackPanel Grid.Column="2" Spacing="10">
+              <TextBlock FontWeight="SemiBold" Text="Or a new solution" />
+              <Grid ColumnDefinitions="*,8,Auto">
+                <Border Classes="pathBox" ToolTip.Tip="{Binding NewSolutionFolder}">
+                  <TextBlock Name="NewSolutionFolderText" Text="{Binding NewSolutionFolder, FallbackValue='Choose a folder'}" TextTrimming="PathSegmentEllipsis" VerticalAlignment="Center" />
+                </Border>
+                <Button Grid.Column="2" Command="{Binding ChooseNewSolutionFolderCommand}">
+                  <StackPanel Orientation="Horizontal" Spacing="6"><PathIcon Data="{StaticResource IconFolder}" Width="14" Height="14" /><TextBlock Text="Choose…" /></StackPanel>
+                </Button>
+              </Grid>
+              <Grid ColumnDefinitions="*,8,96,8,120" RowDefinitions="Auto,Auto">
+                <TextBlock Classes="label" Text="Name" />
+                <TextBlock Grid.Column="2" Classes="label" Text="Format" />
+                <TextBlock Grid.Column="4" Classes="label" Text="New projects use" />
+                <TextBox Grid.Row="1" Name="NewSolutionNameBox" Text="{Binding NewSolutionName}" PlaceholderText="Solution name" />
+                <ComboBox Grid.Row="1" Grid.Column="2" Name="NewSolutionFormatBox" ItemsSource="{Binding SolutionFormats}" SelectedItem="{Binding NewSolutionFormat}" HorizontalAlignment="Stretch" ToolTip.Tip="Solution file format" />
+                <ComboBox Grid.Row="1" Grid.Column="4" ItemsSource="{Binding FrameworkOptions}" SelectedItem="{Binding SelectedTargetFramework}" HorizontalAlignment="Stretch" ToolTip.Tip=".NET version of the projects Sync creates">
+                  <ComboBox.ItemTemplate>
+                    <DataTemplate x:DataType="vm:TargetFrameworkOption">
+                      <TextBlock Text="{Binding Name}" />
+                    </DataTemplate>
+                  </ComboBox.ItemTemplate>
+                </ComboBox>
+              </Grid>
+              <Button Name="UseNewSolutionButton" Command="{Binding UseNewSolutionCommand}" HorizontalAlignment="Left">
+                <StackPanel Orientation="Horizontal" Spacing="6"><PathIcon Data="{StaticResource IconAdd}" Width="14" Height="14" /><TextBlock Text="Use new solution" /></StackPanel>
+              </Button>
+            </StackPanel>
+          </Grid>
+        </Border>
+      </StackPanel>
+    </Border>
+
+    <!-- 2. the review -->
+    <Border Grid.Row="2" Classes="card" Padding="0" ClipToBounds="True">
+      <Grid RowDefinitions="Auto,Auto,*">
+        <!-- running -->
+        <StackPanel Spacing="6" Margin="16,12" IsVisible="{Binding IsRunning}">
+          <TextBlock FontWeight="SemiBold" Text="{Binding Progress.CurrentStep, FallbackValue='Starting…'}" TextTrimming="CharacterEllipsis" />
+          <ProgressBar IsIndeterminate="True" Height="3" />
+        </StackPanel>
+
+        <!-- the outcome: one compact bar -->
+        <Border Grid.Row="1" Classes="summaryBar"
+                Classes.preview="{Binding SummaryState, Converter={x:Static views:EqualsConverter.Instance}, ConverterParameter=preview}"
+                Classes.success="{Binding SummaryState, Converter={x:Static views:EqualsConverter.Instance}, ConverterParameter=success}"
+                Classes.failure="{Binding SummaryState, Converter={x:Static views:EqualsConverter.Instance}, ConverterParameter=error}"
+                IsVisible="{Binding HasReport}">
+          <Grid ColumnDefinitions="Auto,*,Auto">
+            <PathIcon Classes="summaryIcon" Width="16" Height="16" Margin="0,0,10,0"
+                      Data="{Binding SummaryState, Converter={x:Static views:SummaryIconConverter.Instance}}" />
+            <StackPanel Grid.Column="1" Orientation="Horizontal" Spacing="8" VerticalAlignment="Center">
+              <TextBlock Name="SummaryTitle" FontWeight="SemiBold" Text="{Binding SummaryTitle}" />
+              <TextBlock Classes="subtle" Text="{Binding SummaryRest}" TextTrimming="CharacterEllipsis" />
+            </StackPanel>
+            <StackPanel Grid.Column="2" Orientation="Horizontal" Spacing="6" IsVisible="{Binding ShowCounts}">
+              <Border Classes="pill added"><TextBlock Text="{Binding AddedText}" /></Border>
+              <Border Classes="pill changed"><TextBlock Text="{Binding ChangedText}" /></Border>
+              <Border Classes="pill deleted"><TextBlock Text="{Binding DeletedText}" /></Border>
+              <Border Classes="pill"><TextBlock Text="{Binding UnchangedText}" /></Border>
+            </StackPanel>
+          </Grid>
+        </Border>
+
+        <TabControl Grid.Row="2" Classes="review" Margin="12,0,12,12">
+          <TabItem Header="Changes">
+            <Grid Name="ChangesGrid" Margin="0,8,0,0">
+              <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="360" MinWidth="240" />
+                <ColumnDefinition Width="Auto" />
+                <ColumnDefinition Width="*" MinWidth="320" />
+              </Grid.ColumnDefinitions>
+              <!-- the changed files -->
+              <DockPanel>
+                <StackPanel DockPanel.Dock="Top" Spacing="8" Margin="0,0,0,8">
+                  <ListBox Name="ChangeFilterBox" Classes="segmented" ItemsSource="{Binding ChangeFilters}" SelectedItem="{Binding ChangeFilter}">
+                    <ListBox.ItemsPanel>
+                      <ItemsPanelTemplate><StackPanel Orientation="Horizontal" /></ItemsPanelTemplate>
+                    </ListBox.ItemsPanel>
+                    <ListBox.ItemTemplate>
+                      <DataTemplate x:DataType="vm:ChangeFilterOption">
+                        <TextBlock Text="{Binding Display}" />
+                      </DataTemplate>
+                    </ListBox.ItemTemplate>
+                  </ListBox>
+                  <TextBox Name="ChangeSearchBox" Text="{Binding ChangeSearch}" PlaceholderText="Filter files">
+                    <TextBox.InnerLeftContent>
+                      <PathIcon Data="{StaticResource IconSearch}" Width="14" Height="14" Margin="10,0,0,0" Opacity="0.6" />
+                    </TextBox.InnerLeftContent>
+                  </TextBox>
+                </StackPanel>
+                <Border BorderBrush="{DynamicResource CardBorder}" BorderThickness="1" CornerRadius="8" ClipToBounds="True">
+                  <Panel>
+                    <ListBox Name="FileChangeList" Classes="changes" ItemsSource="{Binding FileChanges}" SelectedItem="{Binding SelectedFileChange}" IsVisible="{Binding !HasChangesEmptyText}">
+                      <ListBox.ItemTemplate>
+                        <DataTemplate x:DataType="vm:FileChangeViewModel">
+                          <Grid ColumnDefinitions="Auto,*">
+                            <Border Classes="chip"
+                                    Classes.added="{Binding Letter, Converter={x:Static views:EqualsConverter.Instance}, ConverterParameter=A}"
+                                    Classes.changed="{Binding Letter, Converter={x:Static views:EqualsConverter.Instance}, ConverterParameter=M}"
+                                    Classes.deleted="{Binding Letter, Converter={x:Static views:EqualsConverter.Instance}, ConverterParameter=D}">
+                              <TextBlock Text="{Binding Letter}" />
+                            </Border>
+                            <StackPanel Grid.Column="1" Margin="10,0,0,0" ToolTip.Tip="{Binding RelativePath}">
+                              <TextBlock Text="{Binding FileName}" FontSize="13" TextTrimming="CharacterEllipsis" />
+                              <TextBlock Classes="subtle" FontSize="11.5" Text="{Binding Folder}" TextTrimming="PathSegmentEllipsis" />
+                            </StackPanel>
+                          </Grid>
+                        </DataTemplate>
+                      </ListBox.ItemTemplate>
+                    </ListBox>
+                    <StackPanel Classes="emptyState" Margin="16" IsVisible="{Binding HasChangesEmptyText}">
+                      <PathIcon Data="{StaticResource IconSync}" Width="28" Height="28" />
+                      <TextBlock Name="ChangesEmptyText" Text="{Binding ChangesEmptyText}" />
+                    </StackPanel>
+                  </Panel>
+                </Border>
+              </DockPanel>
+
+              <GridSplitter Grid.Column="1" Classes="grip" Width="12" ResizeDirection="Columns" DragCompleted="OnSplitterDragCompleted" />
+
+              <!-- the selected file -->
+              <Border Grid.Column="2" BorderBrush="{DynamicResource CardBorder}" BorderThickness="1" CornerRadius="8" ClipToBounds="True">
+                <DockPanel>
+                  <Border DockPanel.Dock="Top" Padding="14,9" Background="{DynamicResource RailBackground}" BorderBrush="{DynamicResource CardBorder}" BorderThickness="0,0,0,1"
+                          IsVisible="{Binding Diff, Converter={x:Static ObjectConverters.IsNotNull}}">
+                    <Grid ColumnDefinitions="Auto,*,Auto">
+                      <Border Classes="chip" Margin="0,0,10,0"
+                              Classes.added="{Binding Diff.Letter, Converter={x:Static views:EqualsConverter.Instance}, ConverterParameter=A}"
+                              Classes.changed="{Binding Diff.Letter, Converter={x:Static views:EqualsConverter.Instance}, ConverterParameter=M}"
+                              Classes.deleted="{Binding Diff.Letter, Converter={x:Static views:EqualsConverter.Instance}, ConverterParameter=D}">
+                        <TextBlock Text="{Binding Diff.Letter}" />
+                      </Border>
+                      <StackPanel Grid.Column="1" Orientation="Horizontal" Spacing="8">
+                        <TextBlock Name="DiffTitle" FontWeight="SemiBold" Text="{Binding Diff.Title}" VerticalAlignment="Center" />
+                        <TextBlock Classes="subtle" FontSize="12" Text="{Binding Diff.Folder}" VerticalAlignment="Center" TextTrimming="PathSegmentEllipsis" />
+                      </StackPanel>
+                      <TextBlock Grid.Column="2" Name="DiffHeader" Classes="subtle" FontSize="12" Text="{Binding Diff.Header}" VerticalAlignment="Center" Margin="12,0,0,0" />
+                    </Grid>
+                  </Border>
+                  <Panel Background="{DynamicResource CodeBackground}">
+                    <ae:TextEditor Name="DiffEditor" IsReadOnly="True" FontSize="12.5" Padding="0,4,0,0" WordWrap="True"
+                                   FontFamily="Cascadia Mono,Consolas,Menlo,DejaVu Sans Mono,monospace"
+                                   HorizontalScrollBarVisibility="Disabled" VerticalScrollBarVisibility="Auto" />
+                    <TextBlock Classes="subtle" Margin="16" TextWrapping="Wrap" Text="{Binding Diff.Message}" IsVisible="{Binding Diff.HasMessage, FallbackValue=False}" />
+                    <StackPanel Classes="emptyState" IsVisible="{Binding Diff, Converter={x:Static ObjectConverters.IsNull}}">
+                      <PathIcon Data="{StaticResource IconDocument}" Width="28" Height="28" />
+                      <TextBlock Text="Select a file to see its changes." />
+                    </StackPanel>
+                  </Panel>
+                </DockPanel>
+              </Border>
+            </Grid>
+          </TabItem>
+          <TabItem Header="Log">
+            <Border BorderBrush="{DynamicResource CardBorder}" BorderThickness="1" CornerRadius="8" Margin="0,8,0,0" ClipToBounds="True" Background="{DynamicResource CodeBackground}">
+              <DockPanel>
+                <Border DockPanel.Dock="Top" Classes="logHead" IsVisible="{Binding !!Progress.Entries.Count}">
+                  <Grid ColumnDefinitions="*,Auto">
+                    <TextBlock Classes="subtle" FontSize="12" VerticalAlignment="Center" Text="{Binding Progress.LineCountText}" />
+                    <Button Grid.Column="1" Name="CopySyncLog" Classes="toolbar copyLog" Click="OnCopyLogClick" ToolTip.Tip="Copy the whole log, with the times">
+                      <StackPanel Orientation="Horizontal" Spacing="6"><PathIcon Data="{StaticResource IconCopy}" Width="13" Height="13" /><TextBlock Name="CopySyncLogLabel" Text="Copy" FontSize="12" /></StackPanel>
+                    </Button>
+                  </Grid>
+                </Border>
+                <Panel>
+                <ListBox Name="SyncLog" Classes="log" ItemsSource="{Binding Progress.Entries}" Padding="0,6">
+                  <ListBox.ItemTemplate>
+                    <DataTemplate x:DataType="vm:LogEntryViewModel">
+                      <Grid ColumnDefinitions="Auto,*">
+                        <TextBlock Classes="mono logTime" Text="{Binding Time}" Margin="0,0,14,0" />
+                        <TextBlock Grid.Column="1" Classes="mono" Classes.logError="{Binding IsError}" Text="{Binding Text}" TextWrapping="Wrap" />
+                      </Grid>
+                    </DataTemplate>
+                  </ListBox.ItemTemplate>
+                </ListBox>
+                <StackPanel Classes="emptyState" IsVisible="{Binding !Progress.Entries.Count}">
+                  <PathIcon Data="{StaticResource IconDocument}" Width="28" Height="28" />
+                  <TextBlock Text="The log of the last Preview or Sync shows here." />
+                </StackPanel>
+                </Panel>
+              </DockPanel>
+            </Border>
+          </TabItem>
+        </TabControl>
+      </Grid>
+    </Border>
+  </Grid>
+</UserControl>

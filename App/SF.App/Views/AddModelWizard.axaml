@@ -1,0 +1,131 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:vm="using:SF.App.ViewModels"
+             xmlns:views="using:SF.App.Views"
+             x:Class="SF.App.Views.AddModelWizard"
+             x:ClassModifier="internal"
+             x:DataType="vm:AddModelWizardViewModel">
+  <!-- sized to the step: the forms take their natural height, the object list and the log a fixed one -->
+  <Border Classes="card wizard" Padding="0" BoxShadow="0 12 40 0 #50000000">
+    <DockPanel>
+      <!-- title and steps -->
+      <Border DockPanel.Dock="Top" Padding="24,18" BorderBrush="{DynamicResource CardBorder}" BorderThickness="0,0,0,1">
+        <StackPanel Spacing="14">
+          <TextBlock Classes="sectionTitle" FontSize="20" Margin="0" Text="{Binding Title}" />
+          <views:StepIndicator />
+        </StackPanel>
+      </Border>
+
+      <!-- buttons -->
+      <Border DockPanel.Dock="Bottom" Padding="24,14" BorderBrush="{DynamicResource CardBorder}" BorderThickness="0,1,0,0">
+        <Grid ColumnDefinitions="*,Auto">
+          <TextBlock Name="WizardError" Classes="error" Text="{Binding Error}" VerticalAlignment="Center" Margin="0,0,16,0" />
+          <StackPanel Grid.Column="1" Orientation="Horizontal" Spacing="8">
+            <Button Name="WizardCancel" Content="Cancel" Command="{Binding CancelCommand}" IsVisible="{Binding !IsFinished}" IsEnabled="{Binding !IsWorking}" />
+            <Button Name="WizardBack" Content="Back" Command="{Binding BackCommand}" IsEnabled="{Binding CanGoBack}" IsVisible="{Binding ShowBack}" />
+            <Button Name="WizardNext" Classes="accent" Content="{Binding NextText}" Command="{Binding NextCommand}" IsEnabled="{Binding CanGoNext}" IsVisible="{Binding !IsProgressStep}" />
+            <Button Name="WizardDone" Classes="accent" Content="Done" Command="{Binding DoneCommand}" IsVisible="{Binding IsFinished}" />
+          </StackPanel>
+        </Grid>
+      </Border>
+
+      <Panel Margin="24,20">
+        <!-- 1. common settings (new model file) -->
+        <StackPanel Spacing="16" IsVisible="{Binding IsSettingsStep}">
+          <TextBlock Classes="subtle" TextWrapping="Wrap" Text="These settings apply to every model in the new file. You can change them later in Settings." />
+          <Grid ColumnDefinitions="*,24,*">
+            <StackPanel>
+              <TextBlock Classes="label" Text="Root namespace" />
+              <TextBox Name="NewRootNamespace" Text="{Binding RootNamespace}" PlaceholderText="For example Contoso.Data" />
+            </StackPanel>
+            <StackPanel Grid.Column="2">
+              <TextBlock Classes="label" Text="Dependencies folder" />
+              <TextBox Name="NewDependenciesFolder" Text="{Binding DependenciesFolder}" />
+            </StackPanel>
+          </Grid>
+          <CheckBox Name="NewUseRootNamespace" IsChecked="{Binding UseRootNamespaceInProjectName}" Content="Use root namespace in project name" />
+          <StackPanel>
+            <TextBlock Classes="label" Text="Indent size" />
+            <TextBox Name="NewIndentSize" Text="{Binding IndentSize}" Width="80" HorizontalAlignment="Left"
+                     Classes.invalid="{Binding IndentSizeError, Converter={x:Static ObjectConverters.IsNotNull}}" />
+            <TextBlock Classes="fieldError" Text="{Binding IndentSizeError}" IsVisible="{Binding IndentSizeError, Converter={x:Static ObjectConverters.IsNotNull}}" />
+          </StackPanel>
+        </StackPanel>
+
+        <!-- 2. connection -->
+        <Grid ColumnDefinitions="*,28,*" IsVisible="{Binding IsConnectionStep}">
+          <StackPanel Spacing="14">
+            <StackPanel>
+              <TextBlock Classes="label" Text="Model name" />
+              <TextBox Name="ModelNameBox" Text="{Binding ModelName}" PlaceholderText="For example Sales"
+                       Classes.invalid="{Binding ModelNameError, Converter={x:Static ObjectConverters.IsNotNull}}" />
+              <TextBlock Name="ModelNameError" Classes="fieldError" Text="{Binding ModelNameError}" IsVisible="{Binding ModelNameError, Converter={x:Static ObjectConverters.IsNotNull}}" />
+            </StackPanel>
+            <StackPanel>
+              <TextBlock Classes="label" Text="Server" />
+              <TextBox Name="ServerBox" Text="{Binding Server}"
+                       Classes.invalid="{Binding ServerError, Converter={x:Static ObjectConverters.IsNotNull}}" />
+              <TextBlock Name="ServerError" Classes="fieldError" Text="{Binding ServerError}" IsVisible="{Binding ServerError, Converter={x:Static ObjectConverters.IsNotNull}}" />
+            </StackPanel>
+            <CheckBox Name="IntegratedSecurityBox" IsChecked="{Binding IntegratedSecurity}" Content="Windows authentication (integrated security)" />
+            <TextBlock Classes="subtle" FontSize="12" TextWrapping="Wrap" IsVisible="{Binding ShowIntegratedSecurityNote}"
+                       Text="On macOS and Linux, integrated security needs Kerberos to be set up. Otherwise turn it off and sign in with a SQL Server user." />
+            <StackPanel IsVisible="{Binding !IntegratedSecurity}" Spacing="14">
+              <StackPanel>
+                <TextBlock Classes="label" Text="User" />
+                <TextBox Name="UserBox" Text="{Binding User}"
+                         Classes.invalid="{Binding UserError, Converter={x:Static ObjectConverters.IsNotNull}}" />
+                <TextBlock Classes="fieldError" Text="{Binding UserError}" IsVisible="{Binding UserError, Converter={x:Static ObjectConverters.IsNotNull}}" />
+              </StackPanel>
+              <StackPanel>
+                <TextBlock Classes="label" Text="Password" />
+                <TextBox Name="PasswordBox" Text="{Binding Password}" PasswordChar="•"
+                         Classes.invalid="{Binding PasswordError, Converter={x:Static ObjectConverters.IsNotNull}}" />
+                <TextBlock Classes="fieldError" Text="{Binding PasswordError}" IsVisible="{Binding PasswordError, Converter={x:Static ObjectConverters.IsNotNull}}" />
+              </StackPanel>
+            </StackPanel>
+          </StackPanel>
+          <StackPanel Grid.Column="2" Spacing="0">
+            <TextBlock Classes="label" Text="Database" />
+            <Grid ColumnDefinitions="*,8,Auto">
+              <ComboBox Name="DatabaseBox" ItemsSource="{Binding Databases}" SelectedItem="{Binding SelectedDatabase}" HorizontalAlignment="Stretch" PlaceholderText="Load the server's databases"
+                        Classes.invalid="{Binding DatabaseError, Converter={x:Static ObjectConverters.IsNotNull}}" />
+              <Button Grid.Column="2" Name="LoadDatabasesButton" Command="{Binding LoadDatabasesCommand}" IsEnabled="{Binding !IsWorking}" ToolTip.Tip="List the databases on this server">
+                <StackPanel Orientation="Horizontal" Spacing="6"><PathIcon Data="{StaticResource IconRefresh}" Width="14" Height="14" /><TextBlock Text="Load" /></StackPanel>
+              </Button>
+            </Grid>
+            <TextBlock Name="DatabaseError" Classes="fieldError" Text="{Binding DatabaseError}" IsVisible="{Binding DatabaseError, Converter={x:Static ObjectConverters.IsNotNull}}" />
+            <ProgressBar IsIndeterminate="True" IsVisible="{Binding IsWorking}" Height="3" Margin="0,8,0,0" />
+            <Grid Name="ConnectedLine" ColumnDefinitions="Auto,6,*" Margin="0,8,0,0" IsVisible="{Binding ConnectedText, Converter={x:Static ObjectConverters.IsNotNull}}">
+              <PathIcon Data="{StaticResource IconCheck}" Width="13" Height="13" Foreground="{DynamicResource SuccessText}" VerticalAlignment="Top" Margin="0,2,0,0" />
+              <TextBlock Grid.Column="2" Name="ConnectedText" FontSize="12" Foreground="{DynamicResource SuccessText}" Text="{Binding ConnectedText}" TextWrapping="Wrap" />
+            </Grid>
+            <Border Classes="callout" Margin="0,14,0,0">
+              <StackPanel Orientation="Horizontal" Spacing="8">
+                <PathIcon Data="{StaticResource IconWarning}" Width="16" Height="16" VerticalAlignment="Top" Foreground="{DynamicResource WarningText}" />
+                <TextBlock FontSize="12" TextWrapping="Wrap" MaxWidth="300" Text="Use test databases: reading a model can run stored procedures to discover their result columns." />
+              </StackPanel>
+            </Border>
+          </StackPanel>
+        </Grid>
+
+        <!-- 3. objects -->
+        <DockPanel IsVisible="{Binding IsObjectsStep}" Height="440">
+          <ProgressBar DockPanel.Dock="Top" IsIndeterminate="True" IsVisible="{Binding IsWorking}" Height="3" Margin="0,0,0,8" />
+          <ContentControl Content="{Binding Chooser}">
+            <ContentControl.DataTemplates>
+              <DataTemplate DataType="vm:ObjectChooserViewModel"><views:ObjectChooserView /></DataTemplate>
+            </ContentControl.DataTemplates>
+          </ContentControl>
+        </DockPanel>
+
+        <!-- 4. progress -->
+        <ContentControl Content="{Binding Progress}" IsVisible="{Binding IsProgressStep}" Height="440">
+          <ContentControl.DataTemplates>
+            <DataTemplate DataType="vm:ProgressViewModel"><views:ProgressView /></DataTemplate>
+          </ContentControl.DataTemplates>
+        </ContentControl>
+      </Panel>
+    </DockPanel>
+  </Border>
+</UserControl>

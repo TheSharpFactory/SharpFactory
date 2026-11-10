@@ -1,0 +1,19 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>net10.0</TargetFramework>
+    <EnforceCodeStyleInBuild>true</EnforceCodeStyleInBuild>
+      <CopyLocalLockFileAssemblies>true</CopyLocalLockFileAssemblies>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Newtonsoft.Json" Version="13.0.4" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\SF.CodeGenerator\SF.CodeGenerator.csproj" />
+    <ProjectReference Include="..\SF.Db\SF.Db.csproj" />
+    <ProjectReference Include="..\SF.Models\SF.Models.csproj" />
+  </ItemGroup>
+
+</Project>

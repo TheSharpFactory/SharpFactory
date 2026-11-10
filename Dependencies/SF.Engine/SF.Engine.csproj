@@ -1,0 +1,21 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>net10.0</TargetFramework>
+    <EnforceCodeStyleInBuild>true</EnforceCodeStyleInBuild>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Microsoft.VisualStudio.SolutionPersistence" Version="1.0.52" />
+    <PackageReference Include="System.Management" Version="10.0.14" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\..\Common\SF.Common\SF.Common.csproj" />
+    <ProjectReference Include="..\SF.CodeGenerator\SF.CodeGenerator.csproj" />
+    <ProjectReference Include="..\SF.Db\SF.Db.csproj" />
+    <ProjectReference Include="..\SF.Models\SF.Models.csproj" />
+    <ProjectReference Include="..\SF.Utils\SF.Utils.csproj" />
+  </ItemGroup>
+
+</Project>

@@ -1,0 +1,41 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:vm="using:SF.App.ViewModels"
+             x:Class="SF.App.Views.AboutPage"
+             x:ClassModifier="internal"
+             x:DataType="vm:AboutPageViewModel">
+  <StackPanel Margin="28,22" Spacing="16">
+    <TextBlock Classes="pageTitle" Text="About" />
+    <Border Classes="card" HorizontalAlignment="Left" Width="680" Padding="0">
+      <StackPanel>
+        <Grid ColumnDefinitions="Auto,24,*" Margin="24">
+          <Image Source="/Assets/LogoWithText.png" Width="96" Height="126" VerticalAlignment="Center" />
+          <StackPanel Grid.Column="2" Spacing="6" VerticalAlignment="Center">
+            <TextBlock Name="AboutProductName" FontSize="22" FontWeight="SemiBold" Text="{Binding ProductName}" />
+            <TextBlock Name="AboutVersion" Classes="subtle" Text="{Binding ProductVersion}" />
+            <TextBlock Text="{Binding ProductEdition}" />
+            <HyperlinkButton Classes="plainLink" NavigateUri="{Binding Website}" Padding="0,4">
+              <StackPanel Orientation="Horizontal" Spacing="6">
+                <TextBlock Text="thesharpfactory.com" />
+                <PathIcon Data="{StaticResource IconLink}" Width="12" Height="12" />
+              </StackPanel>
+            </HyperlinkButton>
+          </StackPanel>
+        </Grid>
+        <Border BorderBrush="{DynamicResource CardBorder}" BorderThickness="0,1,0,0" Padding="24,16">
+          <StackPanel Spacing="12">
+            <TextBlock Classes="sectionTitle" Text="Diagnostics" Margin="0" />
+            <Grid ColumnDefinitions="110,*,Auto" RowDefinitions="Auto,Auto">
+              <TextBlock Classes="subtle" Text="Error logs" VerticalAlignment="Center" />
+              <TextBlock Grid.Column="1" Classes="mono" FontSize="12" Text="{Binding LogsFolder}" VerticalAlignment="Center" TextTrimming="PathSegmentEllipsis" ToolTip.Tip="{Binding LogsFolder}" />
+              <HyperlinkButton Grid.Column="2" Classes="plainLink" NavigateUri="{Binding LogsFolderUri}" Content="Open folder" Margin="12,0,0,0" />
+              <TextBlock Grid.Row="1" Classes="subtle" Text="App settings" VerticalAlignment="Center" Margin="0,10,0,0" />
+              <TextBlock Grid.Row="1" Grid.Column="1" Classes="mono" FontSize="12" Text="{Binding SettingsFile}" VerticalAlignment="Center" TextTrimming="PathSegmentEllipsis" ToolTip.Tip="{Binding SettingsFile}" Margin="0,10,0,0" />
+              <HyperlinkButton Grid.Row="1" Grid.Column="2" Classes="plainLink" NavigateUri="{Binding SettingsFolderUri}" Content="Open folder" Margin="12,10,0,0" />
+            </Grid>
+          </StackPanel>
+        </Border>
+      </StackPanel>
+    </Border>
+  </StackPanel>
+</UserControl>

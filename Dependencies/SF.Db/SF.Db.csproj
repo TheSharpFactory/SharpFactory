@@ -1,0 +1,20 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>net10.0</TargetFramework>
+    <EnforceCodeStyleInBuild>true</EnforceCodeStyleInBuild>
+      <CopyLocalLockFileAssemblies>true</CopyLocalLockFileAssemblies>
+  </PropertyGroup>
+
+  <ItemGroup>
+      <PackageReference Include="Microsoft.Data.SqlClient" Version="7.1.1"  />
+      <!-- patched version of a package Microsoft.Data.SqlClient brings in (GHSA-846f-f764-76mx in 9.0.x) -->
+      <PackageReference Include="System.Security.Cryptography.Pkcs" Version="10.0.14" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\..\Common\SF.Common\SF.Common.csproj" />
+    <ProjectReference Include="..\SF.Models\SF.Models.csproj" />
+  </ItemGroup>
+
+</Project>

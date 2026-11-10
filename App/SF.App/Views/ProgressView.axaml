@@ -1,0 +1,50 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:vm="using:SF.App.ViewModels"
+             x:Class="SF.App.Views.ProgressView"
+             x:ClassModifier="internal"
+             x:DataType="vm:ProgressViewModel">
+  <DockPanel>
+    <!-- running: the step being done; finished: the outcome -->
+    <StackPanel DockPanel.Dock="Top" Spacing="8" Margin="0,0,0,12">
+      <StackPanel Spacing="8" IsVisible="{Binding IsRunning}">
+        <TextBlock Name="ProgressStep" FontWeight="SemiBold" Text="{Binding CurrentStep, FallbackValue='Starting…'}" TextTrimming="CharacterEllipsis" />
+        <ProgressBar IsIndeterminate="True" Height="4" />
+      </StackPanel>
+      <Border Classes="outcome success" IsVisible="{Binding IsSucceeded}">
+        <Grid ColumnDefinitions="Auto,10,*">
+          <PathIcon Data="{StaticResource IconCheck}" Width="18" Height="18" Foreground="{DynamicResource SuccessText}" VerticalAlignment="Top" />
+          <TextBlock Grid.Column="2" Name="ProgressResult" Text="{Binding ResultText}" TextWrapping="Wrap" VerticalAlignment="Center" />
+        </Grid>
+      </Border>
+      <Border Classes="outcome failure" IsVisible="{Binding ErrorText, Converter={x:Static ObjectConverters.IsNotNull}}">
+        <Grid ColumnDefinitions="Auto,10,*">
+          <PathIcon Data="{StaticResource IconWarning}" Width="18" Height="18" Foreground="{DynamicResource ErrorText}" VerticalAlignment="Top" />
+          <TextBlock Grid.Column="2" Text="{Binding ErrorText}" TextWrapping="Wrap" VerticalAlignment="Center" />
+        </Grid>
+      </Border>
+    </StackPanel>
+    <Border BorderBrush="{DynamicResource CardBorder}" BorderThickness="1" CornerRadius="8" Background="{DynamicResource RailBackground}" ClipToBounds="True">
+      <DockPanel>
+        <Border DockPanel.Dock="Top" Classes="logHead" IsVisible="{Binding !!Entries.Count}">
+          <Grid ColumnDefinitions="*,Auto">
+            <TextBlock Classes="subtle" FontSize="12" VerticalAlignment="Center" Text="{Binding LineCountText}" />
+            <Button Grid.Column="1" Name="CopyProgressLog" Classes="toolbar copyLog" Click="OnCopyLogClick" ToolTip.Tip="Copy the whole log, with the times">
+              <StackPanel Orientation="Horizontal" Spacing="6"><PathIcon Data="{StaticResource IconCopy}" Width="13" Height="13" /><TextBlock Name="CopyProgressLogLabel" Text="Copy" FontSize="12" /></StackPanel>
+            </Button>
+          </Grid>
+        </Border>
+        <ListBox Name="ProgressLog" Classes="log" ItemsSource="{Binding Entries}" Background="Transparent" Padding="0,6">
+          <ListBox.ItemTemplate>
+            <DataTemplate x:DataType="vm:LogEntryViewModel">
+              <Grid ColumnDefinitions="Auto,*">
+                <TextBlock Classes="mono logTime" Text="{Binding Time}" Margin="0,0,14,0" />
+                <TextBlock Grid.Column="1" Classes="mono" Classes.logError="{Binding IsError}" Text="{Binding Text}" TextWrapping="Wrap" />
+              </Grid>
+            </DataTemplate>
+          </ListBox.ItemTemplate>
+        </ListBox>
+      </DockPanel>
+    </Border>
+  </DockPanel>
+</UserControl>

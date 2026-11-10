@@ -1,0 +1,35 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>net10.0</TargetFramework>
+    <EnforceCodeStyleInBuild>true</EnforceCodeStyleInBuild>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <Compile Remove="Database.cs" />
+    <Compile Remove="DatabaseDelete.cs" />
+    <Compile Remove="DatabaseFunction.cs" />
+    <Compile Remove="DatabaseInsert.cs" />
+    <Compile Remove="DatabaseSelect.cs" />
+    <Compile Remove="DatabaseSequence.cs" />
+    <Compile Remove="DatabaseStoredProc.cs" />
+    <Compile Remove="DatabaseUpdate.cs" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <EmbeddedResource Include="Database.cs" LogicalName="SF.CodeGeneration.Database.cs" />
+    <EmbeddedResource Include="DatabaseDelete.cs" LogicalName="SF.CodeGeneration.DatabaseDelete.cs" />
+    <EmbeddedResource Include="DatabaseFunction.cs" LogicalName="SF.CodeGeneration.DatabaseFunction.cs" />
+    <EmbeddedResource Include="DatabaseInsert.cs" LogicalName="SF.CodeGeneration.DatabaseInsert.cs" />
+    <EmbeddedResource Include="DatabaseSelect.cs" LogicalName="SF.CodeGeneration.DatabaseSelect.cs" />
+    <EmbeddedResource Include="DatabaseSequence.cs" LogicalName="SF.CodeGeneration.DatabaseSequence.cs" />
+    <EmbeddedResource Include="DatabaseStoredProc.cs" LogicalName="SF.CodeGeneration.DatabaseStoredProc.cs" />
+    <EmbeddedResource Include="DatabaseUpdate.cs" LogicalName="SF.CodeGeneration.DatabaseUpdate.cs" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\SF.CSharpGenerator\SF.CSharpGenerator.csproj" />
+    <ProjectReference Include="..\SF.Models\SF.Models.csproj" />
+  </ItemGroup>
+
+</Project>

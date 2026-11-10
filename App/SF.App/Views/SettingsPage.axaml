@@ -1,0 +1,67 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:vm="using:SF.App.ViewModels"
+             x:Class="SF.App.Views.SettingsPage"
+             x:ClassModifier="internal"
+             x:DataType="vm:SettingsPageViewModel">
+  <ScrollViewer>
+    <StackPanel Margin="28,22" Spacing="16" MaxWidth="1000" HorizontalAlignment="Stretch">
+      <StackPanel>
+        <TextBlock Classes="pageTitle" Text="Settings" />
+        <TextBlock Classes="pageSubtitle" Text="These settings apply to every model in this file." />
+      </StackPanel>
+
+      <!-- the settings, one column -->
+      <Border Classes="card">
+        <StackPanel Spacing="16">
+          <Grid ColumnDefinitions="*,24,*">
+            <StackPanel>
+              <TextBlock Classes="label" Text="Root namespace" />
+              <TextBox Name="RootNamespaceBox" Text="{Binding Settings.RootNamespace}" />
+            </StackPanel>
+            <StackPanel Grid.Column="2">
+              <TextBlock Classes="label" Text="Dependencies folder" />
+              <TextBox Name="DependenciesFolderBox" Text="{Binding Settings.DependenciesFolder}" />
+              <TextBlock Classes="subtle" FontSize="12" Margin="0,4,0,0" Text="The solution folder the generated projects go in." TextWrapping="Wrap" />
+            </StackPanel>
+          </Grid>
+          <CheckBox Name="UseRootNamespaceBox" IsChecked="{Binding UseRootNamespaceInProjectName}" Content="Use root namespace in project name" />
+          <StackPanel>
+            <TextBlock Classes="label" Text="Indent size" />
+            <TextBox Name="IndentSizeBox" Text="{Binding IndentSizeText}" Width="80" HorizontalAlignment="Left"
+                     Classes.invalid="{Binding IndentSizeError, Converter={x:Static ObjectConverters.IsNotNull}}" />
+            <TextBlock Classes="fieldError" Text="{Binding IndentSizeError}" IsVisible="{Binding IndentSizeError, Converter={x:Static ObjectConverters.IsNotNull}}" />
+          </StackPanel>
+        </StackPanel>
+      </Border>
+
+      <!-- what the settings produce -->
+      <Border Classes="card" Padding="0">
+        <StackPanel>
+          <StackPanel Margin="20,16,20,10">
+            <TextBlock Classes="sectionTitle" Text="Names this gives" Margin="0" />
+            <TextBlock Classes="subtle" FontSize="12" Text="The project and namespace of each layer, as Sync will create them." />
+          </StackPanel>
+          <Grid Classes="columnsHeader" ColumnDefinitions="250,230,*" Margin="20,6">
+            <TextBlock Text="LAYER" />
+            <TextBlock Grid.Column="1" Text="PROJECT" />
+            <TextBlock Grid.Column="2" Text="NAMESPACE" />
+          </Grid>
+          <ItemsControl ItemsSource="{Binding Preview}">
+            <ItemsControl.ItemTemplate>
+              <DataTemplate x:DataType="vm:LayerRowViewModel">
+                <Border Classes="columnRow" Padding="20,6">
+                  <Grid ColumnDefinitions="250,230,*">
+                    <TextBlock Text="{Binding Title}" TextTrimming="CharacterEllipsis" VerticalAlignment="Center" />
+                    <TextBlock Grid.Column="1" Classes="mono" Text="{Binding FullProjectName}" TextWrapping="Wrap" Margin="0,0,12,0" VerticalAlignment="Center" />
+                    <TextBlock Grid.Column="2" Classes="mono subtle" Text="{Binding FullNamespace}" TextWrapping="Wrap" VerticalAlignment="Center" />
+                  </Grid>
+                </Border>
+              </DataTemplate>
+            </ItemsControl.ItemTemplate>
+          </ItemsControl>
+        </StackPanel>
+      </Border>
+    </StackPanel>
+  </ScrollViewer>
+</UserControl>

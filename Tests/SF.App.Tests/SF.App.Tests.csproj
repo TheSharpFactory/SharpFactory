@@ -1,0 +1,32 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>net10.0</TargetFramework>
+    <EnforceCodeStyleInBuild>true</EnforceCodeStyleInBuild>
+    <OutputType>Exe</OutputType>
+    <IsPackable>false</IsPackable>
+    <RootNamespace>SF.App.Tests</RootNamespace>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Microsoft.NET.Test.Sdk" Version="18.11.0" />
+    <PackageReference Include="xunit.v3" Version="3.2.2" />
+    <PackageReference Include="xunit.runner.visualstudio" Version="4.0.1" />
+    <PackageReference Include="Avalonia.Headless.XUnit" Version="12.1.6" />
+    <PackageReference Include="Avalonia.Skia" Version="12.1.6" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\..\App\SF.App\SF.App.csproj" />
+    <ProjectReference Include="..\..\Dependencies\SF.Engine\SF.Engine.csproj" />
+    <ProjectReference Include="..\..\Dependencies\SF.Models\SF.Models.csproj" />
+    <ProjectReference Include="..\..\Dependencies\SF.Utils\SF.Utils.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <None Include="..\SF.Tests\Fixtures\Coverage.edmj" Link="Fixtures\Coverage.edmj">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
+  </ItemGroup>
+
+</Project>

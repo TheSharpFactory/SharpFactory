@@ -1,0 +1,61 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:vm="using:SF.App.ViewModels"
+             x:Class="SF.App.Views.LayersPage"
+             x:ClassModifier="internal"
+             x:DataType="vm:LayersPageViewModel">
+  <!-- one table per group, in the same style as Settings "Names this gives" -->
+  <UserControl.Resources>
+    <DataTemplate x:Key="LayerRow" x:DataType="vm:LayerRowViewModel">
+      <Border Classes="columnRow" Padding="20,7">
+        <Grid ColumnDefinitions="230,16,170,12,190,20,*">
+          <StackPanel VerticalAlignment="Center" ToolTip.Tip="{Binding Description}">
+            <TextBlock Text="{Binding Title}" FontWeight="SemiBold" TextTrimming="CharacterEllipsis" />
+            <TextBlock Classes="subtle" FontSize="11.5" Text="{Binding Description}" TextTrimming="CharacterEllipsis" />
+          </StackPanel>
+          <TextBox Grid.Column="2" Text="{Binding Layer.Project}" VerticalAlignment="Center" />
+          <TextBox Grid.Column="4" Text="{Binding Layer.Namespace}" VerticalAlignment="Center" />
+          <StackPanel Grid.Column="6" VerticalAlignment="Center" Spacing="1">
+            <TextBlock Classes="mono" FontSize="12" Text="{Binding FullProjectName}" TextTrimming="CharacterEllipsis" ToolTip.Tip="{Binding FullProjectName}" />
+            <TextBlock Classes="mono subtle" FontSize="12" Text="{Binding FullNamespace}" TextTrimming="CharacterEllipsis" ToolTip.Tip="{Binding FullNamespace}" />
+          </StackPanel>
+        </Grid>
+      </Border>
+    </DataTemplate>
+  </UserControl.Resources>
+
+  <ScrollViewer>
+    <StackPanel Margin="28,22" Spacing="16" MaxWidth="1100" HorizontalAlignment="Stretch">
+      <StackPanel>
+        <TextBlock Classes="pageTitle" Text="Layers" />
+        <TextBlock Classes="pageSubtitle" Text="The project and namespace of each generated layer. The result column includes the root namespace from Settings." />
+      </StackPanel>
+
+      <Border Classes="card" Padding="0" IsVisible="{Binding HasModel}">
+        <StackPanel>
+          <TextBlock Classes="sectionTitle" Margin="20,16,20,8" Text="{Binding ModelName, StringFormat='Model {0}: specific to this model'}" />
+          <Grid Classes="columnsHeader" ColumnDefinitions="230,16,170,12,190,20,*" Margin="20,4">
+            <TextBlock Text="LAYER" />
+            <TextBlock Grid.Column="2" Text="PROJECT" />
+            <TextBlock Grid.Column="4" Text="NAMESPACE" />
+            <TextBlock Grid.Column="6" Text="RESULT" />
+          </Grid>
+          <ItemsControl Name="ModelLayerList" ItemsSource="{Binding ModelLayers}" ItemTemplate="{StaticResource LayerRow}" />
+        </StackPanel>
+      </Border>
+
+      <Border Classes="card" Padding="0">
+        <StackPanel>
+          <TextBlock Classes="sectionTitle" Margin="20,16,20,8" Text="Common: shared by every model" />
+          <Grid Classes="columnsHeader" ColumnDefinitions="230,16,170,12,190,20,*" Margin="20,4">
+            <TextBlock Text="LAYER" />
+            <TextBlock Grid.Column="2" Text="PROJECT" />
+            <TextBlock Grid.Column="4" Text="NAMESPACE" />
+            <TextBlock Grid.Column="6" Text="RESULT" />
+          </Grid>
+          <ItemsControl Name="CommonLayerList" ItemsSource="{Binding CommonLayers}" ItemTemplate="{StaticResource LayerRow}" />
+        </StackPanel>
+      </Border>
+    </StackPanel>
+  </ScrollViewer>
+</UserControl>

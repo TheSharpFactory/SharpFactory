@@ -1,0 +1,62 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:vm="using:SF.App.ViewModels"
+             xmlns:views="using:SF.App.Views"
+             x:Class="SF.App.Views.UpdateModelWizard"
+             x:ClassModifier="internal"
+             x:DataType="vm:UpdateModelWizardViewModel">
+  <Border Classes="card wizard" Padding="0" BoxShadow="0 12 40 0 #50000000">
+    <DockPanel>
+      <Border DockPanel.Dock="Top" Padding="24,18" BorderBrush="{DynamicResource CardBorder}" BorderThickness="0,0,0,1">
+        <StackPanel Spacing="14">
+          <TextBlock Classes="sectionTitle" FontSize="20" Margin="0" Text="{Binding Title}" />
+          <views:StepIndicator />
+        </StackPanel>
+      </Border>
+
+      <Border DockPanel.Dock="Bottom" Padding="24,14" BorderBrush="{DynamicResource CardBorder}" BorderThickness="0,1,0,0">
+        <Grid ColumnDefinitions="*,Auto">
+          <TextBlock Name="WizardError" Classes="error" Text="{Binding Error}" VerticalAlignment="Center" Margin="0,0,16,0" />
+          <StackPanel Grid.Column="1" Orientation="Horizontal" Spacing="8">
+            <Button Name="WizardCancel" Content="Cancel" Command="{Binding CancelCommand}" IsVisible="{Binding !IsFinished}" IsEnabled="{Binding !IsWorking}" />
+            <Button Name="WizardBack" Content="Back" Command="{Binding BackCommand}" IsEnabled="{Binding CanGoBack}" IsVisible="{Binding ShowBack}" />
+            <Button Name="WizardNext" Classes="accent" Content="{Binding NextText}" Command="{Binding NextCommand}" IsEnabled="{Binding CanGoNext}" IsVisible="{Binding !IsProgressStep}" />
+            <Button Name="WizardDone" Classes="accent" Content="Done" Command="{Binding DoneCommand}" IsVisible="{Binding IsFinished}" />
+          </StackPanel>
+        </Grid>
+      </Border>
+
+      <Panel Margin="24,20">
+        <!-- 1. connection summary -->
+        <StackPanel Spacing="10" IsVisible="{Binding IsSummaryStep}" MaxWidth="520" HorizontalAlignment="Left">
+          <TextBlock Classes="subtle" TextWrapping="Wrap" Text="The model is read again from its database. Its layers and connection stay as they are." />
+          <Grid ColumnDefinitions="160,*" RowDefinitions="Auto,Auto,Auto,Auto" Margin="0,8,0,0">
+            <TextBlock Classes="subtle" Text="Model" />
+            <TextBlock Grid.Column="1" Name="SummaryName" FontWeight="SemiBold" Text="{Binding Model.Name}" />
+            <TextBlock Grid.Row="1" Classes="subtle" Text="Server" Margin="0,8,0,0" />
+            <TextBlock Grid.Row="1" Grid.Column="1" Text="{Binding Model.ConInfo.Server}" Margin="0,8,0,0" />
+            <TextBlock Grid.Row="2" Classes="subtle" Text="Database" Margin="0,8,0,0" />
+            <TextBlock Grid.Row="2" Grid.Column="1" Text="{Binding Model.ConInfo.Database}" Margin="0,8,0,0" />
+            <TextBlock Grid.Row="3" Classes="subtle" Text="Sign-in" Margin="0,8,0,0" />
+            <TextBlock Grid.Row="3" Grid.Column="1" Name="SummarySignIn" Text="{Binding SignInText}" Margin="0,8,0,0" />
+          </Grid>
+          <ProgressBar IsIndeterminate="True" IsVisible="{Binding IsWorking}" Height="3" />
+        </StackPanel>
+
+        <!-- 2. objects -->
+        <ContentControl Content="{Binding Chooser}" IsVisible="{Binding IsObjectsStep}" Height="440">
+          <ContentControl.DataTemplates>
+            <DataTemplate DataType="vm:ObjectChooserViewModel"><views:ObjectChooserView /></DataTemplate>
+          </ContentControl.DataTemplates>
+        </ContentControl>
+
+        <!-- 3. progress -->
+        <ContentControl Content="{Binding Progress}" IsVisible="{Binding IsProgressStep}" Height="440">
+          <ContentControl.DataTemplates>
+            <DataTemplate DataType="vm:ProgressViewModel"><views:ProgressView /></DataTemplate>
+          </ContentControl.DataTemplates>
+        </ContentControl>
+      </Panel>
+    </DockPanel>
+  </Border>
+</UserControl>
