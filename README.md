@@ -79,7 +79,8 @@ The website, thesharpfactory.com, is a static site in its own repository, `TheSh
 
 Each release on GitHub has its notes and the downloads for Windows (x64, ARM64), Linux (x64) and macOS (x64, Apple
 silicon): the app and the command line, self-contained, with `LICENSE`, `THIRD-PARTY-NOTICES.md` and a `licenses`
-folder. The macOS app is not signed yet: the first time, right-click it and choose **Open**.
+folder. The macOS app is not signed yet, so macOS blocks it the first time: open it once, then go to System Settings >
+Privacy & Security and choose **Open Anyway**. On macOS 14 or earlier, right-click the app and choose **Open** instead.
 
 To publish one: add the version's section to `CHANGELOG.md` (the heading `## <VERSION> — <date>`), commit, and push
 the tag `v<VERSION>`. `.github/workflows/release.yml` checks that the tag matches `VERSION`, builds everything and

@@ -4,6 +4,33 @@ Newest first. One entry per change set. Version rules: see [BACKLOG.md](BACKLOG.
 
 ---
 
+## 1.1.9.3 — 2026-11-10
+
+Changes
+- SF-162: the macOS first-run instruction is correct for current macOS. Since macOS 15 (Sequoia), right-click → Open no longer gets an unsigned app past Gatekeeper: the user opens the app once (macOS refuses), then chooses **Open Anyway** in System Settings > Privacy & Security. Right-click → Open still works on macOS 14 and earlier. `README.md` (Releases), `CHANGELOG.md` (the 1.1.8.8 downloads paragraph) and the comment in `.github/workflows/release.yml` say so; SF-102's description too.
+- The published 1.1.8.8 release page on GitHub still has the old sentence: editing `CHANGELOG.md` does not change a published release. The next release's text comes from the corrected file.
+
+Verification
+- No other place in the repository gives the old instruction (searched for "right-click" and "Control-click"; only the release-notes history has it).
+- `.github/scripts/release_notes.py 1.1.8.8` extracts the corrected paragraph.
+
+Commit details
+
+```
+Correct the macOS first-run instruction
+
+Right-click and Open no longer gets an unsigned app past Gatekeeper
+since macOS 15. The README, the changelog and the release workflow now
+point to Open Anyway in Privacy & Security, with right-click and Open
+for macOS 14 and earlier.
+
+Bump version to 1.1.9.3.
+
+Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>
+```
+
+---
+
 ## 1.1.9.2 — 2026-11-10
 
 Changes

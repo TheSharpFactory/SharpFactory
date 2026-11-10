@@ -29,8 +29,9 @@ database and generate the C# data access for it. Free and open source under the 
 | `TheSharpFactory-linux-x64.tar.gz` | The app for Linux |
 | `sharpfactory-cli-*` | The command line, `sharpfactory`, for the same systems |
 
-Nothing to install: unpack and run. The .NET runtime is included. The macOS app is not signed yet: the first time,
-right-click it and choose **Open**.
+Nothing to install: unpack and run. The .NET runtime is included. The macOS app is not signed yet, so macOS blocks
+it the first time: open it once, then go to System Settings > Privacy & Security and choose **Open Anyway**. On
+macOS 14 or earlier, right-click the app and choose **Open** instead.
 
 The generated code needs the `Microsoft.Data.SqlClient` NuGet package in the repository project, and
 `Microsoft.SqlServer.Types` when the database has `geography` or `geometry` columns. Documentation:

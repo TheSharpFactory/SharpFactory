@@ -62,7 +62,8 @@ jobs:
           tar -czf dist/TheSharpFactory-linux-x64.tar.gz -C out/app-linux-x64 .
           tar -czf dist/sharpfactory-cli-linux-x64.tar.gz -C out/cli-linux-x64 .
 
-          # macOS: an .app bundle (unsigned: the first time, right-click the app and choose Open);
+          # macOS: an .app bundle (unsigned: the first time macOS blocks it; System Settings > Privacy & Security >
+          # Open Anyway, or right-click > Open on macOS 14 and earlier);
           # the license files go to Contents/Resources
           for rid in osx-x64 osx-arm64; do
             bundle=out/bundle-$rid/TheSharpFactory.app
