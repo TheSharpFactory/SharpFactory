@@ -17,6 +17,7 @@ namespace SF.Cli;
 ///   sharpfactory generate &lt;model.edmj&gt; &lt;output folder&gt;
 ///   sharpfactory update &lt;model.edmj&gt; [--model &lt;name&gt;] [--check]
 ///   sharpfactory info &lt;model.edmj&gt;
+///   sharpfactory --version (or version)
 /// Exit code: 0 success, 1 failure (or, for update --check, a model that would change), 2 usage error (an unknown
 /// command or argument, a missing model file).
 /// Progress goes to standard output; errors and the usage go to standard error.
@@ -60,6 +61,10 @@ internal static class Program
             case "--help":
             case "-h":
                 WriteUsage(Console.Out);
+                return 0;
+            case "version":
+            case "--version":
+                Console.Out.WriteLine($"sharpfactory {Version()}");
                 return 0;
             default:
                 return Usage();
@@ -395,9 +400,17 @@ internal static class Program
         return 2;
     }
 
+    /// <summary>
+    /// The version the build stamps into the assembly from the VERSION file, e.g. 1.1.9.2.
+    /// </summary>
+    private static string Version()
+    {
+        return typeof(Program).Assembly.GetName().Version.ToString();
+    }
+
     private static void WriteUsage(TextWriter writer)
     {
-        writer.WriteLine("The Sharp Factory");
+        writer.WriteLine($"The Sharp Factory {Version()}");
         writer.WriteLine("  sharpfactory sync <model.edmj> <solution.sln|.slnx> [--preview]");
         writer.WriteLine("      Generates the model's code into the solution (created when missing). --preview writes nothing.");
         writer.WriteLine("  sharpfactory generate <model.edmj> <output folder>");
@@ -407,6 +420,8 @@ internal static class Program
         writer.WriteLine("      no longer has drop out. --check saves nothing and exits with 1 when a model would change.");
         writer.WriteLine("  sharpfactory info <model.edmj>");
         writer.WriteLine("      Shows the file's settings and each model's connection and object counts.");
+        writer.WriteLine("  sharpfactory --version");
+        writer.WriteLine("      Shows the version.");
     }
 
     /// <summary>

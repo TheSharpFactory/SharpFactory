@@ -4,6 +4,32 @@ Newest first. One entry per change set. Version rules: see [BACKLOG.md](BACKLOG.
 
 ---
 
+## 1.1.9.2 — 2026-11-10
+
+Changes
+- SF-161: `sharpfactory --version` (or `sharpfactory version`) prints one line to standard output, `sharpfactory 1.1.9.2`, and exits with 0, so a build pipeline can log which version it runs. The number is the assembly's version, which the build takes from `VERSION` (SF-160). Before, `--version` was an unknown command: usage and exit code 2.
+- The usage's first line shows the version (`The Sharp Factory 1.1.9.2`) and lists `--version`.
+- `README.md` (the command list) and the summary comment of `App/SF.Cli/Program.cs` list the new option. The website's command list was handed to the website project (docs request #2).
+
+Verification
+- `dotnet run --project App/SF.Cli -- --version`: `sharpfactory 1.1.9.2`, exit code 0; `version` the same. A misspelled `--verison` still prints the usage and exits with 2; `--help` shows the version in its first line and exits with 0.
+- `dotnet build SF.slnx`: 0 errors, 0 warnings.
+
+Commit details
+
+```
+Add sharpfactory --version
+
+The command line prints its version, taken from the assembly that the
+build stamps from VERSION, and the usage shows it in its first line.
+
+Bump version to 1.1.9.2.
+
+Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>
+```
+
+---
+
 ## 1.1.9.1 — 2026-11-10
 
 Changes

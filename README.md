@@ -28,11 +28,13 @@ sharpfactory sync <model.edmj> <solution.sln|.slnx> [--preview]
 sharpfactory generate <model.edmj> <output folder>
 sharpfactory update <model.edmj> [--model <name>] [--check]
 sharpfactory info <model.edmj>
+sharpfactory --version
 ```
 
 `update` reads each model's objects again from its database and saves the file (objects the database no longer
 has drop out; new ones are not added). With `--check` it saves nothing and exits with 1 when a model would change,
-so a build can tell that the model is behind the database. Exit codes: 0 success, 1 failure, 2 usage error.
+so a build can tell that the model is behind the database. `--version` prints one line, such as
+`sharpfactory 1.1.9.2`. Exit codes: 0 success, 1 failure, 2 usage error.
 
 ## Using the generated code
 
