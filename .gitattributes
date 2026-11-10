@@ -2,7 +2,8 @@
 # Set default behavior to automatically normalize line endings.
 ###############################################################################
 *.sql diff
-* text=auto
+# every checkout gets CRLF, as .editorconfig requires (on Linux and macOS too, or the build fails IDE0055)
+* text=auto eol=crlf
 
 ###############################################################################
 # Set default behavior for command prompt diff.

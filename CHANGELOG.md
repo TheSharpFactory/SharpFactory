@@ -3,7 +3,7 @@
 What changed in each published release of The Sharp Factory, newest first. Each section is also the text of that
 release on GitHub, with its downloads.
 
-## 1.1.8.7 — 2026-11-10
+## 1.1.8.8 — 2026-11-10
 
 The first open-source release of The Sharp Factory: a desktop app and a command line that read a SQL Server
 database and generate the C# data access for it. Free and open source under the MIT License.

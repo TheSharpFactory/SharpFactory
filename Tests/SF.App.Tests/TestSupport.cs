@@ -1,7 +1,9 @@
 #region Usings
 using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.IO;
+using System.Threading;
 using System.Threading.Tasks;
 using Avalonia;
 using Avalonia.Controls;
@@ -116,6 +118,23 @@ internal sealed class AppHarness : IDisposable
         Dispatcher.UIThread.RunJobs();
         Window.CaptureRenderedFrame();
         Dispatcher.UIThread.RunJobs();
+    }
+
+    /// <summary>
+    /// Pumps until <paramref name="done"/> is true, for background work the UI waits on (like the Sync page's
+    /// search for solutions); fails when it takes longer than <paramref name="timeoutMs"/>.
+    /// </summary>
+    public void PumpUntil(Func<bool> done, int timeoutMs = 30000)
+    {
+        var watch = Stopwatch.StartNew();
+        while(!done())
+        {
+            if(watch.ElapsedMilliseconds > timeoutMs)
+                throw new TimeoutException("The UI did not reach the expected state in time.");
+
+            Pump();
+            Thread.Sleep(10);
+        }
     }
 
     /// <summary>

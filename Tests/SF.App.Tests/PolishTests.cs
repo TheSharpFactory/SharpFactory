@@ -175,6 +175,10 @@ public sealed class PolishTests
             app.ViewModel.OpenFile(app.CopyFixture());
             app.ViewModel.Navigate(app.ViewModel.Sync);
             var page = app.ViewModel.Sync;
+
+            //opening the page starts the real search for solutions; on a fast machine it ends during the next
+            //Pump and turns IsScanning off, so wait for it before setting IsScanning here
+            app.PumpUntil(() => !page.IsScanning);
             page.IsScanning = true;
             app.Pump();
 

@@ -4,6 +4,36 @@ Newest first. One entry per change set. Version rules: see [BACKLOG.md](BACKLOG.
 
 ---
 
+## 1.1.8.8 — 2026-11-10
+
+Changes
+- SF-158: the first runs on GitHub failed, so 1.1.8.7 published no release; two fixes.
+  - `.gitattributes`: `* text=auto eol=crlf`. The repository stores LF and Linux and macOS checked out LF, while `.editorconfig` requires CRLF; the build (which treats formatting as an error) failed with IDE0055 in `FKeyPart.cs` on Linux and macOS, and the Release workflow (on Linux) with it. Every checkout now gets CRLF.
+  - `PolishTests.TheSolutionListSaysItIsLooking` failed on Windows: opening the Sync page starts the real search for solutions, which on the build machine ended during the next `Pump` and turned `IsScanning` off right after the test turned it on. The test now waits for that search first, with the new `AppHarness.PumpUntil`.
+- `CHANGELOG.md`: the first public release is 1.1.8.8 (the 1.1.8.7 section is now 1.1.8.8; 1.1.8.7 was never released).
+
+Verification
+- The failures were read from the GitHub job logs. A clone checked out the Linux way (LF) reproduced the 12 IDE0055 errors; with the new `.gitattributes` the same checkout gets CRLF and builds with 0 errors.
+- `dotnet build SF.slnx`: 0 errors, 0 warnings. `SF.Tests`: 51 passed, 3 skipped. `SF.App.Tests`: 50 passed, 4 skipped. `VERSION` and `Versionable.cs` say 1.1.8.8.
+
+Commit details
+
+```
+Fix the CI and release builds
+
+Check out every file with CRLF, as .editorconfig requires: Linux and
+macOS got LF and the build failed IDE0055. The Sync page test now
+waits for the page's own search for solutions before it sets
+IsScanning, so the search cannot reset it on a fast machine. The first
+public release is 1.1.8.8.
+
+Bump version to 1.1.8.8.
+
+Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>
+```
+
+---
+
 ## 1.1.8.7 — 2026-11-10
 
 Changes
