@@ -1,0 +1,6 @@
+<Project>
+  <!-- every project carries the version in VERSION (assembly, file and product version) -->
+  <PropertyGroup>
+    <Version>$([System.IO.File]::ReadAllText('$(MSBuildThisFileDirectory)VERSION').Trim())</Version>
+  </PropertyGroup>
+</Project>

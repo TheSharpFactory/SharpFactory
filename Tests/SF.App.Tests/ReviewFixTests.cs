@@ -27,6 +27,17 @@ public sealed class ReviewFixTests
         Assert.True(setting == null || setting.Value<bool>());
     }
 
+    [Fact]
+    public void TheAppHasTheVersionInTheVersionFile()
+    {
+        //the build stamps VERSION into the assemblies (Directory.Build.props); the About page shows the app's
+        var folder = new DirectoryInfo(AppContext.BaseDirectory);
+        while(!File.Exists(Path.Combine(folder.FullName, "VERSION")))
+            folder = folder.Parent;
+
+        Assert.Equal(File.ReadAllText(Path.Combine(folder.FullName, "VERSION")).Trim(), new Versionable().CurrentVersion);
+    }
+
     [AvaloniaFact]
     public void NavigationAndModelPickerLockWhileBusy()
     {

@@ -4,6 +4,35 @@ Newest first. One entry per change set. Version rules: see [BACKLOG.md](BACKLOG.
 
 ---
 
+## 1.1.9.1 — 2026-11-10
+
+Changes
+- SF-160: the binaries carry the real version. No project set a version, so every assembly said 1.0.0.0 (file version) and 1.0.0 (product version), in local builds and in the downloads. `Directory.Build.props` next to `SF.slnx` reads `VERSION` into `<Version>`, so every project, in every build and in the release workflow alike, gets it as its assembly, file and product version (the SDK adds `+<commit>` to the product version).
+- `VERSION` is now the only place to edit: `App/SF.App/Versionable.cs` returns the assembly's version instead of a constant, and `Common/SF.Common/Versioning/VersionManager.cs` (internal, unused, left from the old website, still saying 1.0.7.13) is deleted. The versioning rule in `BACKLOG.md` says so.
+- Test: `TheAppHasTheVersionInTheVersionFile` (what the About page and the toolbar show equals `VERSION`).
+
+Verification
+- `TheSharpFactory.dll`, `sharpfactory.dll` and `SF.Engine.dll`: FileVersion 1.1.9.0 (the version before this bump; it follows `VERSION`), ProductVersion `1.1.9.0+c60a852...`. A release-style publish (`dotnet publish App/SF.Cli -c Release -r win-x64 --self-contained`) gives `sharpfactory.exe` the same.
+- Generated code unchanged: the 174 files generated from `Coverage.edmj` before and after are byte-identical (`SF.GenCheck`: 174 identical, exit code 0).
+- `SF.Tests` 52 passed, `SF.App.Tests` 52 passed (database tests skip locally). `dotnet build SF.slnx`: 0 errors, 0 warnings.
+
+Commit details
+
+```
+Stamp the version into the binaries
+
+Every assembly said 1.0.0.0. Directory.Build.props now reads VERSION
+into every project, the app reads its version from its assembly, and
+the unused VersionManager with its stale number is gone, so VERSION is
+the only place the version is kept.
+
+Bump version to 1.1.9.1.
+
+Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>
+```
+
+---
+
 ## 1.1.9.0 — 2026-11-10
 
 Changes

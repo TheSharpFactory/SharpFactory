@@ -4,15 +4,14 @@ using SF.Common.Versioning;
 
 namespace SF.App;
 
-//the app's version, kept in step with the VERSION file
+//the app's version: the assembly's, which the build takes from the VERSION file (Directory.Build.props)
 internal sealed class Versionable : IVersionable
 {
-    private const string _version = "1.1.9.0";
     public string CurrentVersion
     {
         get
         {
-            return _version;
+            return typeof(Versionable).Assembly.GetName().Version.ToString();
         }
     }
 }
