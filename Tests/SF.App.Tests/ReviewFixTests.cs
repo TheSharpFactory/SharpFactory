@@ -4,6 +4,7 @@ using Avalonia.Headless.XUnit;
 using Newtonsoft.Json.Linq;
 using SF.App.ViewModels;
 using SF.Utils;
+using System;
 using System.IO;
 using System.Threading.Tasks;
 using Xunit;
@@ -16,6 +17,16 @@ namespace SF.App.Tests;
 /// </summary>
 public sealed class ReviewFixTests
 {
+    [Fact]
+    public void TheAppCanUseComToFindOpenSolutions()
+    {
+        //SF-142: with COM interop off, WMI (System.Management) throws and Sync never sees a solution open in an IDE
+        var config = JObject.Parse(File.ReadAllText(Path.Combine(AppContext.BaseDirectory, "TheSharpFactory.runtimeconfig.json")));
+        var setting = config.SelectToken("runtimeOptions.configProperties['System.Runtime.InteropServices.BuiltInComInterop.IsSupported']");
+
+        Assert.True(setting == null || setting.Value<bool>());
+    }
+
     [AvaloniaFact]
     public void NavigationAndModelPickerLockWhileBusy()
     {

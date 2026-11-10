@@ -1,4 +1,5 @@
 #region Usings
+using SF.Common.Logging;
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
@@ -37,9 +38,10 @@ public static class RunningIdeScanner
             else
                 ScanUnix(result);
         }
-        catch
+        catch(Exception ex)
         {
-            //a missing permission or tool only means fewer suggestions
+            //a missing permission or tool only means fewer suggestions, but it goes to the log so it can be found
+            LogManager.WriteErrorLog(ex, "Unable to find the solutions open in an IDE");
         }
 
         return result;
@@ -72,20 +74,32 @@ public static class RunningIdeScanner
         {
             using(var process = Process.GetProcessById(processId))
             {
-                var title = process.MainWindowTitle;
-                if(string.IsNullOrWhiteSpace(title))
-                    return;
-
-                //"Solution - File.cs - Microsoft Visual Studio", "Solution – File.cs" (Rider), "File - Folder - Visual Studio Code"
-                var parts = title.Split(new[] { " - ", " – " }, StringSplitOptions.RemoveEmptyEntries);
-                var solutionName = string.Equals(ideName, "VS Code", StringComparison.Ordinal) && parts.Length > 1 ? parts[parts.Length - 2] : parts[0];
-                result.Add(new OpenSolutionHint { IdeName = ideName, SolutionName = solutionName.Trim() });
+                var solutionName = GetSolutionNameFromWindowTitle(ideName, process.MainWindowTitle);
+                if(solutionName != null)
+                    result.Add(new OpenSolutionHint { IdeName = ideName, SolutionName = solutionName });
             }
         }
         catch
         {
             //the process may have exited
         }
+    }
+
+    /// <summary>
+    /// The solution name in an IDE's window title: "Solution - Microsoft Visual Studio", "Solution – File.cs" (Rider),
+    /// "File - Folder - Visual Studio Code". Null when the title names no solution ("Microsoft Visual Studio" alone).
+    /// </summary>
+    public static string GetSolutionNameFromWindowTitle(string ideName, string title)
+    {
+        if(string.IsNullOrWhiteSpace(title))
+            return null;
+
+        var parts = title.Split(new[] { " - ", " – " }, StringSplitOptions.RemoveEmptyEntries);
+        if(parts.Length < 2)
+            return null;
+
+        var solutionName = string.Equals(ideName, "VS Code", StringComparison.Ordinal) ? parts[parts.Length - 2] : parts[0];
+        return solutionName.Trim();
     }
 
     private static void ScanUnix(List<OpenSolutionHint> result)

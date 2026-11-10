@@ -332,6 +332,19 @@ public sealed class EngineUnitTests
     }
 
     [Fact]
+    public void WindowTitlesGiveTheSolutionName()
+    {
+        Assert.Equal("Shop", RunningIdeScanner.GetSolutionNameFromWindowTitle("Visual Studio", "Shop - Microsoft Visual Studio"));
+        Assert.Equal("Shop", RunningIdeScanner.GetSolutionNameFromWindowTitle("Rider", "Shop – Program.cs"));
+        Assert.Equal("Shop", RunningIdeScanner.GetSolutionNameFromWindowTitle("VS Code", "Program.cs - Shop - Visual Studio Code"));
+
+        //an IDE with nothing open names no solution
+        Assert.Null(RunningIdeScanner.GetSolutionNameFromWindowTitle("Visual Studio", "Microsoft Visual Studio"));
+        Assert.Null(RunningIdeScanner.GetSolutionNameFromWindowTitle("VS Code", "Visual Studio Code"));
+        Assert.Null(RunningIdeScanner.GetSolutionNameFromWindowTitle("Visual Studio", ""));
+    }
+
+    [Fact]
     public void TargetListPutsOpenThenSyncedThenNearby()
     {
         using(var folder = new TestFolder())

@@ -4,6 +4,37 @@ Newest first. One entry per change set. Version rules: see [BACKLOG.md](BACKLOG.
 
 ---
 
+## 1.1.9.0 — 2026-11-10
+
+Changes
+- SF-142: Sync shows the solution open in Visual Studio again. The app's project had `BuiltInComInteropSupport` set to `false`, which writes `System.Runtime.InteropServices.BuiltInComInterop.IsSupported: false` into `TheSharpFactory.runtimeconfig.json`. `System.Management` (WMI) is built on COM interop, so `RunningIdeScanner.ScanWindows` threw `TypeInitializationException` (`System.Management.ManagementPath`) on every call, and `Scan`'s empty `catch` returned an empty list: no candidate was ever labelled "Open in ...". The switch is now `true` (the value of Avalonia's own template). The command line was never affected (it does not scan).
+- `RunningIdeScanner.Scan` writes the exception to the error log instead of swallowing it, so a scan that fails can be found.
+- The window-title fallback (used when the IDE was started without a solution on its command line, e.g. from the Start menu) is `RunningIdeScanner.GetSolutionNameFromWindowTitle`: a title with no separator, such as `Microsoft Visual Studio` with nothing open, names no solution instead of a solution called "Microsoft Visual Studio".
+- Tests: `WindowTitlesGiveTheSolutionName` (engine) and `TheAppCanUseComToFindOpenSolutions` (app: the app's runtime config must not switch COM interop off).
+
+Verification
+- `TheSharpFactory.runtimeconfig.json` now has the switch `true`.
+- A scratch program with the real `RunningIdeScanner` and the same WMI query: with the switch `false` it fails with the `ManagementPath` exception from the bug; with `true` it returns the running `devenv.exe` (Visual Studio 18) and its command line. With no solution open the scan returns no hint, as it should.
+- `SF.Tests` 52 passed, `SF.App.Tests` 51 passed (the database tests skip locally without their settings; CI runs them). `dotnet build SF.slnx`: 0 errors, 0 warnings.
+- Not yet verified: the Sync page with a real solution open in Visual Studio started from the Start menu (the window-title path); that needs the user.
+
+Commit details
+
+```
+Let Sync see the solutions open in Visual Studio
+
+The app switched COM interop off, so WMI threw on every call and the
+scan for open solutions always came back empty without a trace. COM
+interop is on again, a failed scan goes to the error log, and a window
+title with no solution is no longer read as one.
+
+Bump version to 1.1.9.0.
+
+Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>
+```
+
+---
+
 ## 1.1.8.9 — 2026-11-10
 
 Changes

@@ -7,7 +7,7 @@ namespace SF.App;
 //the app's version, kept in step with the VERSION file
 internal sealed class Versionable : IVersionable
 {
-    private const string _version = "1.1.8.9";
+    private const string _version = "1.1.9.0";
     public string CurrentVersion
     {
         get
