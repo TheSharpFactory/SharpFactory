@@ -256,6 +256,11 @@ internal sealed class AboutPageViewModel : PageViewModel
 
     public Uri Website { get; } = new Uri("https://www.thesharpfactory.com");
 
+    //opened in the browser only when clicked: the app connects to nothing but the database
+    public Uri Releases { get; } = new Uri("https://github.com/TheSharpFactory/SharpFactory/releases");
+
+    public Uri Issues { get; } = new Uri("https://github.com/TheSharpFactory/SharpFactory/issues");
+
     public string LogsFolder { get; } = AppPaths.LogsFolder;
 
     public string SettingsFile { get; } = AppPaths.SettingsFile;

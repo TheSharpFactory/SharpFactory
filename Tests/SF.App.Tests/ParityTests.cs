@@ -575,6 +575,9 @@ public sealed class ParityTests
             app.Pump();
             Assert.Equal("The Sharp Factory App", app.Find<TextBlock>("AboutProductName").Text);
             Assert.Equal("Version: test", app.Find<TextBlock>("AboutVersion").Text);
+            Assert.Equal("https://www.thesharpfactory.com/", app.Find<HyperlinkButton>("AboutWebsiteLink").NavigateUri.ToString());
+            Assert.Equal("https://github.com/TheSharpFactory/SharpFactory/releases", app.Find<HyperlinkButton>("AboutReleasesLink").NavigateUri.ToString());
+            Assert.Equal("https://github.com/TheSharpFactory/SharpFactory/issues", app.Find<HyperlinkButton>("AboutIssuesLink").NavigateUri.ToString());
             app.Screenshot("09-about");
         }
     }

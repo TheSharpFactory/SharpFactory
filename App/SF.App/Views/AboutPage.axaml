@@ -14,12 +14,26 @@
             <TextBlock Name="AboutProductName" FontSize="22" FontWeight="SemiBold" Text="{Binding ProductName}" />
             <TextBlock Name="AboutVersion" Classes="subtle" Text="{Binding ProductVersion}" />
             <TextBlock Text="{Binding ProductEdition}" />
-            <HyperlinkButton Classes="plainLink" NavigateUri="{Binding Website}" Padding="0,4">
-              <StackPanel Orientation="Horizontal" Spacing="6">
-                <TextBlock Text="thesharpfactory.com" />
-                <PathIcon Data="{StaticResource IconLink}" Width="12" Height="12" />
-              </StackPanel>
-            </HyperlinkButton>
+            <StackPanel Orientation="Horizontal" Spacing="28" Margin="0,4,0,0">
+              <HyperlinkButton Name="AboutWebsiteLink" Classes="plainLink" NavigateUri="{Binding Website}" Padding="0,4">
+                <StackPanel Orientation="Horizontal" Spacing="6">
+                  <TextBlock Text="thesharpfactory.com" />
+                  <PathIcon Data="{StaticResource IconLink}" Width="12" Height="12" />
+                </StackPanel>
+              </HyperlinkButton>
+              <HyperlinkButton Name="AboutReleasesLink" Classes="plainLink" NavigateUri="{Binding Releases}" Padding="0,4" ToolTip.Tip="Release notes and downloads on GitHub">
+                <StackPanel Orientation="Horizontal" Spacing="6">
+                  <TextBlock Text="Releases" />
+                  <PathIcon Data="{StaticResource IconLink}" Width="12" Height="12" />
+                </StackPanel>
+              </HyperlinkButton>
+              <HyperlinkButton Name="AboutIssuesLink" Classes="plainLink" NavigateUri="{Binding Issues}" Padding="0,4" ToolTip.Tip="Report a problem or ask for a feature on GitHub">
+                <StackPanel Orientation="Horizontal" Spacing="6">
+                  <TextBlock Text="Report an issue" />
+                  <PathIcon Data="{StaticResource IconLink}" Width="12" Height="12" />
+                </StackPanel>
+              </HyperlinkButton>
+            </StackPanel>
           </StackPanel>
         </Grid>
         <Border BorderBrush="{DynamicResource CardBorder}" BorderThickness="0,1,0,0" Padding="24,16">

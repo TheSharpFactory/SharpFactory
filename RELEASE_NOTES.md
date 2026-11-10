@@ -4,6 +4,33 @@ Newest first. One entry per change set. Version rules: see [BACKLOG.md](BACKLOG.
 
 ---
 
+## 1.1.9.4 — 2026-11-10
+
+Changes
+- SF-163: the About page links to the releases and to the issue tracker, so a user who hits a problem has a way from the app to the release notes and to a bug report. Next to "thesharpfactory.com" there are now "Releases" (`https://github.com/TheSharpFactory/SharpFactory/releases`, tooltip "Release notes and downloads on GitHub") and "Report an issue" (`.../issues`, tooltip "Report a problem or ask for a feature on GitHub"), in the same link style with the external-link icon, on one row. `AboutPageViewModel` has the two `Uri` properties next to `Website`.
+- The links open the browser only when clicked: the app still makes no connection except to the database, and there is no update check. SF-112's description says so.
+- Test: `H1_H2_DocumentationAndAbout` checks the three links' addresses.
+
+Verification
+- UI review: three judges graded the headless screenshot of the About page. Round 1: Look 8/8/8, Usability 8/8/7, Comfort 8/7/8, Appeal 7/8/7, all signed off; two asked for more room between the links and above the row (gap 20 -> 28 px, 4 px above), which round 2 has. One asked to rename "Releases" to "Release notes"; kept, because the page holds the downloads as well and matches GitHub's own name (the tooltip says "Release notes and downloads"). Round 2: Look 9/9/8, Usability 8/8/8, Comfort 9/9/8, Appeal 8/8/7, all "keep" and signed off, the third judge agreeing with "Releases".
+- `SF.App.Tests` 52 passed (database tests skip locally). `dotnet build SF.slnx`: 0 errors, 0 warnings.
+
+Commit details
+
+```
+Link the About page to the releases and the issues
+
+A user who hits a problem had no way from the app to the release notes
+or the issue tracker. The About page links to both next to the website,
+in the same style; they open the browser only when clicked.
+
+Bump version to 1.1.9.4.
+
+Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>
+```
+
+---
+
 ## 1.1.9.3 — 2026-11-10
 
 Changes
