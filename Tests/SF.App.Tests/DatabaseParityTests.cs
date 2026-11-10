@@ -45,6 +45,12 @@ public sealed class DatabaseParityTests
             wizard.ModelName = oldModel.Name;
             wizard.Server = oldModel.ConInfo.Server;
             wizard.IntegratedSecurity = !(oldModel.ConInfo.DisableIntegratedSecurity ?? false);
+            if(!wizard.IntegratedSecurity)
+            {
+                wizard.User = oldModel.ConInfo.User;
+                wizard.Password = oldModel.ConInfo.Password;
+            }
+
             await wizard.LoadDatabasesCommand.ExecuteAsync(null);
             Assert.Null(wizard.Error);
             Assert.Contains(oldModel.ConInfo.Database, wizard.Databases);

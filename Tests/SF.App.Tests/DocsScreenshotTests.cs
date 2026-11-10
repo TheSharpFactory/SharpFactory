@@ -34,13 +34,21 @@ public sealed class DocsScreenshotTests
             await wizard.NextCommand.ExecuteAsync(null);
             Assert.True(wizard.IsConnectionStep);
 
-            //the server as typed (the default is this machine's name)
+            //the server as typed (the default is this machine's name); "server;database" signs in with Windows (as
+            //the website's screens show), "server;database;user;password" with a SQL Server login
             wizard.ModelName = "AppDb";
             wizard.Server = parts[0];
-            wizard.IntegratedSecurity = true;
+            wizard.IntegratedSecurity = parts.Length < 4;
+            if(parts.Length >= 4)
+            {
+                wizard.User = parts[2];
+                wizard.Password = parts[3];
+            }
+
             await wizard.LoadDatabasesCommand.ExecuteAsync(null);
             Assert.Null(wizard.Error);
-            Assert.StartsWith($"Connected to {parts[0]} (Windows) · ", wizard.ConnectedText);
+            var who = parts.Length < 4 ? "(Windows)" : "as " + parts[2];
+            Assert.StartsWith($"Connected to {parts[0]} {who} · ", wizard.ConnectedText);
             wizard.SelectedDatabase = parts[1];
             app.Screenshot("connection_and_model");
             await wizard.NextCommand.ExecuteAsync(null);

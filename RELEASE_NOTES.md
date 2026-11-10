@@ -4,6 +4,39 @@ Newest first. One entry per change set. Version rules: see [BACKLOG.md](BACKLOG.
 
 ---
 
+## 1.1.8.9 — 2026-11-10
+
+Changes
+- SF-159: the database tests run in CI (user: "this is 100% needed"). On the Linux leg, `.github/scripts/setup_test_databases.py` starts SQL Server 2022 in Docker (the `sa` login with a random password per run, masked in the log), creates `SharpFactoryTest` and `SharpFactoryDocs` from `Coverage.sql` and `SharpFactoryQuote's` from `QuotedNames.sql`, and sets the three test settings. Both test projects run there with `-- xUnit.FailSkips=true`, so a database test that skips fails the build. The same script works on any machine with Docker (`--port` when 1433 is taken, `--remove` to clean up).
+- The database tests accept a SQL Server login as well as Windows sign-in (user: "fix the tests to use a user and password ... that would work on linux"): `SHARPFACTORY_QUOTED_NAMES_DB` and `SHARPFACTORY_DOCS_DB` take `server;database` (Windows) or `server;database;user;password`; the parity tests fill the wizard's user and password from the model's connection; the engine update test uses the connection of `SHARPFACTORY_TEST_EDMJ` instead of the fixture's hard-coded `localhost`.
+- The parity tests compare with a model file, and a model file only matches a database with the same history (foreign key numbers, object order). In CI the reference is built from the fresh database by `.github/scripts/build_reference_model.cs` (every object, the default layers, the fixture's settings), so the tests check that the wizard builds exactly what the engine builds and that an update leaves the file unchanged. Locally they compare with your own reference as before.
+- `Tests/SF.Tests/Fixtures/Coverage.edmj` is saved the way the app saves model files (tables, columns, keys, layers and the connection on one line each; it was fully indented, so the app's output never matched it). Same JSON, and the 174 files generated from it are byte-identical. `AModelWithATableNameThatCannotBecomeAnIdentifierStillOpens` edits the fixture in the new layout.
+- `TESTING.md` describes the login format and the Docker setup; `README.md` points at it.
+- The website's query composition pages still show the query API from before SF-141; the changes they need were handed to the website project.
+
+Verification
+- Rehearsed locally with SQL Server 2022 in Docker, exactly as CI runs it: `SF.Tests` 54 passed, 0 skipped; `SF.App.Tests` 54 passed, 0 skipped (all 7 database tests ran). Without the settings and with `xUnit.FailSkips=true`, the skipped tests fail; without it they skip as before.
+- `dotnet build SF.slnx`: 0 errors, 0 warnings. `VERSION` and `Versionable.cs` say 1.1.8.9.
+
+Commit details
+
+```
+Run the database tests in CI
+
+On Linux, CI starts SQL Server 2022 in Docker, creates the test
+databases from the fixtures and runs both test projects with skips
+counted as failures. The database tests accept a SQL Server login as
+well as Windows sign-in, the parity tests compare with a reference
+model built from the fresh database, and the Coverage fixture is saved
+the way the app saves model files (same content, same generated code).
+
+Bump version to 1.1.8.9.
+
+Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>
+```
+
+---
+
 ## 1.1.8.8 — 2026-11-10
 
 Changes

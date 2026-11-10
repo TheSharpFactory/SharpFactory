@@ -141,9 +141,11 @@ public sealed class EngineUnitTests
         if(string.IsNullOrWhiteSpace(reference) || !File.Exists(reference))
             Assert.Skip("SHARPFACTORY_TEST_EDMJ is not set to the test database's model file.");
 
-        //the Coverage model reads the same test database; one table is renamed to a name the database does not have
+        //the Coverage model reads the same test database, through the reference file's connection (the build
+        //machine's server is not localhost); one table is renamed to a name the database does not have
         var container = Fixtures.LoadCoverage();
         var model = container.Models[0];
+        model.ConInfo = ModelUtils.Load(reference).Models[0].ConInfo;
         var tables = model.Categories.GetByName(CategoryNames.Entities);
         var renamed = tables.Schemas[0].Entities[0];
         var schemaName = tables.Schemas[0].Name;
@@ -520,7 +522,7 @@ public sealed class EngineUnitTests
     {
         using(var folder = new TestFolder())
         {
-            File.WriteAllText(folder.Combine("table1.edmj"), File.ReadAllText(Fixtures.CoverageModelFile).Replace("\"SN\": \"AllTypes\"", "\"SN\": \"_1\""));
+            File.WriteAllText(folder.Combine("table1.edmj"), File.ReadAllText(Fixtures.CoverageModelFile).Replace("\"SN\":\"AllTypes\"", "\"SN\":\"_1\""));
             var container = ModelUtils.Load(folder.Combine("table1.edmj"));
             var found = ModelNameCheck.Find(container);
             Assert.Single(found);

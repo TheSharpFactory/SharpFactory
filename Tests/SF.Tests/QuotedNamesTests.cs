@@ -23,8 +23,14 @@ public sealed class QuotedNamesTests
         if(string.IsNullOrWhiteSpace(setting) || setting.IndexOf(';') < 0)
             Assert.Skip("SHARPFACTORY_QUOTED_NAMES_DB is not set to \"server;database\".");
 
+        //"server;database" signs in with Windows; "server;database;user;password" with a SQL Server login
         var parts = setting.Split(';');
-        var conInfo = new ConnectionInfo { Server = parts[0], Database = parts[1], DisableIntegratedSecurity = false };
+        var conInfo = new ConnectionInfo { Server = parts[0], Database = parts[1], DisableIntegratedSecurity = parts.Length >= 4 };
+        if(parts.Length >= 4)
+        {
+            conInfo.User = parts[2];
+            conInfo.Password = parts[3];
+        }
 
         Assert.True(DbModelUtils.ValidateConnectionInfo(conInfo, out var reason), reason);
         var categories = ModelBuilder.ReadDatabaseObjects(conInfo);

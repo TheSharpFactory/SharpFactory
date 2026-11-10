@@ -39,8 +39,8 @@ dotnet run --project Tools/SF.SchemaCheck -- <model.edmj> [model name ...]
    - views, scalar / inline-table / multi-statement-table functions, sequences;
    - stored procedures with and without parameters, with `OUTPUT` parameters, with and without result sets.
 3. **That test database's model** (`.edmj`), built by the app (Add, select everything, Save), and **its generated code** saved once as the baseline (for example with `sharpfactory generate`).
-4. **A database with names that need quoting** (optional): an empty test database (an apostrophe in its own name helps, e.g. `SharpFactoryQuote's`) where `Tests/SF.Tests/Fixtures/QuotedNames.sql` was run: a schema, table, column, default, procedure and function with apostrophes, and a procedure with `]` in its name. Set `SHARPFACTORY_QUOTED_NAMES_DB` to `server;database` and the engine tests read it through the schema reader.
-5. **A database with only the Coverage schema** (optional, for the website's screenshots): an empty test database (e.g. `SharpFactoryDocs`) where `Tests/SF.Tests/Fixtures/Coverage.sql` was run with `sqlcmd -I`. With `SHARPFACTORY_DOCS_DB` set to `server;database` (use `localhost`, so no machine name appears) and `SF_SCREENSHOTS` set to a folder, `DocsScreenshotTests` walks the Add wizard and the Models page and saves the screens named like the images of the Model Generation and Updating The Model pages (the website's `SharpFactoryWebsite/images/documentation/gettingstarted`). Nothing in it is internal, so the images can be published as they are. The six wizard images on the website are cropped to the dialog (with a 20 px margin) so they stay readable at the docs column width; `model_details` and `model_code` are full windows.
+4. **A database with names that need quoting** (optional): an empty test database (an apostrophe in its own name helps, e.g. `SharpFactoryQuote's`) where `Tests/SF.Tests/Fixtures/QuotedNames.sql` was run: a schema, table, column, default, procedure and function with apostrophes, and a procedure with `]` in its name. Set `SHARPFACTORY_QUOTED_NAMES_DB` to `server;database` (Windows sign-in) or `server;database;user;password` (a SQL Server login) and the engine tests read it through the schema reader.
+5. **A database with only the Coverage schema** (optional, for the website's screenshots): an empty test database (e.g. `SharpFactoryDocs`) where `Tests/SF.Tests/Fixtures/Coverage.sql` was run with `sqlcmd -I`. With `SHARPFACTORY_DOCS_DB` set to `server;database` (use `localhost`, so no machine name appears; Windows sign-in, as the website's screens show) or `server;database;user;password` and `SF_SCREENSHOTS` set to a folder, `DocsScreenshotTests` walks the Add wizard and the Models page and saves the screens named like the images of the Model Generation and Updating The Model pages (the website's `SharpFactoryWebsite/images/documentation/gettingstarted`). Nothing in it is internal, so the images can be published as they are. The six wizard images on the website are cropped to the dialog (with a 20 px margin) so they stay readable at the docs column width; `model_details` and `model_code` are full windows.
 
 ### The automated tests
 
@@ -50,8 +50,24 @@ dotnet test Tests/SF.App.Tests/SF.App.Tests.csproj
 ```
 
 - `SF.Tests` (engine): Sync into new and existing `.sln`/`.slnx` in temporary folders, re-sync, preview, stale files, moving projects, project references, validation, the Sync target list and settings. It uses `Tests/SF.Tests/Fixtures/Coverage.edmj`, a model of the synthetic Coverage schema only.
-- `SF.App.Tests` (app, headless): one test per group of the parity checklist in `PLAN.md`. Avalonia runs headless with Skia, so no window appears and nothing on the desktop is driven. Set `SF_SCREENSHOTS` to a folder to save a PNG of each screen. Set `SHARPFACTORY_TEST_EDMJ` to a model file built by the old app from a reachable test database to also run the database parity tests: they build and update that model through the new UI and require the saved `.edmj` to be identical.
+- `SF.App.Tests` (app, headless): one test per group of the parity checklist in `PLAN.md`. Avalonia runs headless with Skia, so no window appears and nothing on the desktop is driven. Set `SF_SCREENSHOTS` to a folder to save a PNG of each screen. Set `SHARPFACTORY_TEST_EDMJ` to a model file built by the old app from a reachable test database to also run the database parity tests: they build and update that model through the new UI and require the saved `.edmj` to be identical. The model's own connection is used, Windows sign-in or a SQL Server login.
 - Both set `SHARPFACTORY_HOME` (or use temporary folders), so they never touch your own settings.
+
+### The database tests with Docker (and on GitHub)
+
+On Linux, CI runs SQL Server 2022 in Docker and the database tests with it; a skipped test fails the build there
+(`-- xUnit.FailSkips=true`), so they cannot be skipped by accident. The same setup works on any machine with Docker:
+
+```
+python .github/scripts/setup_test_databases.py [--port 14333]
+python .github/scripts/setup_test_databases.py --remove
+```
+
+It starts the container (`sf-test-sql`, the `sa` login with a random password for this run), creates
+`SharpFactoryTest` and `SharpFactoryDocs` from `Coverage.sql` and `SharpFactoryQuote's` from `QuotedNames.sql`,
+builds the reference model from `SharpFactoryTest` (`.github/scripts/build_reference_model.cs`: every object, the
+default layers, `Coverage.edmj`'s settings; a model file only matches a database with the same history, such as
+foreign key numbers and object order) and prints the three settings to set. Use `--port` when 1433 is taken.
 
 ### The command line
 

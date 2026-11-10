@@ -24,11 +24,17 @@ jobs:
       - name: Build
         run: dotnet build SF.slnx -c Release
 
+      # Linux: SQL Server 2022 in Docker with the test databases, so the database tests run too; there a skipped
+      # test fails the build, so they cannot be skipped by accident
+      - name: SQL Server and the test databases (Linux)
+        if: runner.os == 'Linux'
+        run: python3 .github/scripts/setup_test_databases.py
+
       - name: Engine tests
-        run: dotnet test Tests/SF.Tests/SF.Tests.csproj -c Release --no-build
+        run: dotnet test Tests/SF.Tests/SF.Tests.csproj -c Release --no-build ${{ runner.os == 'Linux' && '-- xUnit.FailSkips=true' || '' }}
 
       - name: UI tests (headless)
-        run: dotnet test Tests/SF.App.Tests/SF.App.Tests.csproj -c Release --no-build
+        run: dotnet test Tests/SF.App.Tests/SF.App.Tests.csproj -c Release --no-build ${{ runner.os == 'Linux' && '-- xUnit.FailSkips=true' || '' }}
 
       # every OS must generate the same bytes: hash every generated file, compared in the next job
       - name: Generate the public test model

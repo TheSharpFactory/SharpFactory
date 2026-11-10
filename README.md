@@ -52,6 +52,9 @@ dotnet test Tests/SF.App.Tests/SF.App.Tests.csproj
 dotnet run --project App/SF.App
 ```
 
+The database tests need SQL Server: `python .github/scripts/setup_test_databases.py` starts one in Docker with the
+test databases (see `TESTING.md`). CI does the same on Linux, so every push runs them.
+
 Requires the .NET 10 SDK. `TESTING.md` describes the regression checks (generated code must stay
 byte-identical), `PLAN.md` the app's design, `BACKLOG.md` the open work, `RELEASE_NOTES.md` every change and
 `CHANGELOG.md` what each published release brings.
