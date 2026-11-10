@@ -4,6 +4,38 @@ Newest first. One entry per change set. Version rules: see [BACKLOG.md](BACKLOG.
 
 ---
 
+## 1.1.9.5 — 2026-11-10
+
+Changes
+- SF-164: `BACKLOG.md` matches what happened when the project went public. Sprint proposals are built from the backlog, and five rows still said "Open" or "Ready, not run yet" for finished work:
+  - SF-007 (source control): Done in 1.1.8.7, a fresh public repository `TheSharpFactory/SharpFactory` seeded from the cleaned code; `.gitignore` in place, no binaries or `.vs` tracked.
+  - SF-040 (download address): Done in 1.1.8.8, the website's Download button goes to the latest release (website 1.0.0.4).
+  - SF-041 (release packaging): Done in 1.1.8.8, the Release workflow published `v1.1.8.8` with all ten downloads.
+  - SF-099 (CI on three systems): Done in 1.1.8.8, green on GitHub at 1.1.8.8 and 1.1.8.9.
+  - SF-112 (addresses for the website): Done in 1.1.8.8, the website links to the repository, Issues, Discussions and the latest release.
+- The versioning rule's stale `WPF/SharpFactory/Versionable.cs` path was already replaced in 1.1.9.1 (SF-160: `VERSION` is the only place to edit).
+
+Verification
+- The facts come from the product owner's check of GitHub's public API and the live website (2026-11-10) and match this project's own records (the 1.1.8.8 release and CI runs, SF-158, SF-159). `git ls-files` lists no `.vs`, `bin`, `obj`, `.dll` or `.exe` entries.
+- Backlog only: no code changed.
+
+Commit details
+
+```
+Bring the backlog up to date
+
+Five rows still called finished work open or not run yet: the public
+repository, the download address, the release workflow, CI on three
+systems and the addresses for the website. They are marked done with
+what was done.
+
+Bump version to 1.1.9.5.
+
+Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>
+```
+
+---
+
 ## 1.1.9.4 — 2026-11-10
 
 Changes
