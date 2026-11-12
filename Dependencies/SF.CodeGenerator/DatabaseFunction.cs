@@ -18,9 +18,9 @@ public static partial class Database
     {
         FunctionQuery.Execute(modelId, entityId, isScalar, param, materializer);
     }
-    internal static async Task<bool> FunctionAsync(int modelId, int entityId, bool isScalar, SqlParameter[] param, Action<SqlDataReader> materializer)
+    internal static Task<bool> FunctionAsync(int modelId, int entityId, bool isScalar, SqlParameter[] param, Action<SqlDataReader> materializer)
     {
-        return await FunctionQuery.ExecuteAsync(modelId, entityId, isScalar, param, materializer);
+        return FunctionQuery.ExecuteAsync(modelId, entityId, isScalar, param, materializer);
     }
 
     private static class FunctionQuery
@@ -37,7 +37,7 @@ public static partial class Database
 
             SqlExecute.Reader(modelId, entityInfo.DbFQName, query, param, materializer, FinishBehavior.Cancel);
         }
-        internal static async Task<bool> ExecuteAsync(int modelId, int funcId, bool isScalar, SqlParameter[] param, Action<SqlDataReader> materializer)
+        internal static Task<bool> ExecuteAsync(int modelId, int funcId, bool isScalar, SqlParameter[] param, Action<SqlDataReader> materializer)
         {
             var entityInfo = RepoLookup.Functions[funcId];
             var query = _select;
@@ -47,7 +47,7 @@ public static partial class Database
             else
                 query += $"*{_from}{entityInfo.DbFQName}({GenerateParams(param)})";
 
-            return await SqlExecute.ReaderAsync(modelId, entityInfo.DbFQName, query, param, materializer, FinishBehavior.Cancel);
+            return SqlExecute.ReaderAsync(modelId, entityInfo.DbFQName, query, param, materializer, FinishBehavior.Cancel);
         }
 
         private static string GenerateParams(SqlParameter[] param)

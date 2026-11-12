@@ -57,7 +57,7 @@ internal static class RepoMethodSignatures
             CSharpFile.DeclareMethod(methodInfo);
             return methodInfo;
         }
-        public static MethodDeclaration GenerateGenericCreate(bool isAsync, bool isInterfaceMember, bool shareConnection, AccessModifiers accesibility = AccessModifiers.Public)
+        public static MethodDeclaration GenerateGenericCreate(bool isAsync, bool isInterfaceMember, bool shareConnection, AccessModifiers accesibility = AccessModifiers.Public, bool skipAwait = false)
         {
             var entityName = "TEntity";
             var summary = $"Creates the specified {entityName} in the database.";
@@ -82,6 +82,7 @@ internal static class RepoMethodSignatures
                 IsInterfaceMember = isInterfaceMember,
                 IsStatic = false,
                 IsAsync = isAsync,
+                SkipAwait = skipAwait,
                 Parameters = methodParams
             };
 
@@ -156,7 +157,7 @@ internal static class RepoMethodSignatures
     internal static class RetrieveMethods
     {
         #region Get
-        public static MethodDeclaration GenerateGetById(Entity entity, UsingNamespace entityNamespace, bool isAsync, string entityFullName, bool isInterfaceMember, bool hasNavProps, AccessModifiers accesibility = AccessModifiers.Public)
+        public static MethodDeclaration GenerateGetById(Entity entity, UsingNamespace entityNamespace, bool isAsync, string entityFullName, bool isInterfaceMember, bool hasNavProps, AccessModifiers accesibility = AccessModifiers.Public, bool skipAwait = false)
         {
             var entityName = entity.N;
             var returnType = !entity.FullyQualify ? entityName : $"{entityNamespace.Alias}.{entityName}";
@@ -188,13 +189,14 @@ internal static class RepoMethodSignatures
                 IsInterfaceMember = isInterfaceMember,
                 IsStatic = false,
                 IsAsync = isAsync,
+                SkipAwait = skipAwait,
                 Parameters = methodParams
             };
 
             CSharpFile.DeclareMethod(methodInfo);
             return methodInfo;
         }
-        public static MethodDeclaration GenerateGetByPK(Entity entity, UsingNamespace entityNamespace, bool isAsync, string entityFullName, bool isInterfaceMember, bool hasNavProps, AccessModifiers accesibility = AccessModifiers.Public)
+        public static MethodDeclaration GenerateGetByPK(Entity entity, UsingNamespace entityNamespace, bool isAsync, string entityFullName, bool isInterfaceMember, bool hasNavProps, AccessModifiers accesibility = AccessModifiers.Public, bool skipAwait = false)
         {
             var entityName = entity.N;
             var returnType = !entity.FullyQualify ? entityName : $"{entityNamespace.Alias}.{entityName}";
@@ -219,13 +221,14 @@ internal static class RepoMethodSignatures
                 IsInterfaceMember = isInterfaceMember,
                 IsStatic = false,
                 IsAsync = isAsync,
+                SkipAwait = skipAwait,
                 Parameters = methodParams
             };
 
             CSharpFile.DeclareMethod(methodInfo);
             return methodInfo;
         }
-        public static MethodDeclaration GenerateGetByUK(Entity entity, UsingNamespace entityNamespace, bool isAsync, Key uniqueKey, string entityFullName, string keySuffix, bool isInterfaceMember, bool hasNavProps, AccessModifiers accesibility = AccessModifiers.Public)
+        public static MethodDeclaration GenerateGetByUK(Entity entity, UsingNamespace entityNamespace, bool isAsync, Key uniqueKey, string entityFullName, string keySuffix, bool isInterfaceMember, bool hasNavProps, AccessModifiers accesibility = AccessModifiers.Public, bool skipAwait = false)
         {
             var entityName = entity.N;
             var returnType = !entity.FullyQualify ? entityName : $"{entityNamespace.Alias}.{entityName}";
@@ -250,6 +253,7 @@ internal static class RepoMethodSignatures
                 IsInterfaceMember = isInterfaceMember,
                 IsStatic = false,
                 IsAsync = isAsync,
+                SkipAwait = skipAwait,
                 Parameters = methodParams
             };
 
@@ -324,7 +328,7 @@ internal static class RepoMethodSignatures
             CSharpFile.DeclareMethod(methodInfo);
             return methodInfo;
         }
-        public static MethodDeclaration GenerateGenericGetTopBasedOnQuery(bool isAsync, bool isInterfaceMember, bool hasNavProps, bool shareConnection, AccessModifiers accesibility = AccessModifiers.Public)
+        public static MethodDeclaration GenerateGenericGetTopBasedOnQuery(bool isAsync, bool isInterfaceMember, bool hasNavProps, bool shareConnection, AccessModifiers accesibility = AccessModifiers.Public, bool skipAwait = false)
         {
             var entityName = "TEntity";
             var returnType = $"List<{entityName}>";
@@ -350,13 +354,14 @@ internal static class RepoMethodSignatures
                 IsInterfaceMember = isInterfaceMember,
                 IsStatic = false,
                 IsAsync = isAsync,
+                SkipAwait = skipAwait,
                 Parameters = methodParams
             };
 
             CSharpFile.DeclareMethod(methodInfo);
             return methodInfo;
         }
-        public static MethodDeclaration GenerateGenericGetTopNoQuery(Entity entity, bool isAsync, bool isInterfaceMember, bool shareConnection, AccessModifiers accesibility = AccessModifiers.Public)
+        public static MethodDeclaration GenerateGenericGetTopNoQuery(Entity entity, bool isAsync, bool isInterfaceMember, bool shareConnection, AccessModifiers accesibility = AccessModifiers.Public, bool skipAwait = false)
         {
             var entityName = entity != null ? entity.N : "TEntity";
             var returnType = $"List<{entityName}>";
@@ -380,6 +385,7 @@ internal static class RepoMethodSignatures
                 IsInterfaceMember = isInterfaceMember,
                 IsStatic = false,
                 IsAsync = isAsync,
+                SkipAwait = skipAwait,
                 Parameters = methodParams
             };
 
@@ -787,10 +793,10 @@ internal static class RepoMethodSignatures
 
             return Helpers.GenerateGetCollectionBasedOnQuery(entity, returnTypeList, entityFullName, isAsync, isInterfaceMember, hasNavProps, shareConnection, accesibility);
         }
-        public static MethodDeclaration GenerateGenericGetListBasedOnQuery(bool isAsync, bool isInterfaceMember, bool hasNavProps, bool shareConnection, AccessModifiers accesibility = AccessModifiers.Public)
+        public static MethodDeclaration GenerateGenericGetListBasedOnQuery(bool isAsync, bool isInterfaceMember, bool hasNavProps, bool shareConnection, AccessModifiers accesibility = AccessModifiers.Public, bool skipAwait = false)
         {
             var returnType = $"List<TEntity>";
-            return Helpers.GenerateGenericGetCollectionBasedOnQuery(isAsync, returnType, isInterfaceMember, hasNavProps, shareConnection, accesibility);
+            return Helpers.GenerateGenericGetCollectionBasedOnQuery(isAsync, returnType, isInterfaceMember, hasNavProps, shareConnection, accesibility, skipAwait);
         }
         #endregion
 
@@ -803,10 +809,10 @@ internal static class RepoMethodSignatures
 
             return Helpers.GenerateGetAllCollection(isAsync, returnTypeList, entity, entityFullName, isInterfaceMember, hasNavProps, shareConnection, defaultSorting, supportsPagination, accesibility);
         }
-        public static MethodDeclaration GenerateGenericGetAll(bool isAsync, bool isInterfaceMember, bool shareConnection, AccessModifiers accesibility = AccessModifiers.Public)
+        public static MethodDeclaration GenerateGenericGetAll(bool isAsync, bool isInterfaceMember, bool shareConnection, AccessModifiers accesibility = AccessModifiers.Public, bool skipAwait = false)
         {
             var returnType = $"List<TEntity>";
-            return Helpers.GenerateGenericGetAllCollection(isAsync, returnType, isInterfaceMember, shareConnection, accesibility);
+            return Helpers.GenerateGenericGetAllCollection(isAsync, returnType, isInterfaceMember, shareConnection, accesibility, skipAwait);
         }
         #endregion
 
@@ -870,7 +876,7 @@ internal static class RepoMethodSignatures
                 CSharpFile.DeclareMethod(methodInfo);
                 return methodInfo;
             }
-            public static MethodDeclaration GenerateGenericGetCollectionBasedOnQuery(bool isAsync, string returnType, bool isInterfaceMember, bool hasNavProps, bool shareConnection, AccessModifiers accesibility)
+            public static MethodDeclaration GenerateGenericGetCollectionBasedOnQuery(bool isAsync, string returnType, bool isInterfaceMember, bool hasNavProps, bool shareConnection, AccessModifiers accesibility, bool skipAwait = false)
             {
                 var entityName = "TEntity";
                 var summary = $"Gets List of {entityName} from the database based on a Query object.";
@@ -894,6 +900,7 @@ internal static class RepoMethodSignatures
                     IsInterfaceMember = isInterfaceMember,
                     IsStatic = false,
                     IsAsync = isAsync,
+                    SkipAwait = skipAwait,
                     Parameters = methodParams
                 };
 
@@ -935,7 +942,7 @@ internal static class RepoMethodSignatures
                 CSharpFile.DeclareMethod(methodInfo);
                 return methodInfo;
             }
-            public static MethodDeclaration GenerateGenericGetAllCollection(bool isAsync, string returnType, bool isInterfaceMember, bool shareConnection, AccessModifiers accesibility)
+            public static MethodDeclaration GenerateGenericGetAllCollection(bool isAsync, string returnType, bool isInterfaceMember, bool shareConnection, AccessModifiers accesibility, bool skipAwait = false)
             {
                 var entityName = "TEntity";
                 var summary = $"Gets List of {entityName} from the database. No filtering.";
@@ -957,6 +964,7 @@ internal static class RepoMethodSignatures
                     IsInterfaceMember = isInterfaceMember,
                     IsStatic = false,
                     IsAsync = isAsync,
+                    SkipAwait = skipAwait,
                     Parameters = methodParams
                 };
 
@@ -1004,7 +1012,7 @@ internal static class RepoMethodSignatures
             CSharpFile.DeclareMethod(methodInfo);
             return methodInfo;
         }
-        public static MethodDeclaration GenerateGenericUpdate(bool isAsync, bool isInterfaceMember, bool shareConnection, AccessModifiers accesibility = AccessModifiers.Public)
+        public static MethodDeclaration GenerateGenericUpdate(bool isAsync, bool isInterfaceMember, bool shareConnection, AccessModifiers accesibility = AccessModifiers.Public, bool skipAwait = false)
         {
             var entityName = "TEntity";
             var summary = $"<para>Updates the specified {entityName} in the database.</para><para>This method only updates those fields that have changed.</para><para>If no fields have changed then no call is made to the database.</para>";
@@ -1028,6 +1036,7 @@ internal static class RepoMethodSignatures
                 IsInterfaceMember = isInterfaceMember,
                 IsStatic = false,
                 IsAsync = isAsync,
+                SkipAwait = skipAwait,
                 Parameters = methodParams
             };
 
@@ -1106,7 +1115,7 @@ internal static class RepoMethodSignatures
             CSharpFile.DeclareMethod(methodInfo);
             return methodInfo;
         }
-        public static MethodDeclaration GenerateGenericUpdateOptimistic(bool isAsync, bool isInterfaceMember, bool shareConnection, AccessModifiers accesibility = AccessModifiers.Public)
+        public static MethodDeclaration GenerateGenericUpdateOptimistic(bool isAsync, bool isInterfaceMember, bool shareConnection, AccessModifiers accesibility = AccessModifiers.Public, bool skipAwait = false)
         {
             var entityName = "TEntity";
             var summary = $"<para>Updates the specified {entityName} in the database.</para><para>This method only updates those fields that have changed. Compares original to changed.</para><para>If no fields have changed then no call is made to the database.</para><para>WARNING: This method allows changes to PrimaryKey, Unique Keys, and Identity.</para>";
@@ -1134,13 +1143,14 @@ internal static class RepoMethodSignatures
                 IsInterfaceMember = isInterfaceMember,
                 IsStatic = false,
                 IsAsync = isAsync,
+                SkipAwait = skipAwait,
                 Parameters = methodParams
             };
 
             CSharpFile.DeclareMethod(methodInfo);
             return methodInfo;
         }
-        public static MethodDeclaration GenerateGenericUpdateOptimisticBatch(bool isAsync, bool isInterfaceMember, bool shareConnection, AccessModifiers accesibility = AccessModifiers.Public)
+        public static MethodDeclaration GenerateGenericUpdateOptimisticBatch(bool isAsync, bool isInterfaceMember, bool shareConnection, AccessModifiers accesibility = AccessModifiers.Public, bool skipAwait = false)
         {
             var entityName = "TEntity";
             var paramType = $"List<BatchEntry<{entityName}>>";
@@ -1167,6 +1177,7 @@ internal static class RepoMethodSignatures
                 IsInterfaceMember = isInterfaceMember,
                 IsStatic = false,
                 IsAsync = isAsync,
+                SkipAwait = skipAwait,
                 Parameters = methodParams
             };
 
@@ -1206,7 +1217,7 @@ internal static class RepoMethodSignatures
             CSharpFile.DeclareMethod(methodInfo);
             return methodInfo;
         }
-        public static MethodDeclaration GenerateGenericUpdateOrCreate(bool isAsync, bool isInterfaceMember, bool shareConnection, AccessModifiers accesibility = AccessModifiers.Public)
+        public static MethodDeclaration GenerateGenericUpdateOrCreate(bool isAsync, bool isInterfaceMember, bool shareConnection, AccessModifiers accesibility = AccessModifiers.Public, bool skipAwait = false)
         {
             var entityName = "TEntity";
             var summary = $"<para>Updates the specified {entityName} in the database. If not found then it is created.</para><para>This function only updates those fields that have changed.</para><para>If no fields have changed then no call is made to the database.</para>";
@@ -1230,6 +1241,7 @@ internal static class RepoMethodSignatures
                 IsInterfaceMember = isInterfaceMember,
                 IsStatic = false,
                 IsAsync = isAsync,
+                SkipAwait = skipAwait,
                 Parameters = methodParams
             };
 
@@ -1390,7 +1402,7 @@ internal static class RepoMethodSignatures
             CSharpFile.DeclareMethod(methodInfo);
             return methodInfo;
         }
-        public static MethodDeclaration GenerateGenericUpdateAnyBasedOnQuery(bool isAsync, bool isInterfaceMember, bool shareConnection, AccessModifiers accesibility = AccessModifiers.Public)
+        public static MethodDeclaration GenerateGenericUpdateAnyBasedOnQuery(bool isAsync, bool isInterfaceMember, bool shareConnection, AccessModifiers accesibility = AccessModifiers.Public, bool skipAwait = false)
         {
             var entityName = "TEntity";
             var summary = "Updates all Entities from the database that match the query specified.";
@@ -1415,6 +1427,7 @@ internal static class RepoMethodSignatures
                 IsInterfaceMember = isInterfaceMember,
                 IsStatic = false,
                 IsAsync = isAsync,
+                SkipAwait = skipAwait,
                 Parameters = methodParams
             };
 
@@ -1612,7 +1625,7 @@ internal static class RepoMethodSignatures
             CSharpFile.DeclareMethod(methodInfo);
             return methodInfo;
         }
-        public static MethodDeclaration GenerateGenericDeleteAnyBasedOnQuery(bool isAsync, bool isInterfaceMember, bool shareConnection, AccessModifiers accesibility = AccessModifiers.Public)
+        public static MethodDeclaration GenerateGenericDeleteAnyBasedOnQuery(bool isAsync, bool isInterfaceMember, bool shareConnection, AccessModifiers accesibility = AccessModifiers.Public, bool skipAwait = false)
         {
             var summary = "Deletes all Entities from the database that match the filters specified in the Query.";
             var returnType = "int";
@@ -1636,6 +1649,7 @@ internal static class RepoMethodSignatures
                 IsInterfaceMember = isInterfaceMember,
                 IsStatic = false,
                 IsAsync = isAsync,
+                SkipAwait = skipAwait,
                 Parameters = methodParams
             };
 
@@ -1790,7 +1804,7 @@ internal static class RepoMethodSignatures
     }
     internal static class Sequences
     {
-        public static MethodDeclaration Generate(Sequence seq, bool isAsync, bool isInterfaceMember, bool shareConnection, AccessModifiers accesibility = AccessModifiers.Public)
+        public static MethodDeclaration Generate(Sequence seq, bool isAsync, bool isInterfaceMember, bool shareConnection, AccessModifiers accesibility = AccessModifiers.Public, bool skipAwait = false)
         {
             var summary = $"Executes Sequence named {seq.N}.";
             var returnType = seq.Sc.T;
@@ -1812,6 +1826,7 @@ internal static class RepoMethodSignatures
                 IsInterfaceMember = isInterfaceMember,
                 IsStatic = false,
                 IsAsync = isAsync,
+                SkipAwait = skipAwait,
                 Parameters = methodParams
             };
 

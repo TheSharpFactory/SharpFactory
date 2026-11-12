@@ -195,10 +195,12 @@ public static partial class RepoGenerator
                 return $"{returns}{methodName}({queryFilters}, {sortFilters}, {pagination}, {top})";
             }
         }
+        //The select calls these helpers write are the whole body of the method (nothing before or after them that needs
+        //the result), so an async method returns the inner Task instead of awaiting it: declare it with skipAwait.
         private static string ComposeReturnStatementPart(bool isAsync, bool returnsValue)
         {
             if(isAsync)
-                return returnsValue ? "return await " : "await ";
+                return returnsValue ? "return " : "await ";
 
             return returnsValue ? "return " : "";
         }

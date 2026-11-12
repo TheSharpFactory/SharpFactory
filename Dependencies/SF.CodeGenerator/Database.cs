@@ -101,27 +101,27 @@ public static partial class Database
     {
         return SqlExecute.Scalar<DateTime>(modelId, "StoreQuery", _getDateSql, null, FinishBehavior.DisposeCommand);
     }
-    internal static async Task<DateTime> GetStoreDateTimeAsync(int modelId)
+    internal static Task<DateTime> GetStoreDateTimeAsync(int modelId)
     {
-        return await SqlExecute.ScalarAsync<DateTime>(modelId, "StoreQuery", _getDateSql, null, FinishBehavior.DisposeCommand);
+        return SqlExecute.ScalarAsync<DateTime>(modelId, "StoreQuery", _getDateSql, null, FinishBehavior.DisposeCommand);
     }
 
     internal static DateTime GetStoreUtcDateTime(int modelId)
     {
         return SqlExecute.Scalar<DateTime>(modelId, "StoreQuery", _getUtcDateSql, null, FinishBehavior.DisposeCommand);
     }
-    internal static async Task<DateTime> GetStoreUtcDateTimeAsync(int modelId)
+    internal static Task<DateTime> GetStoreUtcDateTimeAsync(int modelId)
     {
-        return await SqlExecute.ScalarAsync<DateTime>(modelId, "StoreQuery", _getUtcDateSql, null, FinishBehavior.DisposeCommand);
+        return SqlExecute.ScalarAsync<DateTime>(modelId, "StoreQuery", _getUtcDateSql, null, FinishBehavior.DisposeCommand);
     }
 
     internal static int GetServerTimeZoneOffsetInMinutes(int modelId)
     {
         return SqlExecute.Scalar<int>(modelId, "StoreQuery", _getTimeZoneOffsetSql, null, FinishBehavior.DisposeCommand);
     }
-    internal static async Task<int> GetServerTimeZoneOffsetInMinutesAsync(int modelId)
+    internal static Task<int> GetServerTimeZoneOffsetInMinutesAsync(int modelId)
     {
-        return await SqlExecute.ScalarAsync<int>(modelId, "StoreQuery", _getTimeZoneOffsetSql, null, FinishBehavior.DisposeCommand);
+        return SqlExecute.ScalarAsync<int>(modelId, "StoreQuery", _getTimeZoneOffsetSql, null, FinishBehavior.DisposeCommand);
     }
 
     internal static bool GetDataBaseHeartBeat(int modelId)

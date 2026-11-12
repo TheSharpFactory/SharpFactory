@@ -22,9 +22,9 @@ public static partial class Database
     {
         UpdateQuery.Execute(entityQueries, materializer);
     }
-    internal static async Task<bool> UpdateAsync(List<EntityQuery> entityQueries, Action<SqlDataReader> materializer)
+    internal static Task<bool> UpdateAsync(List<EntityQuery> entityQueries, Action<SqlDataReader> materializer)
     {
-        return await UpdateQuery.ExecuteAsync(entityQueries, materializer);
+        return UpdateQuery.ExecuteAsync(entityQueries, materializer);
     }
 
     private static class UpdateQuery

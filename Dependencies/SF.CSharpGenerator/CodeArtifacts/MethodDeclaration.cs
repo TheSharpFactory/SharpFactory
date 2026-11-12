@@ -16,7 +16,18 @@ public sealed class MethodDeclaration : PolymorphicDeclarationBase, IMethodDecla
 
     public List<MethodParameter> Parameters { get; set; }
     public bool IsAsync { get; set; }
+    /// <summary>
+    /// An async method whose body returns the awaited call's Task instead of awaiting it: declared without the async keyword.
+    /// </summary>
+    public bool SkipAwait { get; set; }
     public string GenerateCall()
+    {
+        return GenerateCall(false);
+    }
+    /// <summary>
+    /// The call to this method; skipAwait writes it without await (the caller returns the Task).
+    /// </summary>
+    public string GenerateCall(bool skipAwait)
     {
         var parameters = "";
         if(Parameters?.Count > 0)
@@ -31,7 +42,7 @@ public sealed class MethodDeclaration : PolymorphicDeclarationBase, IMethodDecla
             }
         }
 
-        var awaitCall = IsAsync ? "await " : "";
+        var awaitCall = IsAsync && !skipAwait ? "await " : "";
         return $"{awaitCall}{Name}({parameters})";
     }
 }

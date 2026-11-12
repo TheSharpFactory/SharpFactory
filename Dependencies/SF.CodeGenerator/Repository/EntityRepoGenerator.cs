@@ -253,7 +253,7 @@ public static partial class RepoGenerator
                 GenerateGetByIdBody(entity, false, supportsNavProps, false);//no nav props
                 CSharpFile.CloseBlock();
 
-                RepoMethodSignatures.RetrieveMethods.GenerateGetById(entity, entityNamespace, true, entityFullName, false, false);
+                RepoMethodSignatures.RetrieveMethods.GenerateGetById(entity, entityNamespace, true, entityFullName, false, false, skipAwait: true);
                 CSharpFile.OpenBlock();
                 GenerateGetByIdBody(entity, true, supportsNavProps, false);//no nav props
                 CSharpFile.CloseBlock();
@@ -265,7 +265,7 @@ public static partial class RepoGenerator
                     GenerateGetByIdBody(entity, false, supportsNavProps, true);//with nav props
                     CSharpFile.CloseBlock();
 
-                    RepoMethodSignatures.RetrieveMethods.GenerateGetById(entity, entityNamespace, true, entityFullName, false, true);
+                    RepoMethodSignatures.RetrieveMethods.GenerateGetById(entity, entityNamespace, true, entityFullName, false, true, skipAwait: true);
                     CSharpFile.OpenBlock();
                     GenerateGetByIdBody(entity, true, supportsNavProps, true);//with nav props
                     CSharpFile.CloseBlock();
@@ -284,7 +284,7 @@ public static partial class RepoGenerator
                 GenerateGetByPKBody(entity, false, supportsNavProps, false);//no nav props
                 CSharpFile.CloseBlock();
 
-                RepoMethodSignatures.RetrieveMethods.GenerateGetByPK(entity, entityNamespace, true, entityFullName, false, false);
+                RepoMethodSignatures.RetrieveMethods.GenerateGetByPK(entity, entityNamespace, true, entityFullName, false, false, skipAwait: true);
                 CSharpFile.OpenBlock();
                 GenerateGetByPKBody(entity, true, supportsNavProps, false);//no nav props
                 CSharpFile.CloseBlock();
@@ -296,7 +296,7 @@ public static partial class RepoGenerator
                     GenerateGetByPKBody(entity, false, supportsNavProps, true);//with nav props
                     CSharpFile.CloseBlock();
 
-                    RepoMethodSignatures.RetrieveMethods.GenerateGetByPK(entity, entityNamespace, true, entityFullName, false, true);
+                    RepoMethodSignatures.RetrieveMethods.GenerateGetByPK(entity, entityNamespace, true, entityFullName, false, true, skipAwait: true);
                     CSharpFile.OpenBlock();
                     GenerateGetByPKBody(entity, true, supportsNavProps, true);//with nav props
                     CSharpFile.CloseBlock();
@@ -325,7 +325,7 @@ public static partial class RepoGenerator
                     GenerateGetByUKBody(entity, uk, false, supportsNavProps, false);//no nav props
                     CSharpFile.CloseBlock();
 
-                    RepoMethodSignatures.RetrieveMethods.GenerateGetByUK(entity, entityNamespace, true, uk, entityFullName, keySuffix, false, false);
+                    RepoMethodSignatures.RetrieveMethods.GenerateGetByUK(entity, entityNamespace, true, uk, entityFullName, keySuffix, false, false, skipAwait: true);
                     CSharpFile.OpenBlock();
                     GenerateGetByUKBody(entity, uk, true, supportsNavProps, false);//no nav props
                     CSharpFile.CloseBlock();
@@ -337,7 +337,7 @@ public static partial class RepoGenerator
                         GenerateGetByUKBody(entity, uk, false, supportsNavProps, true);//with nav props
                         CSharpFile.CloseBlock();
 
-                        RepoMethodSignatures.RetrieveMethods.GenerateGetByUK(entity, entityNamespace, true, uk, entityFullName, keySuffix, false, true);
+                        RepoMethodSignatures.RetrieveMethods.GenerateGetByUK(entity, entityNamespace, true, uk, entityFullName, keySuffix, false, true, skipAwait: true);
                         CSharpFile.OpenBlock();
                         GenerateGetByUKBody(entity, uk, true, supportsNavProps, true);//with nav props
                         CSharpFile.CloseBlock();

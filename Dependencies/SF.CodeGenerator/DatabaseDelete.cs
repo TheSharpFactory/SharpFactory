@@ -20,9 +20,9 @@ public static partial class Database
     {
         return DeleteQuery.Execute(entityQuery.ModelId, entityQuery.EntityId, entityQuery.Where);
     }
-    internal static async Task<int> DeleteAsync(EntityQuery entityQuery)
+    internal static Task<int> DeleteAsync(EntityQuery entityQuery)
     {
-        return await DeleteQuery.ExecuteAsync(entityQuery.ModelId, entityQuery.EntityId, entityQuery.Where);
+        return DeleteQuery.ExecuteAsync(entityQuery.ModelId, entityQuery.EntityId, entityQuery.Where);
     }
 
     private static class DeleteQuery
@@ -37,7 +37,7 @@ public static partial class Database
 
             return SqlExecute.NonQuery(modelId, entityInfo.DbFQName, query, paramsForWhere, FinishBehavior.DisposeCommand);
         }
-        internal static async Task<int> ExecuteAsync(int modelId, int entityId, List<IQueryFilter> where)
+        internal static Task<int> ExecuteAsync(int modelId, int entityId, List<IQueryFilter> where)
         {
             var entityInfo = RepoLookup.Entities[entityId];
 
@@ -45,7 +45,7 @@ public static partial class Database
 
             var paramsForWhere = Parameters.Compose(entityInfo, where, null);
 
-            return await SqlExecute.NonQueryAsync(modelId, entityInfo.DbFQName, query, paramsForWhere, FinishBehavior.DisposeCommand);
+            return SqlExecute.NonQueryAsync(modelId, entityInfo.DbFQName, query, paramsForWhere, FinishBehavior.DisposeCommand);
         }
 
         private static readonly SpanAction<char, StatementText> _writeDelete = WriteDeleteInto;

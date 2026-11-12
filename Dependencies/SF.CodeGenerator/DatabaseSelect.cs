@@ -23,9 +23,9 @@ public static partial class Database
     {
         SelectQuery.Execute(entityQuery.ModelId, entityQuery.EntityId, entityQuery.Top, entityQuery.Where, entityQuery.Sort, entityQuery.Pagination, entityQuery.NavProps, materializer);
     }
-    internal static async Task<bool> SelectAsync(EntityQuery entityQuery, Action<SqlDataReader> materializer)
+    internal static Task<bool> SelectAsync(EntityQuery entityQuery, Action<SqlDataReader> materializer)
     {
-        return await SelectQuery.ExecuteAsync(entityQuery.ModelId, entityQuery.EntityId, entityQuery.Top, entityQuery.Where, entityQuery.Sort, entityQuery.Pagination, entityQuery.NavProps, materializer);
+        return SelectQuery.ExecuteAsync(entityQuery.ModelId, entityQuery.EntityId, entityQuery.Top, entityQuery.Where, entityQuery.Sort, entityQuery.Pagination, entityQuery.NavProps, materializer);
     }
 
     /// <summary>
@@ -50,7 +50,7 @@ public static partial class Database
 
             SqlExecute.Reader(modelId, entityInfo.DbFQName, query, param, materializer, FinishBehavior.Cancel);
         }
-        internal static async Task<bool> ExecuteAsync(int modelId, int entityId, int topCount, List<IQueryFilter> queryFilters, List<ISortFilter> sortFilters, IPaginationSettings paginationSettings, List<NavPropertyInfo> navProps, Action<SqlDataReader> materializer)
+        internal static Task<bool> ExecuteAsync(int modelId, int entityId, int topCount, List<IQueryFilter> queryFilters, List<ISortFilter> sortFilters, IPaginationSettings paginationSettings, List<NavPropertyInfo> navProps, Action<SqlDataReader> materializer)
         {
             var entityInfo = RepoLookup.Entities[entityId];
 
@@ -58,7 +58,7 @@ public static partial class Database
 
             var param = Parameters.Compose(entityInfo, queryFilters, paginationSettings);
 
-            return await SqlExecute.ReaderAsync(modelId, entityInfo.DbFQName, query, param, materializer, FinishBehavior.Cancel);
+            return SqlExecute.ReaderAsync(modelId, entityInfo.DbFQName, query, param, materializer, FinishBehavior.Cancel);
         }
 
         internal static string Compose(int topCount, EntityInfo entityInfo, List<IQueryFilter> queryFilters, List<ISortFilter> sortFilters, IPaginationSettings paginationSettings, List<NavPropertyInfo> navProps, string paramSuffix = "")

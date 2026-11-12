@@ -21,9 +21,9 @@ public static partial class Database
     {
         return StoredProcQuery.Execute(entityQuery.ModelId, entityQuery.EntityId, entityQuery.Where, materializer);
     }
-    internal static async Task<Dictionary<int, object>> StoredProcAsync(EntityQuery entityQuery, Action<SqlDataReader> materializer)
+    internal static Task<Dictionary<int, object>> StoredProcAsync(EntityQuery entityQuery, Action<SqlDataReader> materializer)
     {
-        return await StoredProcQuery.ExecuteAsync(entityQuery.ModelId, entityQuery.EntityId, entityQuery.Where, materializer);
+        return StoredProcQuery.ExecuteAsync(entityQuery.ModelId, entityQuery.EntityId, entityQuery.Where, materializer);
     }
 
     private class StoredProcParams

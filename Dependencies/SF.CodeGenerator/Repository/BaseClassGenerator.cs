@@ -393,7 +393,7 @@ public static partial class RepoGenerator
                 CSharpFile.CloseBlock();
 
                 //Async
-                var noQueryMethodAsync = RepoMethodSignatures.RetrieveMethods.GenerateGenericGetTopNoQuery(null, true, false, false);
+                var noQueryMethodAsync = RepoMethodSignatures.RetrieveMethods.GenerateGenericGetTopNoQuery(null, true, false, false, skipAwait: true);
                 CSharpFile.OpenBlock();
                 CSharpFile.Line(Helpers.GenerateSelectManyCallNoQuery(true, false, true, -1));
                 CSharpFile.CloseBlock();
@@ -408,10 +408,10 @@ public static partial class RepoGenerator
                 CSharpFile.CloseBlock();
 
                 //Async
-                RepoMethodSignatures.RetrieveMethods.GenerateGenericGetTopBasedOnQuery(true, false, false, false);
+                RepoMethodSignatures.RetrieveMethods.GenerateGenericGetTopBasedOnQuery(true, false, false, false, skipAwait: true);
                 CSharpFile.OpenBlock();
                 CSharpFile.If("query == null");
-                CSharpFile.ReturnIndented(noQueryMethodAsync.GenerateCall());
+                CSharpFile.ReturnIndented(noQueryMethodAsync.GenerateCall(true));
                 CSharpFile.Line(Helpers.GenerateSelectManyCallBasedOnQuery(true, false, false, true, -1));
                 CSharpFile.CloseBlock();
 
@@ -556,7 +556,7 @@ public static partial class RepoGenerator
                 CSharpFile.CloseBlock();
 
                 //Async
-                RepoMethodSignatures.RetrieveMethods.GenerateGenericGetListBasedOnQuery(true, false, false, false);
+                RepoMethodSignatures.RetrieveMethods.GenerateGenericGetListBasedOnQuery(true, false, false, false, skipAwait: true);
                 CSharpFile.OpenBlock();
                 CSharpFile.Line(Helpers.GenerateSelectManyCallBasedOnQuery(true, false, true, true, 0));
                 CSharpFile.CloseBlock();
@@ -572,7 +572,7 @@ public static partial class RepoGenerator
                 Helpers.GenerateSelectCall(false, false, false, false, true, DefaultSortField, false, false, false);
                 CSharpFile.CloseBlock();
 
-                RepoMethodSignatures.RetrieveMethods.GenerateGenericGetAll(true, false, false);//no pagination
+                RepoMethodSignatures.RetrieveMethods.GenerateGenericGetAll(true, false, false, skipAwait: true);//no pagination
                 CSharpFile.OpenBlock();
                 Helpers.GenerateSelectCall(true, false, false, false, true, DefaultSortField, false, false, false);
                 CSharpFile.CloseBlock();
@@ -590,10 +590,10 @@ public static partial class RepoGenerator
                 CSharpFile.Return($"{RepoMethodNames.InsertEntity}(entity)");
 
                 CSharpFile.CloseBlock();
-                RepoMethodSignatures.CreateMethods.GenerateGenericCreate(true, false, false);
+                RepoMethodSignatures.CreateMethods.GenerateGenericCreate(true, false, false, skipAwait: true);
                 CSharpFile.OpenBlock();
 
-                CSharpFile.Return($"await {RepoMethodNames.InsertEntity}Async(entity)");
+                CSharpFile.Return($"{RepoMethodNames.InsertEntity}Async(entity)");
 
                 CSharpFile.CloseBlock();
                 CSharpFile.CloseRegion();
@@ -700,9 +700,9 @@ public static partial class RepoGenerator
                 CSharpFile.Return($"{RepoMethodNames.DeleteAny}(query.Prepare().{PredicateFiltersProp})");
                 CSharpFile.CloseBlock();
 
-                RepoMethodSignatures.DeleteMethods.GenerateGenericDeleteAnyBasedOnQuery(true, false, false);
+                RepoMethodSignatures.DeleteMethods.GenerateGenericDeleteAnyBasedOnQuery(true, false, false, skipAwait: true);
                 CSharpFile.OpenBlock();
-                CSharpFile.Return($"await {RepoMethodNames.DeleteAny}Async(query.Prepare().{PredicateFiltersProp})");
+                CSharpFile.Return($"{RepoMethodNames.DeleteAny}Async(query.Prepare().{PredicateFiltersProp})");
                 CSharpFile.CloseBlock();
 
                 CSharpFile.CloseRegion();
@@ -731,9 +731,9 @@ public static partial class RepoGenerator
                 CSharpFile.Return($"{RepoMethodNames.UpdateEntity}(entity)");
                 CSharpFile.CloseBlock();
 
-                RepoMethodSignatures.UpdateMethods.GenerateGenericUpdate(true, false, false);
+                RepoMethodSignatures.UpdateMethods.GenerateGenericUpdate(true, false, false, skipAwait: true);
                 CSharpFile.OpenBlock();
-                CSharpFile.Return($"await {RepoMethodNames.UpdateEntity}Async(entity)");
+                CSharpFile.Return($"{RepoMethodNames.UpdateEntity}Async(entity)");
                 CSharpFile.CloseBlock();
 
                 CSharpFile.CloseRegion();
@@ -747,9 +747,9 @@ public static partial class RepoGenerator
                 CSharpFile.Return($"{RepoMethodNames.UpdateAny}(query.Prepare().SetValues, query.Prepare().{PredicateFiltersProp})");
                 CSharpFile.CloseBlock();
 
-                RepoMethodSignatures.UpdateMethods.GenerateGenericUpdateAnyBasedOnQuery(true, false, false);
+                RepoMethodSignatures.UpdateMethods.GenerateGenericUpdateAnyBasedOnQuery(true, false, false, skipAwait: true);
                 CSharpFile.OpenBlock();
-                CSharpFile.Return($"await {RepoMethodNames.UpdateAny}Async(query.Prepare().SetValues, query.Prepare().{PredicateFiltersProp})");
+                CSharpFile.Return($"{RepoMethodNames.UpdateAny}Async(query.Prepare().SetValues, query.Prepare().{PredicateFiltersProp})");
                 CSharpFile.CloseBlock();
 
                 CSharpFile.CloseRegion();
@@ -763,9 +763,9 @@ public static partial class RepoGenerator
                 CSharpFile.Return($"{RepoMethodNames.UpdateOptimisticEntity}(original, changed)");
                 CSharpFile.CloseBlock();
 
-                RepoMethodSignatures.UpdateMethods.GenerateGenericUpdateOptimistic(true, false, false);
+                RepoMethodSignatures.UpdateMethods.GenerateGenericUpdateOptimistic(true, false, false, skipAwait: true);
                 CSharpFile.OpenBlock();
-                CSharpFile.Return($"await {RepoMethodNames.UpdateOptimisticEntity}Async(original, changed)");
+                CSharpFile.Return($"{RepoMethodNames.UpdateOptimisticEntity}Async(original, changed)");
                 CSharpFile.CloseBlock();
 
                 CSharpFile.CloseRegion();
@@ -779,9 +779,9 @@ public static partial class RepoGenerator
                 CSharpFile.Return($"{RepoMethodNames.UpdateOptimisticBatch}(batchEntries)");
                 CSharpFile.CloseBlock();
 
-                RepoMethodSignatures.UpdateMethods.GenerateGenericUpdateOptimisticBatch(true, false, false);
+                RepoMethodSignatures.UpdateMethods.GenerateGenericUpdateOptimisticBatch(true, false, false, skipAwait: true);
                 CSharpFile.OpenBlock();
-                CSharpFile.Return($"await {RepoMethodNames.UpdateOptimisticBatch}Async(batchEntries)");
+                CSharpFile.Return($"{RepoMethodNames.UpdateOptimisticBatch}Async(batchEntries)");
                 CSharpFile.CloseBlock();
 
                 CSharpFile.CloseRegion();
@@ -826,9 +826,9 @@ public static partial class RepoGenerator
                 CSharpFile.Return($"{RepoMethodNames.UpdateOrCreateEntity}(entity)");
                 CSharpFile.CloseBlock();
 
-                RepoMethodSignatures.UpdateMethods.GenerateGenericUpdateOrCreate(true, false, false);
+                RepoMethodSignatures.UpdateMethods.GenerateGenericUpdateOrCreate(true, false, false, skipAwait: true);
                 CSharpFile.OpenBlock();
-                CSharpFile.Return($"await {RepoMethodNames.UpdateOrCreateEntity}Async(entity)");
+                CSharpFile.Return($"{RepoMethodNames.UpdateOrCreateEntity}Async(entity)");
                 CSharpFile.CloseBlock();
 
                 CSharpFile.CloseRegion();
@@ -1028,6 +1028,7 @@ public static partial class RepoGenerator
                     ReturnType = new TypeInfo(Common.Names.GenericEntity),
                     AccessModifier = AccessModifiers.Protected,
                     IsAsync = isAsync,
+                    SkipAwait = isAsync,//only hands the call on: returns the inner Task
                     Parameters = new List<MethodParameter>
                     {
                       new MethodParameter { Name = RepoMethodSignatures.ParamNames._queryFilters, ParamType = $"List<{Common.Names.IQueryFilter}>" },
@@ -1039,8 +1040,7 @@ public static partial class RepoGenerator
                 CSharpFile.DeclareMethod(method);
                 CSharpFile.OpenBlock();
 
-                var await = isAsync ? "await " : "";
-                CSharpFile.Return($"{await}{methodName}({RepoMethodSignatures.ParamNames._queryFilters}, {RepoMethodSignatures.ParamNames._sortFilters}, {RepoMethodSignatures.ParamNames._navProps}?.Items)");
+                CSharpFile.Return($"{methodName}({RepoMethodSignatures.ParamNames._queryFilters}, {RepoMethodSignatures.ParamNames._sortFilters}, {RepoMethodSignatures.ParamNames._navProps}?.Items)");
                 CSharpFile.CloseBlock();
             }
 
@@ -1056,6 +1056,7 @@ public static partial class RepoGenerator
                     AccessModifier = AccessModifiers.Protected,
                     InheritanceModifier = InheritanceModifiers.Virtual,
                     IsAsync = isAsync,
+                    SkipAwait = isAsync,//only hands the call on: returns the inner Task
                     Parameters = new List<MethodParameter>
                     {
                       new MethodParameter { Name = "query", ParamType = $"{Common.Names.QueryWrapper}<{Common.Names.GenericProp}>" },
@@ -1067,8 +1068,7 @@ public static partial class RepoGenerator
                 CSharpFile.DeclareMethod(method);
                 CSharpFile.OpenBlock();
 
-                var await = isAsync ? "await " : "";
-                CSharpFile.Return($"{await}{RepoMethodNames.SelectMany}{asyncSuffix}(query.PredicateFilters, query.Sorting ?? {DefaultSortField}, {RepoMethodSignatures.ParamNames._paginationSettings}, topCount)");
+                CSharpFile.Return($"{RepoMethodNames.SelectMany}{asyncSuffix}(query.PredicateFilters, query.Sorting ?? {DefaultSortField}, {RepoMethodSignatures.ParamNames._paginationSettings}, topCount)");
                 CSharpFile.CloseBlock();
             }
 
@@ -1084,6 +1084,7 @@ public static partial class RepoGenerator
                     AccessModifier = AccessModifiers.Protected,
                     InheritanceModifier = InheritanceModifiers.Override,
                     IsAsync = isAsync,
+                    SkipAwait = isAsync,//each branch only hands the call on: returns the inner Task
                     Parameters = new List<MethodParameter>
                     {
                       new MethodParameter { Name = "query", ParamType = $"{Common.Names.QueryWrapper}<{Common.Names.GenericProp}>" },
@@ -1095,10 +1096,9 @@ public static partial class RepoGenerator
                 CSharpFile.DeclareMethod(method);
                 CSharpFile.OpenBlock();
 
-                var await = isAsync ? "await " : "";
                 CSharpFile.If("query.NavigationProperties == null");
-                CSharpFile.ReturnIndented($"{await}base.{methodName}(query, {RepoMethodSignatures.ParamNames._paginationSettings}, topCount)");
-                CSharpFile.Return($"{await}{RepoMethodNames.SelectMany}{asyncSuffix}(query.PredicateFilters, query.Sorting ?? {DefaultSortField}, query.NavigationProperties, {RepoMethodSignatures.ParamNames._paginationSettings}, topCount)");
+                CSharpFile.ReturnIndented($"base.{methodName}(query, {RepoMethodSignatures.ParamNames._paginationSettings}, topCount)");
+                CSharpFile.Return($"{RepoMethodNames.SelectMany}{asyncSuffix}(query.PredicateFilters, query.Sorting ?? {DefaultSortField}, query.NavigationProperties, {RepoMethodSignatures.ParamNames._paginationSettings}, topCount)");
                 CSharpFile.CloseBlock();
             }
 
@@ -1207,6 +1207,7 @@ public static partial class RepoGenerator
                     ReturnType = TypeInfo.Bool,
                     AccessModifier = AccessModifiers.Protected,
                     IsAsync = isAsync,
+                    SkipAwait = isAsync,//only hands the call on: returns the inner Task
                     Parameters = new List<MethodParameter>
                     {
                       new MethodParameter { Name = "original", ParamType = genericEntity},
@@ -1217,9 +1218,7 @@ public static partial class RepoGenerator
                 CSharpFile.DeclareMethod(method);
                 CSharpFile.OpenBlock();
 
-                var await = isAsync ? "await " : "";
-
-                CSharpFile.Return($"{await}{RepoMethodNames.UpdateOptimisticBatch}{asyncSuffix}(new List<{Common.Names.BatchEntry}<{genericEntity}>>{{ new {Common.Names.BatchEntry}<{genericEntity}> {{ Original = original, Changed = changed }}}})");
+                CSharpFile.Return($"{RepoMethodNames.UpdateOptimisticBatch}{asyncSuffix}(new List<{Common.Names.BatchEntry}<{genericEntity}>>{{ new {Common.Names.BatchEntry}<{genericEntity}> {{ Original = original, Changed = changed }}}})");
 
                 CSharpFile.CloseBlock();
             }
@@ -1420,6 +1419,7 @@ public static partial class RepoGenerator
                     ReturnType = TypeInfo.Int,
                     AccessModifier = AccessModifiers.Protected,
                     IsAsync = isAsync,
+                    SkipAwait = isAsync,//builds the query, then only hands the call on: returns the inner Task
                     Parameters = new List<MethodParameter> { new MethodParameter { Name = queryFilterParam, ParamType = $"List<{Common.Names.IQueryFilter}>" } }
                 };
 
@@ -1435,9 +1435,7 @@ public static partial class RepoGenerator
                 //CSharpFile.Line("entityQuery.Pagination = pagination");
                 //CSharpFile.Line($"entityQuery.NavProps = {RepoMethodNames.BuildNavPropInfoTree}(navprops)");
 
-                var await = isAsync ? "await " : "";
-
-                CSharpFile.Return($"{await}{SqlEngineName}.{RepoMethodNames.DatabaseDelete}{asyncSuffix}(entityQuery)");
+                CSharpFile.Return($"{SqlEngineName}.{RepoMethodNames.DatabaseDelete}{asyncSuffix}(entityQuery)");
                 CSharpFile.CloseBlock();
             }
         }
@@ -1769,6 +1767,7 @@ public static partial class RepoGenerator
 
             method.Name = $"{RepoMethodNames.StoredProcedure}Async";
             method.IsAsync = true;
+            method.SkipAwait = true;//builds the query, then only hands the call on: returns the inner Task
 
             CSharpFile.DeclareMethod(method);
             CSharpFile.OpenBlock();
@@ -1776,7 +1775,7 @@ public static partial class RepoGenerator
             CSharpFile.Line($"entityQuery.ModelId = {ModelIdField}");
             CSharpFile.Line($"entityQuery.EntityId = procId");
             CSharpFile.Line($"entityQuery.Where = filters");
-            CSharpFile.Return($"await {SqlEngineName}.{RepoMethodNames.DatabaseStoredProc}Async(entityQuery, materialize)");
+            CSharpFile.Return($"{SqlEngineName}.{RepoMethodNames.DatabaseStoredProc}Async(entityQuery, materialize)");
             CSharpFile.CloseBlock();
 
             CSharpFile.CloseRegion();
@@ -1828,11 +1827,12 @@ public static partial class RepoGenerator
 
             method.Name = $"{RepoMethodNames.Function}Async";
             method.IsAsync = true;
+            method.SkipAwait = true;//only hands the call on: returns the inner Task
             method.ReturnType = new TypeInfo("bool");
 
             CSharpFile.DeclareMethod(method);
             CSharpFile.OpenBlock();
-            CSharpFile.Line($"return await {SqlEngineName}.{RepoMethodNames.DatabaseFunction}Async({ModelIdField}, funcId, isScalar, param, materialize)");
+            CSharpFile.Line($"return {SqlEngineName}.{RepoMethodNames.DatabaseFunction}Async({ModelIdField}, funcId, isScalar, param, materialize)");
             CSharpFile.CloseBlock();
 
             CSharpFile.CloseRegion();
@@ -1886,13 +1886,14 @@ public static partial class RepoGenerator
 
             method.Name = $"{RepoMethodNames.Sequence}Async";
             method.IsAsync = true;
+            method.SkipAwait = true;//builds the query, then only hands the call on: returns the inner Task
 
             CSharpFile.DeclareMethod(method);
             CSharpFile.OpenBlock();
             CSharpFile.Line($"var entityQuery = new {Common.Names.RepositoryEntityQuery}()");
             CSharpFile.Line($"entityQuery.ModelId = {ModelIdField}");
             CSharpFile.Line($"entityQuery.EntityId = seqId");
-            CSharpFile.Return($"await {SqlEngineName}.{RepoMethodNames.DatabaseSequence}Async<TResult>(entityQuery)");
+            CSharpFile.Return($"{SqlEngineName}.{RepoMethodNames.DatabaseSequence}Async<TResult>(entityQuery)");
             CSharpFile.CloseBlock();
 
             CSharpFile.CloseRegion();

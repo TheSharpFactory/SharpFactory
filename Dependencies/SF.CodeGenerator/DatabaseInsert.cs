@@ -24,12 +24,12 @@ public static partial class Database
         else
             InsertQuery.Execute(entityQuery.ModelId, entityQuery.EntityId, entityQuery.Changes, materializer);
     }
-    internal static async Task<bool> InsertAsync(EntityQuery entityQuery, Action<SqlDataReader> materializer)
+    internal static Task<bool> InsertAsync(EntityQuery entityQuery, Action<SqlDataReader> materializer)
     {
         if(entityQuery.Where != null && entityQuery.Where.Count > 0)
-            return await InsertQuery.ExecuteAsync(entityQuery.ModelId, entityQuery.EntityId, entityQuery.Changes, entityQuery.Where, materializer);
+            return InsertQuery.ExecuteAsync(entityQuery.ModelId, entityQuery.EntityId, entityQuery.Changes, entityQuery.Where, materializer);
         else
-            return await InsertQuery.ExecuteAsync(entityQuery.ModelId, entityQuery.EntityId, entityQuery.Changes, materializer);
+            return InsertQuery.ExecuteAsync(entityQuery.ModelId, entityQuery.EntityId, entityQuery.Changes, materializer);
     }
 
     private static class InsertQuery

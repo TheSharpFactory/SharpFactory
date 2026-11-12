@@ -4,6 +4,40 @@ Newest first. One entry per change set. Version rules: see [BACKLOG.md](BACKLOG.
 
 ---
 
+## 1.1.9.6 — 2026-11-12
+
+Changes
+- SF-166: generated async methods that only hand a call on return the inner `Task` instead of awaiting it. Each such method used to cost one async state machine per call (one heap object of about 140 bytes, plus a resume step when the result came back), with no work of its own to do after the `await`.
+  - Changed (625 methods in a 270-table test model): `ByPKAsync`, `ByIdAsync`, `ByUK*Async`; the base classes' `ToListAsync`, `TopAsync`, `SelectQueryAsync` (base and navigation-property override), `SelectSingleAsync(NavProps<T>)`, `CreateAsync`, the four `UpdateAsync`, `UpdateOrCreateAsync`, `DeleteAsync(query)`, `DeleteAnyAsync`, `UpdateOptimisticEntityAsync`, `StoredProcedureAsync`, `FunctionAsync`, `SequenceAsync` and each sequence's method; the engine's `Database.SelectAsync`, `InsertAsync`, `UpdateAsync`, `DeleteAsync`, `FunctionAsync`, `SequenceAsync`, `StoredProcAsync`, the three `GetStore*Async`, and `SelectQuery`/`DeleteQuery`/`FunctionQuery.ExecuteAsync`.
+  - Kept async: every method that does work after its `await` (`DeleteBy*Async`'s `> 0`, `SelectSingleAsync`'s row checks, `SelectManyAsync`, `First`/`Single` and their `OrDefault` forms, the entity insert/update helpers, stored-procedure wrappers, `SqlExecute`).
+  - The code writer has a new `MethodDeclaration.SkipAwait`: an async method declared with it is written without the `async` keyword, and `GenerateCall(true)` writes a call without `await`. The repository generator decides which methods use it.
+- SQL text and parameters are byte-identical. The public API is unchanged: `async` is not part of a method's signature, so interfaces, hand-written partials and mocks compile as they are.
+- One behaviour difference: an exception thrown before the database call (while building the query) now comes out of the method call instead of out of the `await`. Code that awaits on the same line sees no difference. Database errors (timeouts, deadlocks, connection failures) still come out of the `await`, from `SqlExecute`, which stays async.
+- Tests: `AsyncMethodsThatOnlyHandACallOnReturnTheTask` (named methods on both sides of the line) and `NoGeneratedAsyncMethodOnlyReturnsAnAwaitedCall` (every generated async method of the Coverage model). Both fail on 1.1.9.5's generator.
+
+Verification
+- Measured on a real business layer's queries against a local test database (paired benchmark outside the repository, 2 sessions plus a 3-session recheck, results byte-identical): every async query allocates 430–680 bytes less per call (4–6% for key lookups and short lists, under 1% for large results); the synchronous control query is unchanged. CPU and wall-clock differences were below what the machine can measure.
+- The 1.1.9.6 CLI (published like the release workflow) synced a copy of that generated code: 255 files changed, byte-identical to the hand-made copy that was benchmarked and parity-checked. A scan of the business layer found nothing that behaves differently: its generated async calls are awaited where they are made, except two fire-and-forget updates whose only code before the database call is `Query.Prepare()`, which returns a field.
+- `dotnet test SF.slnx`: `SF.Tests` 54 passed, `SF.App.Tests` 52 passed (database tests skip locally). `dotnet build SF.slnx`: 0 errors.
+
+Commit details
+
+```
+Return the inner task from pass-through async methods
+
+Generated async methods that only hand a call on (ByPKAsync, ToListAsync,
+the engine's SelectAsync and others) awaited it, costing an async state
+machine per layer per call. They now return the inner task: 430-680 bytes
+less per async query, same SQL, same public API. Methods that do work
+after the await keep it. The code writer gets SkipAwait for this.
+
+Bump version to 1.1.9.6.
+
+Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>
+```
+
+---
+
 ## 1.1.9.5 — 2026-11-10
 
 Changes

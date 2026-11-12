@@ -54,9 +54,9 @@ public static partial class RepoGenerator
             CSharpFile.Return($"{RepoMethodNames.Sequence}<{seq.Sc.T}>({repoLookupSeqId})");
             CSharpFile.CloseBlock();
 
-            RepoMethodSignatures.Sequences.Generate(seq, true, false, false);
+            RepoMethodSignatures.Sequences.Generate(seq, true, false, false, skipAwait: true);//only hands the call on: returns the inner Task
             CSharpFile.OpenBlock();
-            CSharpFile.Return($"await {RepoMethodNames.Sequence}Async<{seq.Sc.T}>({repoLookupSeqId})");
+            CSharpFile.Return($"{RepoMethodNames.Sequence}Async<{seq.Sc.T}>({repoLookupSeqId})");
             CSharpFile.CloseBlock();
         }
 

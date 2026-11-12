@@ -17,9 +17,9 @@ public static partial class Database
     {
         return SequenceQuery.Execute<TSequenceResult>(entityQuery.ModelId, entityQuery.EntityId);
     }
-    internal static async Task<TSequenceResult> SequenceAsync<TSequenceResult>(EntityQuery entityQuery)
+    internal static Task<TSequenceResult> SequenceAsync<TSequenceResult>(EntityQuery entityQuery)
     {
-        return await SequenceQuery.ExecuteAsync<TSequenceResult>(entityQuery.ModelId, entityQuery.EntityId);
+        return SequenceQuery.ExecuteAsync<TSequenceResult>(entityQuery.ModelId, entityQuery.EntityId);
     }
 
     private static class SequenceQuery

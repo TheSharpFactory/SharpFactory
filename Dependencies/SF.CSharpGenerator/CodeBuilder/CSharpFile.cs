@@ -130,7 +130,7 @@ public static partial class CSharpFile
 
         if(isMethod && ((IMethodDeclaration)member).IsAsync)
         {
-            if(!member.IsInterfaceMember)
+            if(!member.IsInterfaceMember && !((IMethodDeclaration)member).SkipAwait)
             {
                 _b.Append("async")
                   .Append(' ');
