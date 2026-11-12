@@ -4,6 +4,29 @@ Newest first. One entry per change set. Version rules: see [BACKLOG.md](BACKLOG.
 
 ---
 
+## 1.1.9.9 — 2026-11-12
+
+Changes
+- SF-169: the schema-reader log rolls over at 150 KB instead of 1 MB (`IOUtils.LogFileMaxBytes`), so each file opens quickly in Notepad. Five files are still kept per model and source.
+
+Verification
+- `SF.Tests` 59 passed; `SchemaReaderLogsAppendAndRollOver` checks the rollover against `LogFileMaxBytes`.
+
+Commit details
+
+```
+Roll the schema-reader log over at 150 KB
+
+A 1 MB log is slow to open in Notepad; 150 KB files open at once. Five
+files are still kept.
+
+Bump version to 1.1.9.9.
+
+Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>
+```
+
+---
+
 ## 1.1.9.8 — 2026-11-12
 
 Changes

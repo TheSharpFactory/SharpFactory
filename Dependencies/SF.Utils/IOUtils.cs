@@ -14,7 +14,7 @@ public static class IOUtils
     /// <summary>
     /// A schema-reader log rolls over when it passes this size: log.txt becomes log.1.txt, and so on.
     /// </summary>
-    public const long LogFileMaxBytes = 1024 * 1024;
+    public const long LogFileMaxBytes = 150 * 1024;
 
     /// <summary>
     /// How many log files are kept per model and source (log.txt and up to log.4.txt); the oldest is deleted.
