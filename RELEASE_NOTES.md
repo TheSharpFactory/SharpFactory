@@ -4,6 +4,37 @@ Newest first. One entry per change set. Version rules: see [BACKLOG.md](BACKLOG.
 
 ---
 
+## 1.1.9.8 — 2026-11-12
+
+Changes
+- SF-168: three fixes from the code review of 1.1.9.7 (items 8, 6 and 4).
+  - **Schema-reader logs roll over (item 8).** `IOUtils.WriteLog` replaced the whole file on every call, so only the last entry per model and source survived. The file name was fixed at process start from the date and the minute, with no hour, so sessions an hour apart overwrote each other. It now appends a dated entry to `<model>Logs\<source>\log.txt`. Past 1 MB the file rolls over (`log.txt` becomes `log.1.txt`, and so on), and 5 files are kept (`LogFileMaxBytes`, `LogFilesKept`).
+  - **The Sync page's scan works on a copy of the settings (item 6).** The background solution scan read the shared `AppSettings.SyncTargets` while a Sync that finished meanwhile added to it on the UI thread ("Collection was modified", an empty solution list). `FindTargetsJob` now takes `AppSettingsStore.Copy(settings)` on the UI thread.
+  - **String IN lists on nvarchar and nchar columns are Unicode literals (item 4).** The generated SQL engine wrote IN / NOT IN strings as `'value'`. Against an nvarchar or nchar column, characters outside the database's code page became `?` and matched nothing. For those two column types the values are now `N'value'`; every other column's SQL is unchanged. In the generated `Database.cs` / `DatabaseSelect.cs`: `AppendQuoted(value, unicode)` and `WriteConditionWhenIsArray(..., prop)`.
+- Tests: `SchemaReaderLogsAppendAndRollOver`, `ACopyOfTheSettingsDoesNotChangeWithTheOriginal`, `StringInListsOnUnicodeColumnsAreUnicodeLiterals`.
+
+Verification
+- The 1.1.9.8 CLI (published like the release workflow) synced a copy of a real model's generated code: only `Database.cs` and `DatabaseSelect.cs` changed. A read-only probe against a local test database sends `[PlayerName] IN (N'Malla',N'O''Neil',N'Łukasz')` for an nvarchar column and `[Alias] IN ('Hector','O''Neil')` for a varchar column, with the expected rows.
+- `dotnet test SF.slnx`: `SF.Tests` 59 passed, `SF.App.Tests` 52 passed (database tests skip locally). `dotnet build SF.slnx`: 0 errors.
+
+Commit details
+
+```
+Roll over schema logs, copy settings for the scan, N'' for nvarchar IN
+
+Code review fixes: the schema reader's log replaced itself on every
+write, so it now appends and rolls over at 1 MB (5 files kept); the Sync
+page's background scan read the settings while a finished Sync changed
+them, so it gets a copy; string IN lists on nvarchar and nchar columns
+are written as N'...' so no character is lost to the code page.
+
+Bump version to 1.1.9.8.
+
+Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>
+```
+
+---
+
 ## 1.1.9.7 — 2026-11-12
 
 Changes

@@ -860,7 +860,8 @@ internal sealed partial class SyncPageViewModel : PageViewModel
         public FindTargetsJob(string modelFile, AppSettings settings)
         {
             _modelFile = modelFile;
-            _settings = settings;
+            //a copy, taken on the UI thread: a Sync that finishes during the scan records its target in the original
+            _settings = AppSettingsStore.Copy(settings);
         }
 
         public List<SolutionCandidate> Result { get; set; } = new List<SolutionCandidate>();

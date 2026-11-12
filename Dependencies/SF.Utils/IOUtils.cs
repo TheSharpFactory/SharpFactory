@@ -1,19 +1,25 @@
 ﻿#region Usings
 using System;
 using System.IO;
+using System.Threading;
 #endregion
 
 namespace SF.Utils;
 
 public static class IOUtils
 {
+    private const string _logFileName = "log";
+    private static readonly Lock _logSyncRoot = new Lock();
 
-    private static readonly string _logFile;
-    static IOUtils()
-    {
-        var today = DateTime.Now;
-        _logFile = $"{today.Year}_{today.Month}_{today.Day}_{today.Minute}.txt";
-    }
+    /// <summary>
+    /// A schema-reader log rolls over when it passes this size: log.txt becomes log.1.txt, and so on.
+    /// </summary>
+    public const long LogFileMaxBytes = 1024 * 1024;
+
+    /// <summary>
+    /// How many log files are kept per model and source (log.txt and up to log.4.txt); the oldest is deleted.
+    /// </summary>
+    public const int LogFilesKept = 5;
 
     /// <summary>
     /// Where WriteLog puts the schema reader's per-model error logs. The app sets it to its per-user log folder;
@@ -64,9 +70,43 @@ public static class IOUtils
         CreateFolder(result);
         return result;
     }
+    /// <summary>
+    /// Appends an entry, with its date and time, to the model's log for <paramref name="source"/>:
+    /// LogFolder\&lt;model&gt;Logs\&lt;source&gt;\log.txt. Past LogFileMaxBytes the file rolls over (log.1.txt is the newest
+    /// older file); LogFilesKept files are kept.
+    /// </summary>
     public static void WriteLog(string modelName, string source, string content)
     {
-        File.WriteAllText(Path.Combine(CreateSubFolder(CreateSubFolder(LogFolder, modelName + "Logs"), source), _logFile), content);
+        var folder = Path.Combine(LogFolder, modelName + "Logs", source);
+        var file = Path.Combine(folder, _logFileName + ".txt");
+        var entry = $"**** {DateTime.Now:yyyy-MM-dd HH:mm:ss} ****{Environment.NewLine}{content}{Environment.NewLine}";
+        lock(_logSyncRoot)
+        {
+            Directory.CreateDirectory(folder);
+            if(File.Exists(file) && new FileInfo(file).Length >= LogFileMaxBytes)
+                RollOver(folder);
+
+            File.AppendAllText(file, entry);
+        }
+    }
+
+    /// <summary>
+    /// log.3.txt becomes log.4.txt, ... log.txt becomes log.1.txt; the oldest beyond LogFilesKept is deleted.
+    /// </summary>
+    private static void RollOver(string folder)
+    {
+        DeleteIfExists(RolledLogFile(folder, LogFilesKept - 1));
+        for(var i = LogFilesKept - 2; i >= 0; i--)
+        {
+            var from = RolledLogFile(folder, i);
+            if(File.Exists(from))
+                File.Move(from, RolledLogFile(folder, i + 1));
+        }
+    }
+
+    private static string RolledLogFile(string folder, int index)
+    {
+        return Path.Combine(folder, index == 0 ? _logFileName + ".txt" : $"{_logFileName}.{index}.txt");
     }
     /// <summary>
     /// Writes the file so a failure never leaves it half written: the content goes to a temporary file in the same

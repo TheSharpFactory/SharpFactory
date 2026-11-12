@@ -250,16 +250,19 @@ public static partial class Database
         }
 
         /// <summary>
-        /// A string value between quotes, its quotes doubled.
+        /// A string value between quotes, its quotes doubled; N'...' (a Unicode literal) when <paramref name="unicode"/>.
         /// </summary>
-        public void AppendQuoted(string value)
+        public void AppendQuoted(string value, bool unicode)
         {
             var quotes = value.AsSpan().Count('\'');
             if(_measuring)
             {
-                _length += value.Length + quotes + 2;
+                _length += value.Length + quotes + (unicode ? 3 : 2);
                 return;
             }
+
+            if(unicode)
+                Append('N');
 
             Append('\'');
             if(quotes == 0)

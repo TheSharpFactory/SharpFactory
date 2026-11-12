@@ -63,6 +63,25 @@ public static class AppSettingsStore
     }
 
     /// <summary>
+    /// An independent copy of the settings, for work on another thread: the original can change meanwhile (the UI
+    /// records a Sync target) without the copy changing under it.
+    /// </summary>
+    public static AppSettings Copy(AppSettings settings)
+    {
+        var copy = new AppSettings
+        {
+            RecentFiles = [.. settings.RecentFiles],
+            SyncTargets = new List<SyncTarget>(settings.SyncTargets.Count),
+            PaneWidths = new Dictionary<string, double>(settings.PaneWidths),
+        };
+
+        foreach(var target in settings.SyncTargets)
+            copy.SyncTargets.Add(new SyncTarget { ModelFile = target.ModelFile, SolutionPath = target.SolutionPath, LastSynced = target.LastSynced });
+
+        return copy;
+    }
+
+    /// <summary>
     /// Puts a file at the top of the recent files.
     /// </summary>
     public static void AddRecentFile(AppSettings settings, string file)

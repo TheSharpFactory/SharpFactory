@@ -228,7 +228,7 @@ public static partial class Database
                 if(!filter.IsArray || prop.SqlType == SqlDbType.Timestamp)
                     WriteConditionNormal(ref w, colAlias, filter, paramOrdinal, prop, paramSuffix);
                 else
-                    WriteConditionWhenIsArray(ref w, colAlias, filter);
+                    WriteConditionWhenIsArray(ref w, colAlias, filter, prop);
             }
             else
             {
@@ -596,9 +596,11 @@ public static partial class Database
             }
         }
 
-        private static void WriteConditionWhenIsArray(ref SqlText w, string colAlias, IQueryFilter filter)
+        private static void WriteConditionWhenIsArray(ref SqlText w, string colAlias, IQueryFilter filter, PropertyInfo prop)
         {
             var typeCode = Type.GetTypeCode(filter.Type);
+            //strings compared with an nvarchar or nchar column are Unicode literals (N'...'), so no character is lost to the code page
+            var unicode = prop.SqlType == SqlDbType.NVarChar || prop.SqlType == SqlDbType.NChar;
 
             switch(filter.Condition)
             {
@@ -607,7 +609,7 @@ public static partial class Database
                     w.Append(colAlias);
                     w.Append(_in);
                     w.Append('(');
-                    WriteList(ref w, typeCode, filter.Value);
+                    WriteList(ref w, typeCode, filter.Value, unicode);
                     w.Append("))");
                     return;
 
@@ -616,7 +618,7 @@ public static partial class Database
                     w.Append(colAlias);
                     w.Append(_notIn);
                     w.Append('(');
-                    WriteList(ref w, typeCode, filter.Value);
+                    WriteList(ref w, typeCode, filter.Value, unicode);
                     w.Append("))");
                     return;
 
@@ -626,9 +628,10 @@ public static partial class Database
         }
 
         /// <summary>
-        /// The values of an IN list, separated by commas: numbers with the invariant culture, strings quoted.
+        /// The values of an IN list, separated by commas: numbers with the invariant culture, strings quoted (N'...' when
+        /// <paramref name="unicode"/>: the column is nvarchar or nchar).
         /// </summary>
-        private static void WriteList(ref SqlText w, TypeCode typeCode, object val)
+        private static void WriteList(ref SqlText w, TypeCode typeCode, object val, bool unicode)
         {
             switch(typeCode)
             {
@@ -678,7 +681,7 @@ public static partial class Database
                     {
                         if(i > 0)
                             w.Append(',');
-                        w.AppendQuoted(strings[i]);
+                        w.AppendQuoted(strings[i], unicode);
                     }
                     return;
 
