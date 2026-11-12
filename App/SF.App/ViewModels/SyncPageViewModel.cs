@@ -357,6 +357,9 @@ internal sealed partial class SyncPageViewModel : PageViewModel
         OnPropertyChanged(nameof(ChangedText));
         OnPropertyChanged(nameof(DeletedText));
         OnPropertyChanged(nameof(UnchangedText));
+        OnPropertyChanged(nameof(HasAdded));
+        OnPropertyChanged(nameof(HasChanged));
+        OnPropertyChanged(nameof(HasDeleted));
         OnPropertyChanged(nameof(ShowCounts));
     }
 
@@ -498,6 +501,33 @@ internal sealed partial class SyncPageViewModel : PageViewModel
         get
         {
             return Report == null ? null : $"{Report.UnchangedFileCount} unchanged";
+        }
+    }
+
+    /// <summary>
+    /// The added, changed and deleted counts are coloured only when there are some: a zero count stays grey.
+    /// </summary>
+    public bool HasAdded
+    {
+        get
+        {
+            return Report != null && Report.CountFiles(SyncFileChangeKind.Added) > 0;
+        }
+    }
+
+    public bool HasChanged
+    {
+        get
+        {
+            return Report != null && Report.CountFiles(SyncFileChangeKind.Changed) > 0;
+        }
+    }
+
+    public bool HasDeleted
+    {
+        get
+        {
+            return Report != null && Report.CountFiles(SyncFileChangeKind.Deleted) > 0;
         }
     }
 

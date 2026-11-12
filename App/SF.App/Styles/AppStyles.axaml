@@ -42,11 +42,6 @@
     <Setter Property="CornerRadius" Value="10" />
     <Setter Property="Padding" Value="20" />
   </Style>
-  <Style Selector="Border.badge">
-    <Setter Property="Background" Value="{DynamicResource BadgeBackground}" />
-    <Setter Property="CornerRadius" Value="10" />
-    <Setter Property="Padding" Value="8,2" />
-  </Style>
 
   <!-- navigation rail -->
   <Style Selector="ListBox.nav">
@@ -232,24 +227,7 @@
     <Setter Property="HorizontalAlignment" Value="Center" />
     <Setter Property="VerticalAlignment" Value="Center" />
   </Style>
-  <Style Selector="Border.chip.added">
-    <Setter Property="Background" Value="{DynamicResource InsertedBackground}" />
-  </Style>
-  <Style Selector="Border.chip.added TextBlock">
-    <Setter Property="Foreground" Value="{DynamicResource SuccessText}" />
-  </Style>
-  <Style Selector="Border.chip.changed">
-    <Setter Property="Background" Value="{DynamicResource WarningBackground}" />
-  </Style>
-  <Style Selector="Border.chip.changed TextBlock">
-    <Setter Property="Foreground" Value="{DynamicResource WarningText}" />
-  </Style>
-  <Style Selector="Border.chip.deleted">
-    <Setter Property="Background" Value="{DynamicResource DeletedBackground}" />
-  </Style>
-  <Style Selector="Border.chip.deleted TextBlock">
-    <Setter Property="Foreground" Value="{DynamicResource ErrorText}" />
-  </Style>
+  <!-- the added, changed and deleted colours are with the pills' below -->
   <Style Selector="ListBox.changes > ListBoxItem">
     <Setter Property="Padding" Value="10,5" />
     <Setter Property="MinHeight" Value="0" />
@@ -384,7 +362,7 @@
     <Setter Property="Foreground" Value="{DynamicResource SubtleText}" />
   </Style>
 
-  <!-- pills: small rounded labels; coloured ones for added, changed and deleted counts -->
+  <!-- pills: small rounded labels (a kind, an extension, a count) -->
   <Style Selector="Border.pill">
     <Setter Property="Background" Value="{DynamicResource BadgeBackground}" />
     <Setter Property="CornerRadius" Value="10" />
@@ -393,22 +371,24 @@
   <Style Selector="Border.pill TextBlock">
     <Setter Property="FontSize" Value="11.5" />
   </Style>
-  <Style Selector="Border.pill.added">
+
+  <!-- added, changed and deleted: the same colours on pills and on Sync's status chips -->
+  <Style Selector="Border.pill.added, Border.chip.added">
     <Setter Property="Background" Value="{DynamicResource InsertedBackground}" />
   </Style>
-  <Style Selector="Border.pill.added TextBlock">
+  <Style Selector="Border.pill.added TextBlock, Border.chip.added TextBlock">
     <Setter Property="Foreground" Value="{DynamicResource SuccessText}" />
   </Style>
-  <Style Selector="Border.pill.changed">
+  <Style Selector="Border.pill.changed, Border.chip.changed">
     <Setter Property="Background" Value="{DynamicResource WarningBackground}" />
   </Style>
-  <Style Selector="Border.pill.changed TextBlock">
+  <Style Selector="Border.pill.changed TextBlock, Border.chip.changed TextBlock">
     <Setter Property="Foreground" Value="{DynamicResource WarningText}" />
   </Style>
-  <Style Selector="Border.pill.deleted">
+  <Style Selector="Border.pill.deleted, Border.chip.deleted">
     <Setter Property="Background" Value="{DynamicResource DeletedBackground}" />
   </Style>
-  <Style Selector="Border.pill.deleted TextBlock">
+  <Style Selector="Border.pill.deleted TextBlock, Border.chip.deleted TextBlock">
     <Setter Property="Foreground" Value="{DynamicResource ErrorText}" />
   </Style>
 

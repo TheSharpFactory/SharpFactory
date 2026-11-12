@@ -1,0 +1,12 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             x:Class="SF.App.Views.LayerTableHeader"
+             x:ClassModifier="internal">
+  <!-- the column titles of a Layers table: the same columns as the LayerRow template -->
+  <Grid Classes="columnsHeader" ColumnDefinitions="230,16,170,12,190,20,*" Margin="20,4">
+    <TextBlock Text="LAYER" />
+    <TextBlock Grid.Column="2" Text="PROJECT" />
+    <TextBlock Grid.Column="4" Text="NAMESPACE" />
+    <TextBlock Grid.Column="6" Text="RESULT" />
+  </Grid>
+</UserControl>

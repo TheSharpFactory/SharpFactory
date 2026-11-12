@@ -7,7 +7,9 @@
   <Border Classes="card" MinWidth="420" MaxWidth="560" BoxShadow="0 8 32 0 #40000000">
     <StackPanel Spacing="16">
       <StackPanel Orientation="Horizontal" Spacing="10">
-        <PathIcon Data="{StaticResource IconWarning}" Width="22" Height="22" Foreground="{DynamicResource ErrorText}" IsVisible="{Binding HasSign}" />
+        <!-- red for an error, amber for a warning -->
+        <PathIcon Name="DialogErrorSign" Data="{StaticResource IconWarning}" Width="22" Height="22" Foreground="{DynamicResource ErrorText}" IsVisible="{Binding HasErrorSign}" />
+        <PathIcon Name="DialogWarningSign" Data="{StaticResource IconWarning}" Width="22" Height="22" Foreground="{DynamicResource WarningText}" IsVisible="{Binding HasWarningSign}" />
         <TextBlock Classes="sectionTitle" FontSize="18" Margin="0" Text="{Binding Title}" VerticalAlignment="Center" />
       </StackPanel>
       <SelectableTextBlock Text="{Binding Message}" TextWrapping="Wrap" />

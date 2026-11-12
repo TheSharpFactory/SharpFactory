@@ -23,13 +23,24 @@ internal sealed partial class DialogViewModel : ViewModelBase
     public bool IsWarning { get; set; }
 
     /// <summary>
-    /// Errors and warnings show the warning sign.
+    /// An error shows a red sign.
     /// </summary>
-    public bool HasSign
+    public bool HasErrorSign
     {
         get
         {
-            return IsWarning || IsError;
+            return IsError;
+        }
+    }
+
+    /// <summary>
+    /// A warning (a question about a destructive action) shows an amber sign; an error that is also a warning shows the red one.
+    /// </summary>
+    public bool HasWarningSign
+    {
+        get
+        {
+            return IsWarning && !IsError;
         }
     }
 

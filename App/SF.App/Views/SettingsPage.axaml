@@ -11,7 +11,7 @@
         <TextBlock Classes="pageSubtitle" Text="These settings apply to every model in this file." />
       </StackPanel>
 
-      <!-- the settings, one column -->
+      <!-- the settings -->
       <Border Classes="card">
         <StackPanel Spacing="16">
           <Grid ColumnDefinitions="*,24,*">

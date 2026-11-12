@@ -218,6 +218,11 @@ internal sealed partial class MainWindowViewModel : ViewModelBase
     private void OnDocumentPropertyChanged(object sender, PropertyChangedEventArgs e)
     {
         OnPropertyChanged(nameof(WindowTitle));
+
+        //"Saved" or "Opened" is no longer true once the model has unsaved changes. Every message is set after the
+        //change it reports, so a message about that change stays
+        if(string.Equals(e.PropertyName, nameof(ModelDocument.IsDirty), StringComparison.Ordinal) && Document != null && Document.IsDirty)
+            StatusText = null;
     }
 
     /// <summary>

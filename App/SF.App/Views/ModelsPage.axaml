@@ -98,7 +98,7 @@
                 <StackPanel Margin="12" Spacing="18" DataContext="{Binding Details}" x:DataType="vm:DetailsViewModel">
                   <StackPanel Orientation="Horizontal" Spacing="10">
                     <TextBlock Classes="sectionTitle" FontSize="20" Text="{Binding Title}" Margin="0" />
-                    <Border Classes="badge" VerticalAlignment="Center"><TextBlock FontSize="12" Text="{Binding Kind}" /></Border>
+                    <Border Classes="pill" VerticalAlignment="Center"><TextBlock FontSize="12" Text="{Binding Kind}" /></Border>
                   </StackPanel>
 
                   <!-- a table's or view's columns -->

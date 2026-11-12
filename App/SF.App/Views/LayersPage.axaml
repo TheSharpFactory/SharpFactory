@@ -1,11 +1,13 @@
 <UserControl xmlns="https://github.com/avaloniaui"
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
              xmlns:vm="using:SF.App.ViewModels"
+             xmlns:views="using:SF.App.Views"
              x:Class="SF.App.Views.LayersPage"
              x:ClassModifier="internal"
              x:DataType="vm:LayersPageViewModel">
   <!-- one table per group, in the same style as Settings "Names this gives" -->
   <UserControl.Resources>
+    <!-- the columns match LayerTableHeader -->
     <DataTemplate x:Key="LayerRow" x:DataType="vm:LayerRowViewModel">
       <Border Classes="columnRow" Padding="20,7">
         <Grid ColumnDefinitions="230,16,170,12,190,20,*">
@@ -34,12 +36,7 @@
       <Border Classes="card" Padding="0" IsVisible="{Binding HasModel}">
         <StackPanel>
           <TextBlock Classes="sectionTitle" Margin="20,16,20,8" Text="{Binding ModelName, StringFormat='Model {0}: specific to this model'}" />
-          <Grid Classes="columnsHeader" ColumnDefinitions="230,16,170,12,190,20,*" Margin="20,4">
-            <TextBlock Text="LAYER" />
-            <TextBlock Grid.Column="2" Text="PROJECT" />
-            <TextBlock Grid.Column="4" Text="NAMESPACE" />
-            <TextBlock Grid.Column="6" Text="RESULT" />
-          </Grid>
+          <views:LayerTableHeader />
           <ItemsControl Name="ModelLayerList" ItemsSource="{Binding ModelLayers}" ItemTemplate="{StaticResource LayerRow}" />
         </StackPanel>
       </Border>
@@ -47,12 +44,7 @@
       <Border Classes="card" Padding="0">
         <StackPanel>
           <TextBlock Classes="sectionTitle" Margin="20,16,20,8" Text="Common: shared by every model" />
-          <Grid Classes="columnsHeader" ColumnDefinitions="230,16,170,12,190,20,*" Margin="20,4">
-            <TextBlock Text="LAYER" />
-            <TextBlock Grid.Column="2" Text="PROJECT" />
-            <TextBlock Grid.Column="4" Text="NAMESPACE" />
-            <TextBlock Grid.Column="6" Text="RESULT" />
-          </Grid>
+          <views:LayerTableHeader />
           <ItemsControl Name="CommonLayerList" ItemsSource="{Binding CommonLayers}" ItemTemplate="{StaticResource LayerRow}" />
         </StackPanel>
       </Border>

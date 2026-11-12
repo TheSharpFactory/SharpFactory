@@ -194,7 +194,7 @@ public sealed class AppReviewTests
             var second = app.ViewModel.ShowMessageAsync("Second", "two", true);
             Assert.Null(await first);
             Assert.Equal("Second", app.ViewModel.Dialog.Title);
-            Assert.True(app.ViewModel.Dialog.HasSign);
+            Assert.True(app.ViewModel.Dialog.HasErrorSign);
 
             app.Pump();
             app.Window.KeyPress(Avalonia.Input.Key.Escape, RawInputModifiers.None, PhysicalKey.Escape, null);

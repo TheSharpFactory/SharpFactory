@@ -4,6 +4,37 @@ Newest first. One entry per change set. Version rules: see [BACKLOG.md](BACKLOG.
 
 ---
 
+## 1.2.0.1 — 2026-11-12
+
+Changes
+- SF-171: four fixes from the UI review (items 9, 10, 11 and 13).
+  - **Sync counts (9):** a zero added, changed or deleted count is a plain grey pill. Only a count above zero is green, amber or red (`SyncPageViewModel.HasAdded`, `HasChanged`, `HasDeleted`).
+  - **Message signs (10):** a warning (the Delete model question) shows an amber sign, an error a red one. `DialogViewModel.HasSign` is replaced by `HasErrorSign` and `HasWarningSign`.
+  - **Status line (11):** the message clears when the model goes from saved to unsaved, so "Opened" or "Saved" no longer sits next to the unsaved-changes dot. Every message is set after the change it reports, so "Added model", "Deleted model" and "Updated model" still show.
+  - **Cleanups (13):** the `badge` style was the same as `pill` and is gone (the Models kind label uses `pill`). The added, changed and deleted colours are one set of rules for pills and Sync's status chips. The Layers column header is one control (`LayerTableHeader`) used by both tables. A wrong comment in Settings is corrected. Settings' "Names this gives" stays: it shows the result while you type the root namespace.
+- Tests: `UiReviewFixesTests` (5): grey zero counts, amber and red signs, the status line clearing, a message about the change itself staying, and the merged styles giving the same colours as before.
+
+Verification
+- `dotnet test SF.slnx -c Release`: `SF.App.Tests` 59 passed, `SF.Tests` 58 passed (database tests skip locally). 0 build errors.
+
+Commit details
+
+```
+Grey zero Sync counts, amber warning sign, clear stale status
+
+From the UI review: a zero added/changed/deleted count on Sync is a
+plain pill; a warning question shows an amber sign and an error a red
+one; the status line clears when the model gets unsaved changes. Also
+merges the duplicate badge/pill and chip colour styles and shares the
+Layers column header.
+
+Bump version to 1.2.0.1.
+
+Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>
+```
+
+---
+
 ## 1.2.0.0 — 2026-11-12
 
 Changes

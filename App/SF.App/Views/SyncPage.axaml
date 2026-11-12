@@ -147,9 +147,10 @@
               <TextBlock Classes="subtle" Text="{Binding SummaryRest}" TextTrimming="CharacterEllipsis" />
             </StackPanel>
             <StackPanel Grid.Column="2" Orientation="Horizontal" Spacing="6" IsVisible="{Binding ShowCounts}">
-              <Border Classes="pill added"><TextBlock Text="{Binding AddedText}" /></Border>
-              <Border Classes="pill changed"><TextBlock Text="{Binding ChangedText}" /></Border>
-              <Border Classes="pill deleted"><TextBlock Text="{Binding DeletedText}" /></Border>
+              <!-- a zero count stays grey -->
+              <Border Name="AddedCount" Classes="pill" Classes.added="{Binding HasAdded}"><TextBlock Text="{Binding AddedText}" /></Border>
+              <Border Name="ChangedCount" Classes="pill" Classes.changed="{Binding HasChanged}"><TextBlock Text="{Binding ChangedText}" /></Border>
+              <Border Name="DeletedCount" Classes="pill" Classes.deleted="{Binding HasDeleted}"><TextBlock Text="{Binding DeletedText}" /></Border>
               <Border Classes="pill"><TextBlock Text="{Binding UnchangedText}" /></Border>
             </StackPanel>
           </Grid>
