@@ -64,11 +64,12 @@ internal sealed partial class MainWindowViewModel : ViewModelBase
         Documentation = new DocumentationPageViewModel(this);
         About = new AboutPageViewModel(this);
 
+        //Home and Sync are the pages used most: Sync comes right under Home
         NavItems.Add(new NavItemViewModel { Title = "Home", IconKey = "IconHome", Page = Welcome });
+        NavItems.Add(new NavItemViewModel { Title = "Sync", IconKey = "IconSync", Page = Sync, RequiresDocument = true });
         NavItems.Add(new NavItemViewModel { Title = "Models", IconKey = "IconDatabase", Page = Models, RequiresDocument = true });
         NavItems.Add(new NavItemViewModel { Title = "Layers", IconKey = "IconLayers", Page = Layers, RequiresDocument = true });
         NavItems.Add(new NavItemViewModel { Title = "Settings", IconKey = "IconSettings", Page = SettingsPage, RequiresDocument = true });
-        NavItems.Add(new NavItemViewModel { Title = "Sync", IconKey = "IconSync", Page = Sync, RequiresDocument = true });
         NavItems.Add(new NavItemViewModel { Title = "Documentation", IconKey = "IconBook", Page = Documentation });
         NavItems.Add(new NavItemViewModel { Title = "About", IconKey = "IconInfo", Page = About });
 

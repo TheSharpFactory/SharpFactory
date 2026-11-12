@@ -4,6 +4,30 @@ Newest first. One entry per change set. Version rules: see [BACKLOG.md](BACKLOG.
 
 ---
 
+## 1.2.0.2 — 2026-11-12
+
+Changes
+- SF-172: Sync is right under Home in the navigation rail (Home, Sync, Models, Layers, Settings, Documentation, About). Home and Sync are the pages used most: open the model file, Update it on Models (where opening a file lands), then Sync. Sync stays off until a model file is open, as before.
+- Tests: `SyncIsRightUnderHomeInTheRail` checks the order in the rail and that Sync still needs an open model file.
+
+Verification
+- `dotnet test SF.slnx -c Release`: `SF.App.Tests` 60 passed, `SF.Tests` 58 passed (database tests skip locally). 0 build errors.
+
+Commit details
+
+```
+Put Sync right under Home in the navigation rail
+
+Home and Sync are the pages used most, so Sync moves up from fifth
+to second place in the rail.
+
+Bump version to 1.2.0.2.
+
+Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>
+```
+
+---
+
 ## 1.2.0.1 — 2026-11-12
 
 Changes

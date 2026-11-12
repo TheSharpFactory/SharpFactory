@@ -224,4 +224,32 @@ public sealed class UiReviewFixesTests
             }
         }
     }
+
+    /// <summary>
+    /// Home and Sync are the pages used most (user, 2026-11-12): Sync is right under Home in the rail.
+    /// </summary>
+    [AvaloniaFact]
+    public void SyncIsRightUnderHomeInTheRail()
+    {
+        using(var app = new AppHarness())
+        {
+            var titles = new System.Collections.Generic.List<string>();
+            foreach(var item in app.ViewModel.NavItems)
+                titles.Add(item.Title);
+
+            Assert.Equal(new[] { "Home", "Sync", "Models", "Layers", "Settings", "Documentation", "About" }, titles);
+            Assert.Same(app.ViewModel.Sync, app.ViewModel.NavItems[1].Page);
+
+            //the rail shows that order, and Sync is still off until a model file is open
+            app.Pump();
+            var rail = app.Find<ListBox>("NavList");
+            Assert.Same(app.ViewModel.NavItems[1], rail.Items[1]);
+            Assert.False(app.ViewModel.NavItems[1].IsEnabled);
+
+            app.ViewModel.OpenFile(app.CopyFixture());
+            Assert.True(app.ViewModel.NavItems[1].IsEnabled);
+            app.ViewModel.SelectedNavItem = app.ViewModel.NavItems[1];
+            Assert.Same(app.ViewModel.Sync, app.ViewModel.CurrentPage);
+        }
+    }
 }
