@@ -50,6 +50,7 @@ internal static class RepoMethodNames
     public static string UpdateOrCreateEntity { get; } = "UpdateOrCreateEntity";
     public static string MaterializeResult { get; } = "MaterializeResult";
     public static string CalculateListCapacity { get; } = "CalculateListCapacity";
+    public static string ToOneCapacity { get; } = "ToOneCapacity";
     public static string Materialize { get; } = "Materialize";
     public static string MaterializeEntity { get; } = "MaterializeEntity";
     public static string UnboxEntityList { get; } = "UnboxEntityList";

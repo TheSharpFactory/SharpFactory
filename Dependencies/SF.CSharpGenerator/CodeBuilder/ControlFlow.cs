@@ -18,6 +18,20 @@ public static partial class CSharpFile
     {
         _b.Append(_currentIndent).Append("while(").Append(condition).AppendLine(")");
     }
+    /// <summary>
+    /// Opens a do/while loop: write the body as a block, then close the loop with DoWhile.
+    /// </summary>
+    public static void Do()
+    {
+        _b.Append(_currentIndent).AppendLine("do");
+    }
+    /// <summary>
+    /// Closes a do/while loop with its condition.
+    /// </summary>
+    public static void DoWhile(string condition)
+    {
+        _b.Append(_currentIndent).Append("while(").Append(condition).AppendLine(");");
+    }
     public static void Switch(string field)
     {
         _b.Append(_currentIndent).Append("switch(").Append(field).AppendLine(")");

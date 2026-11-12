@@ -736,44 +736,49 @@ public static partial class RepoGenerator
                 var method = new MethodDeclaration
                 {
                     Name = RepoMethodNames.GetNavPropMaterializers,
-                    ReturnType = new TypeInfo("Func<SqlDataReader, int, object>", isList: true),
+                    ReturnType = TypeInfo.Void,
                     AccessModifier = AccessModifiers.Protected,
                     InheritanceModifier = InheritanceModifiers.Override,
                     Parameters = new List<MethodParameter>
                     {
-                      new MethodParameter { Name = "navprops", ParamType = Common.Names.NavPropCollection }
+                      new MethodParameter { Name = "navprops", ParamType = Common.Names.NavPropCollection, Description = "The navigation properties of the query." },
+                      new MethodParameter { Name = "materializers", ParamType = "Func<SqlDataReader, int, object>[]", Description = "One materializer per result set; result set 0 is the entity itself." },
+                      new MethodParameter { Name = "toOneParents", ParamType = "int[]", Description = "Per result set: the parent result set of a to-one navigation property, -1 otherwise." }
                     },
                     Summary = new List<string> { "Composes the Navigation Property tree materializers." }
                 };
 
                 CSharpFile.DeclareMethod(method);
                 CSharpFile.OpenBlock();
-                CSharpFile.Return($"{RepoMethodNames.ComposeNavPropMaterializers}(navprops)");
+                CSharpFile.Line($"{RepoMethodNames.ComposeNavPropMaterializers}(navprops, materializers, toOneParents, 0, 1)", "result set 0 is the entity itself");
                 CSharpFile.CloseBlock();
             }
             private static void GenerateComposeNavPropMaterializers(CommonSettings commonSettings, Model model, Entity entity)
             {
                 var navPropEnum = Common.GenerateNavPropEnumName(entity);
-                var returnType = new TypeInfo("Func<SqlDataReader, int, object>", isList: true);
 
                 var method = new MethodDeclaration
                 {
                     Name = RepoMethodNames.ComposeNavPropMaterializers,
-                    ReturnType = returnType,
+                    ReturnType = TypeInfo.Int,
+                    ReturnTypeForComments = "The index of the next result set.",
                     AccessModifier = AccessModifiers.Internal,
                     IsStatic = true,
                     Parameters = new List<MethodParameter>
                     {
-                      new MethodParameter { Name = "navprops", ParamType = Common.Names.NavPropCollection }
+                      new MethodParameter { Name = "navprops", ParamType = Common.Names.NavPropCollection, Description = "The navigation properties of this entity in the query." },
+                      new MethodParameter { Name = "materializers", ParamType = "Func<SqlDataReader, int, object>[]", Description = "One materializer per result set." },
+                      new MethodParameter { Name = "toOneParents", ParamType = "int[]", Description = "Per result set: the parent result set of a to-one navigation property, -1 otherwise." },
+                      new MethodParameter { Name = "parentIndex", ParamType = "int", Description = "The result set of this entity." },
+                      new MethodParameter { Name = "index", ParamType = "int", Description = "The result set of the first navigation property." }
                     },
-                    Summary = new List<string> { "Composes the Navigation Property tree materializers." }
+                    Summary = new List<string> { "Composes the Navigation Property tree materializers, in the order of the result sets (each parent before its children)." }
                 };
 
                 CSharpFile.DeclareMethod(method);
                 CSharpFile.OpenBlock();
                 CSharpFile.If("!(navprops?.Count > 0)");
-                CSharpFile.ReturnIndented($"new {returnType}(0)");
-                CSharpFile.Line($"var result = new {returnType}(navprops.TotalCount)");
+                CSharpFile.ReturnIndented("index");
 
                 CSharpFile.ForEach("p", "navprops");
                 CSharpFile.OpenBlock();
@@ -801,10 +806,18 @@ public static partial class RepoGenerator
                     var navPropNamespace = Common.GenerateTypeNamespace(commonSettings, model.Layers.Repository, model, otherSchema);
                     var repoName = Common.GenerateRepositoryName(otherSchema.Entities.GetByName(otherEntityName));
 
+                    //the same multiplicity PopulateNavProperties uses: a to-one navigation property is assigned, not added to a list
+                    var isToOne = p.End == NavPropertyEnd.Parent ? fk.PMu[0] == '1' : fk.CMu[0] != '*';
+
                     CSharpFile.Case($"{navPropEnum}.{p.N}");
-                    CSharpFile.Line($"result.Add({navPropNamespace}.{repoName}.{RepoMethodNames.Materialize})");
+                    CSharpFile.Line($"materializers[index] = {navPropNamespace}.{repoName}.{RepoMethodNames.Materialize}");
+                    if(isToOne)
+                        CSharpFile.Line("toOneParents[index] = parentIndex", "to-one: at most one row per parent row");
+                    else
+                        CSharpFile.Line("toOneParents[index] = -1");
+                    CSharpFile.Line("index++");
                     CSharpFile.If("p.NavProps?.Count > 0");
-                    CSharpFile.LineIndented($"result.AddRange({navPropNamespace}.{repoName}.{RepoMethodNames.ComposeNavPropMaterializers}(p.NavProps))");
+                    CSharpFile.LineIndented($"index = {navPropNamespace}.{repoName}.{RepoMethodNames.ComposeNavPropMaterializers}(p.NavProps, materializers, toOneParents, index - 1, index)");
                     CSharpFile.Break();
                 }
 
@@ -813,7 +826,7 @@ public static partial class RepoGenerator
                 CSharpFile.CloseBlock();
 
                 CSharpFile.CloseBlock();
-                CSharpFile.Return("result");
+                CSharpFile.Return("index");
                 CSharpFile.CloseBlock();
             }
 

@@ -4,6 +4,40 @@ Newest first. One entry per change set. Version rules: see [BACKLOG.md](BACKLOG.
 
 ---
 
+## 1.1.9.7 — 2026-11-12
+
+Changes
+- SF-167: generated result lists are created on their first row, and a to-one navigation property's list is sized by its parent's row count.
+  - **First row:** every result set's list used to be created at 500 (or the TOP, page size, or 1 for key lookups) before any row was read, so an empty result set cost a 4 KB array that was thrown away. `MaterializeEntityResult` now reads the first row before creating the list, and returns `null` without allocating when there is none. A list that gets rows starts at the same capacity as before.
+  - **To-one sizing:** a to-one navigation property (one-to-one or many-to-one) returns at most one row per row of its parent result set, and the parent is always read first. Its list now starts at the parent's row count (1 for a key lookup) instead of 500, with the same 10,000 cap, and never grows. The to-one decision is the one `PopulateNavProperties` already makes (assigned rather than added to a list).
+  - **How:** `GetNavPropMaterializers` (protected, overridden by each repository) and `ComposeNavPropMaterializers` (internal) fill the materializer array directly and record each to-one result set's parent; `MaterializeResult` uses the parent's row count. The temporary list of materializers is gone. The code writer has `Do()` / `DoWhile(condition)` for the loop.
+- SQL text and parameters are byte-identical; results are unchanged. The signature of the protected `GetNavPropMaterializers` changes; hand-written partial classes are not affected.
+- Tests: `AResultListIsCreatedOnItsFirstRow`, and `ToOneNavigationPropertiesAreTheOnesThatAreAssigned` (every generated repository of the Coverage model: each navigation property marked to-one is exactly one that `PopulateNavProperties` assigns). Both fail on 1.1.9.6's generator.
+
+Verification
+- Measured on a real business layer's queries against a local test database (paired benchmark outside the repository, 5 sessions plus swapped, A/A and single-query checks; results byte-identical in every run): 112 KB less per call for a 35-navigation-property query (17 of its 36 result sets empty, 22 to-one), 32 KB for two 9-property queries, 16 KB for three queries with nested navigation properties; queries without navigation properties are unchanged. CPU over the 16 queries: +0.3% and +0.4%, no measurable change.
+- The 1.1.9.7 CLI (published like the release workflow) synced a copy of that generated code: 191 files changed, the same code as the measured prototype (only comment wording differs), results byte-identical to 1.1.9.6 and the same memory per call.
+- `dotnet test SF.slnx`: `SF.Tests` 56 passed, `SF.App.Tests` 52 passed (database tests skip locally). `dotnet build SF.slnx`: 0 errors.
+
+Commit details
+
+```
+Create result lists on the first row, size to-one lists by the parent
+
+Every result set's list was created at 500 before a row was read, so an
+empty result set cost a 4 KB array. Lists are now created on the first
+row, at the same capacity. A to-one navigation property returns at most
+one row per parent row, so its list starts at the parent's row count.
+Same SQL and results; 16-112 KB less per call for queries with
+navigation properties.
+
+Bump version to 1.1.9.7.
+
+Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>
+```
+
+---
+
 ## 1.1.9.6 — 2026-11-12
 
 Changes

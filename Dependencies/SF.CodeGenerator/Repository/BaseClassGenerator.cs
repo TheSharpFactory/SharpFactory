@@ -237,7 +237,13 @@ public static partial class RepoGenerator
             CSharpFile.DeclareMethod(method);
 
             method.Name = RepoMethodNames.GetNavPropMaterializers;
-            method.ReturnType = new TypeInfo("List<Func<SqlDataReader, int, object>>");
+            method.ReturnType = TypeInfo.Void;
+            method.Parameters = new List<MethodParameter>
+            {
+              new MethodParameter { Name = "navprops", ParamType = navPropCollection },
+              new MethodParameter { Name = "materializers", ParamType = "Func<SqlDataReader, int, object>[]" },
+              new MethodParameter { Name = "toOneParents", ParamType = "int[]" }
+            };
 
             CSharpFile.DeclareMethod(method);
 
@@ -947,12 +953,13 @@ public static partial class RepoGenerator
                 CSharpFile.Line("var resultSets = new object[resultCount]");
                 CSharpFile.Line("var materializers = new Func<SqlDataReader, int, object>[resultCount]");
                 CSharpFile.Line($"materializers[0] = {RepoMethodNames.MaterializeEntity}");
+                CSharpFile.Line("var toOneParents = (int[])null");
                 CSharpFile.If("navPropCount > 0");
                 CSharpFile.OpenBlock();
-                CSharpFile.Line($"var npMaterializers = {RepoMethodNames.GetNavPropMaterializers}(navprops)");
-                CSharpFile.Line($"npMaterializers.CopyTo(materializers, 1)");
+                CSharpFile.Line("toOneParents = new int[resultCount]");
+                CSharpFile.Line($"{RepoMethodNames.GetNavPropMaterializers}(navprops, materializers, toOneParents)");
                 CSharpFile.CloseBlock();
-                CSharpFile.Line(GenerateMaterializeInlineFunction(true, true, ", listCapacity"));
+                CSharpFile.Line(GenerateMaterializeInlineFunction(true, true, ", listCapacity, 0, toOneParents"));
 
                 CSharpFile.Line($"var entityQuery = new {Common.Names.RepositoryEntityQuery}()");
                 CSharpFile.Line($"entityQuery.ModelId = {ModelIdField}");
@@ -1507,7 +1514,8 @@ public static partial class RepoGenerator
                       new MethodParameter { Name = "resultSets", ParamType = "object[]" },
                       new MethodParameter { Name = "pagination", ParamType = Common.Names.PaginationSettings, DefaultValue = "null" },
                       new MethodParameter { Name = "listCapacity", ParamType = "int", DefaultValue = "0" },
-                      new MethodParameter { Name = "otherListCapacity", ParamType = "int", DefaultValue = "0" }
+                      new MethodParameter { Name = "otherListCapacity", ParamType = "int", DefaultValue = "0" },
+                      new MethodParameter { Name = "toOneParents", ParamType = "int[]", DefaultValue = "null" }
                     }
                 };
 
@@ -1517,13 +1525,36 @@ public static partial class RepoGenerator
                 CSharpFile.Line("var keepReading = true");
                 CSharpFile.While("keepReading");
                 CSharpFile.OpenBlock();
-                CSharpFile.Line($"{RepoMethodNames.MaterializeResult}(r, materializers[resultIndex], resultSets, resultIndex, pagination, resultIndex == 0 ? listCapacity : otherListCapacity)");
+                CSharpFile.Line("var capacity = resultIndex == 0 ? listCapacity : otherListCapacity");
+                CSharpFile.Comment("a to-one navigation property returns at most one row per row of its parent result set, which was read before it");
+                CSharpFile.If("resultIndex > 0 && toOneParents != null && toOneParents[resultIndex] >= 0");
+                CSharpFile.LineIndented($"capacity = {RepoMethodNames.ToOneCapacity}(resultSets[toOneParents[resultIndex]])");
+                CSharpFile.Line($"{RepoMethodNames.MaterializeResult}(r, materializers[resultIndex], resultSets, resultIndex, pagination, capacity)");
                 CSharpFile.Line("keepReading = r.NextResult()");
                 CSharpFile.Line("resultIndex++");
                 CSharpFile.CloseBlock();
                 CSharpFile.CloseBlock();
 
+                var toOneCapacity = new MethodDeclaration
+                {
+                    Name = RepoMethodNames.ToOneCapacity,
+                    ReturnType = TypeInfo.Int,
+                    AccessModifier = AccessModifiers.Private,
+                    IsStatic = true,
+                    Parameters = new List<MethodParameter> { new MethodParameter { Name = "parentResult", ParamType = "object" } }
+                };
+
+                CSharpFile.DeclareMethod(toOneCapacity);
+                CSharpFile.OpenBlock();
+                CSharpFile.If("!(parentResult is System.Collections.ICollection parentRows) || parentRows.Count < 1");
+                CSharpFile.Indent();
+                CSharpFile.Line("return 1", "no parent rows: no rows here either, and the list is only created for a first row");
+                CSharpFile.Outdent();
+                CSharpFile.Return("parentRows.Count > _maxListCapacity ? _maxListCapacity : parentRows.Count");
+                CSharpFile.CloseBlock();
+
                 method.Parameters[1] = new MethodParameter { Name = "materializer", ParamType = "Func<SqlDataReader, int, object>" };
+                method.Parameters.RemoveAt(6);
                 method.Parameters.RemoveAt(5);
 
                 CSharpFile.DeclareMethod(method);
@@ -1609,24 +1640,20 @@ public static partial class RepoGenerator
                 };
                 CSharpFile.DeclareMethod(method);
                 CSharpFile.OpenBlock();
-                CSharpFile.Line($"var result = new List<{genericEntity}>(listCapacity > 0 ? listCapacity : _unboundedListCapacity)", "a key lookup, a TOP or a page size sets the size; with none the list starts at 500 rows and grows from there");
+                CSharpFile.If("!r.Read()");
+                CSharpFile.Indent();
+                CSharpFile.Line("return null", "no rows: no list");
+                CSharpFile.Outdent();
+                CSharpFile.Line($"var result = new List<{genericEntity}>(listCapacity > 0 ? listCapacity : _unboundedListCapacity)", "a key lookup, a TOP, a page size or a to-one parent's row count sets the size; with none the list starts at 500 rows and grows from there");
                 CSharpFile.Line($"var totalRowCount = 0;//this is used for pagination represents the total number of rows returned if no pagination was being used");
-                CSharpFile.Line($"var firstRow = true");
-                CSharpFile.While("r.Read()");
-                CSharpFile.OpenBlock();
-                CSharpFile.Line($"result.Add(materializer(r))");
-                CSharpFile.If("firstRow");
-                CSharpFile.OpenBlock();
-                CSharpFile.Line("firstRow = false");
                 CSharpFile.Comment("if the field count is greater than the column count get the total number of rows from the last column");
                 CSharpFile.If($"r.FieldCount > fieldCount");
+                CSharpFile.LineIndented("totalRowCount = r.GetInt32(fieldCount)");
+                CSharpFile.Do();
                 CSharpFile.OpenBlock();
-                CSharpFile.Line("totalRowCount = r.GetInt32(fieldCount)");
+                CSharpFile.Line($"result.Add(materializer(r))");
                 CSharpFile.CloseBlock();
-                CSharpFile.CloseBlock();
-                CSharpFile.CloseBlock();
-                CSharpFile.If("result.Count < 1");
-                CSharpFile.LineIndented($"result = null");
+                CSharpFile.DoWhile("r.Read()");
                 CSharpFile.If("totalRowCount > 0");
                 CSharpFile.ReturnIndented("new object[] { totalRowCount, result };//return both the row count for pagination and the results");
                 CSharpFile.Return("result");
