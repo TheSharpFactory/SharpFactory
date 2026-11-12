@@ -4,6 +4,36 @@ Newest first. One entry per change set. Version rules: see [BACKLOG.md](BACKLOG.
 
 ---
 
+## 1.2.0.0 — 2026-11-12
+
+Changes
+- SF-170: the Sync page's solution list follows the settings. This replaces the 1.1.9.8 settings copy (SF-168, item 6), which only stopped the crash.
+  - **The bug:** the list was built once per scan. Each row's "Synced" date was fixed then, and nothing rebuilt the list after a Sync. A Sync left the badge saying "Synced 3 days ago", and a solution the Sync had just created was not in the list, until a refresh. The 1.1.9.8 fix had also left a stale date when a Sync finished during a scan.
+  - **The fix:** the background job only does the slow searches (open IDEs, the IDEs' recent lists, the solutions near the model file) and never reads the settings. The list is built on the UI thread, where the settings change, from those searches and the settings as they are now. That happens when a scan ends, and again right after a Sync records its target. Choosing the same solution again while the list is rebuilt is no new target, so the Sync's report stays.
+  - `TargetSolutionFinder.Find` has an overload that takes the near-model list. `AppSettingsStore.Copy` is gone.
+- Tests: `ASyncShowsInTheSolutionListAtOnce`, which fails on 1.1.9.9, and `ASyncDateRecordedAfterTheScanIsShownWhenTheListIsBuilt`.
+
+Verification
+- `dotnet test SF.slnx`: `SF.Tests` 58 passed, `SF.App.Tests` 54 passed (database tests skip locally). `dotnet build SF.slnx`: 0 errors.
+
+Commit details
+
+```
+Rebuild the Sync page's solution list when the settings change
+
+The list was built once per scan, so a Sync left its "Synced" date
+stale and a solution it created out of the list until a refresh. The
+scan now only searches (off the UI thread, without the settings); the
+list is built on the UI thread from the settings as they are, after
+each scan and after each Sync.
+
+Bump version to 1.2.0.0.
+
+Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>
+```
+
+---
+
 ## 1.1.9.9 — 2026-11-12
 
 Changes

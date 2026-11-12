@@ -268,6 +268,7 @@ internal sealed partial class SyncPageViewModel : PageViewModel
 
     public override void OnDocumentChanged()
     {
+        _found = null;
         Candidates.Clear();
         TargetPath = null;
         ClearReport();
@@ -290,7 +291,8 @@ internal sealed partial class SyncPageViewModel : PageViewModel
 
     partial void OnSelectedCandidateChanged(SolutionCandidateViewModel value)
     {
-        if(value != null)
+        //selecting the solution that is already the target (the list was rebuilt) is no new target: the report stays
+        if(value != null && !string.Equals(TargetPath, value.SolutionPath, StringComparison.OrdinalIgnoreCase))
             TargetPath = value.SolutionPath;
 
         OnPropertyChanged(nameof(TargetBadge));
@@ -509,6 +511,8 @@ internal sealed partial class SyncPageViewModel : PageViewModel
     }
 
     private Task _currentScan;
+    //the last scan's searches, for the open document: the list is rebuilt from them when the settings change
+    private FindTargetsJob _found;
     private ModelDocument _scannedDocument;
     private string _scannedPath;
     private int _reportChangeCount;
@@ -538,24 +542,16 @@ internal sealed partial class SyncPageViewModel : PageViewModel
         IsScanning = true;
         try
         {
-            var job = new FindTargetsJob(document.FilePath, Shell.Settings);
+            //the slow searches (open IDEs, recent lists, folders) run on another thread; the settings are only read here
+            var job = new FindTargetsJob(document.FilePath);
             await Task.Run(job.Run);
 
             //another model file was opened during the scan: these solutions are not for it
             if(Shell.Document != document)
                 return;
 
-            var previousTarget = TargetPath;
-            Candidates.Clear();
-            foreach(var candidate in job.Result)
-                Candidates.Add(new SolutionCandidateViewModel(candidate));
-
-            //keep the current choice (highlighted when it is in the list); otherwise suggest the first open or
-            //recently synced solution
-            if(!string.IsNullOrWhiteSpace(previousTarget))
-                SelectedCandidate = FindCandidate(previousTarget);
-            else if(Candidates.Count > 0 && (Candidates[0].IsOpen || Candidates[0].LastSynced != null))
-                SelectedCandidate = Candidates[0];
+            _found = job;
+            RebuildCandidates();
         }
         finally
         {
@@ -563,6 +559,32 @@ internal sealed partial class SyncPageViewModel : PageViewModel
             OnPropertyChanged(nameof(HasCandidates));
             OnPropertyChanged(nameof(ShowNoCandidates));
         }
+    }
+
+    /// <summary>
+    /// Builds the solution list from the last searches and the settings as they are now, on the UI thread where the
+    /// settings change: after a scan, and after a Sync records its target (its "Synced" date, or a solution it created).
+    /// </summary>
+    private void RebuildCandidates()
+    {
+        if(_found == null || Shell.Document == null)
+            return;
+
+        var found = TargetSolutionFinder.Find(Shell.Document.FilePath, Shell.Settings, _found.OpenSolutions, _found.RecentSolutions, _found.NearModel);
+        var previousTarget = TargetPath;
+        Candidates.Clear();
+        foreach(var candidate in found)
+            Candidates.Add(new SolutionCandidateViewModel(candidate));
+
+        //keep the current choice (highlighted when it is in the list); otherwise suggest the first open or
+        //recently synced solution
+        if(!string.IsNullOrWhiteSpace(previousTarget))
+            SelectedCandidate = FindCandidate(previousTarget);
+        else if(Candidates.Count > 0 && (Candidates[0].IsOpen || Candidates[0].LastSynced != null))
+            SelectedCandidate = Candidates[0];
+
+        OnPropertyChanged(nameof(HasCandidates));
+        OnPropertyChanged(nameof(ShowNoCandidates));
     }
 
     private SolutionCandidateViewModel FindCandidate(string solutionPath)
@@ -692,6 +714,9 @@ internal sealed partial class SyncPageViewModel : PageViewModel
                 {
                     AppSettingsStore.RecordSyncTarget(Shell.Settings, Shell.Document.FilePath, TargetPath);
                     AppSettingsStore.Save(Shell.Settings);
+
+                    //the list shows the new "Synced" date, and a solution this Sync created
+                    RebuildCandidates();
                 }
 
                 Shell.StatusText = $"Synced to {Path.GetFileName(TargetPath)}";
@@ -855,20 +880,24 @@ internal sealed partial class SyncPageViewModel : PageViewModel
     private sealed class FindTargetsJob
     {
         private readonly string _modelFile;
-        private readonly AppSettings _settings;
 
-        public FindTargetsJob(string modelFile, AppSettings settings)
+        public FindTargetsJob(string modelFile)
         {
             _modelFile = modelFile;
-            //a copy, taken on the UI thread: a Sync that finishes during the scan records its target in the original
-            _settings = AppSettingsStore.Copy(settings);
         }
 
-        public List<SolutionCandidate> Result { get; set; } = new List<SolutionCandidate>();
+        public List<OpenSolutionHint> OpenSolutions { get; set; } = new List<OpenSolutionHint>();
+        public List<string> RecentSolutions { get; set; } = new List<string>();
+        public List<string> NearModel { get; set; } = new List<string>();
 
+        /// <summary>
+        /// Only the searches: nothing here reads the app settings, which the UI thread changes.
+        /// </summary>
         public void Run()
         {
-            Result = TargetSolutionFinder.Find(_modelFile, _settings, RunningIdeScanner.Scan(), RecentSolutionsReader.Read());
+            OpenSolutions = RunningIdeScanner.Scan();
+            RecentSolutions = RecentSolutionsReader.Read();
+            NearModel = TargetSolutionFinder.FindNearModel(_modelFile);
         }
     }
 

@@ -1,6 +1,5 @@
 #region Usings
 using SF.Engine;
-using SF.Engine.Settings;
 using SF.Engine.Sync;
 using SF.Utils;
 using System;
@@ -11,9 +10,8 @@ using Xunit;
 namespace SF.Tests;
 
 /// <summary>
-/// Fixes from the code review of 1.1.9.7: schema-reader logs roll over instead of overwriting each other, the Sync
-/// page's background scan works on a copy of the settings, and string IN lists on nvarchar/nchar columns are Unicode
-/// literals.
+/// Fixes from the code review of 1.1.9.7: schema-reader logs roll over instead of overwriting each other, and string IN lists
+/// on nvarchar/nchar columns are Unicode literals. (The Sync page's solution list: SyncTargetListTests in SF.App.Tests.)
 /// </summary>
 public sealed class ReviewFixes1198Tests
 {
@@ -53,29 +51,6 @@ public sealed class ReviewFixes1198Tests
                 IOUtils.LogFolder = previous;
             }
         }
-    }
-
-    [Fact]
-    public void ACopyOfTheSettingsDoesNotChangeWithTheOriginal()
-    {
-        var settings = new AppSettings();
-        AppSettingsStore.AddRecentFile(settings, "a.edmj");
-        AppSettingsStore.RecordSyncTarget(settings, "a.edmj", "App.slnx");
-        settings.PaneWidths["Sync.Files"] = 300;
-
-        var copy = AppSettingsStore.Copy(settings);
-        var lastSynced = copy.SyncTargets[0].LastSynced;
-
-        //what a Sync that finishes during the scan does to the original
-        AppSettingsStore.RecordSyncTarget(settings, "a.edmj", "Other.slnx");
-        settings.SyncTargets[0].LastSynced = lastSynced.AddDays(1);
-        AppSettingsStore.AddRecentFile(settings, "b.edmj");
-        settings.PaneWidths["Sync.Files"] = 500;
-
-        Assert.Single(copy.SyncTargets);
-        Assert.Equal(lastSynced, copy.SyncTargets[0].LastSynced);
-        Assert.Single(copy.RecentFiles);
-        Assert.Equal(300, copy.PaneWidths["Sync.Files"]);
     }
 
     [Fact]

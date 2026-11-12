@@ -72,6 +72,15 @@ public static class TargetSolutionFinder
 
     public static List<SolutionCandidate> Find(string modelFile, AppSettings settings, List<OpenSolutionHint> openSolutions, List<string> recentSolutions)
     {
+        return Find(modelFile, settings, openSolutions, recentSolutions, FindNearModel(modelFile));
+    }
+
+    /// <summary>
+    /// The same, with the solutions near the model already found (<see cref="FindNearModel"/>): the slow searches (open
+    /// IDEs, recent lists, folders) can run on another thread, and the list is built where the settings live.
+    /// </summary>
+    public static List<SolutionCandidate> Find(string modelFile, AppSettings settings, List<OpenSolutionHint> openSolutions, List<string> recentSolutions, List<string> nearModel)
+    {
         var byPath = new Dictionary<string, SolutionCandidate>(SolutionProjectHost.PathComparer);
         var ordered = new List<SolutionCandidate>();
 
@@ -85,7 +94,7 @@ public static class TargetSolutionFinder
                 candidate.LastSynced = target.LastSynced;
         }
 
-        foreach(var solution in FindNearModel(modelFile))
+        foreach(var solution in nearModel)
             GetOrAdd(byPath, ordered, solution).NearModel = true;
 
         //open solutions: by path when the command line named it, by name otherwise
