@@ -70,6 +70,7 @@ public sealed class GeneratedPagingTests
             Assert.Contains("PASS page with the total, the total", output, StringComparison.Ordinal);
             Assert.Contains("PASS page with the total, async", output, StringComparison.Ordinal);
             Assert.Contains("PASS page with a to-many navigation property, its rows", output, StringComparison.Ordinal);
+            Assert.Contains("PASS page with a to-many navigation property, the total", output, StringComparison.Ordinal);
             Assert.Contains("PASS page with a to-one navigation property, async", output, StringComparison.Ordinal);
             Assert.Contains("ALL PASSED", output, StringComparison.Ordinal);
         }

@@ -4,6 +4,7 @@ using SF.App.Services;
 using SF.App.Services.Updates;
 using SF.App.ViewModels;
 using SF.Engine.Settings;
+using SF.Tests;
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
@@ -217,27 +218,44 @@ public sealed class UpdateTests
     [Fact]
     public void AReleaseDownloadCanUpdateItselfButABuildFromTheSourceCannot()
     {
-        using(var folder = new TempFolder())
+        using(var folder = new TestFolder())
         {
             var program = Path.Combine(folder.Path, OperatingSystem.IsWindows() ? "TheSharpFactory.exe" : "TheSharpFactory");
             File.WriteAllText(program, "app");
 
-            var release = InstallLocation.Find(program, false);
+            var release = InstallLocation.Find(program, InstallLocation.CurrentPlatform);
             Assert.Null(release.Problem);
             Assert.Equal(folder.Path, release.Folder);
             Assert.Equal(Path.GetFileName(program), release.RelativeExecutable);
 
             File.WriteAllText(Path.Combine(folder.Path, "TheSharpFactory.dll"), "dll");
-            Assert.NotNull(InstallLocation.Find(program, false).Problem);
-            Assert.NotNull(InstallLocation.Find(Path.Combine(folder.Path, "Other.exe"), false).Problem);
-            Assert.NotNull(InstallLocation.Find(null, false).Problem);
+            Assert.NotNull(InstallLocation.Find(program, InstallLocation.CurrentPlatform).Problem);
+            Assert.NotNull(InstallLocation.Find(Path.Combine(folder.Path, "Other.exe"), InstallLocation.CurrentPlatform).Problem);
+            Assert.NotNull(InstallLocation.Find(null, InstallLocation.CurrentPlatform).Problem);
         }
+    }
+
+    [Fact]
+    public void EachSystemHasItsOwnProgramName()
+    {
+        //paths with "/" work on every system, so all three layouts are checked everywhere
+        var windows = InstallLocation.Find("/apps/sf/TheSharpFactory.exe", AppPlatform.Windows);
+        Assert.Null(windows.Problem);
+        Assert.Equal("TheSharpFactory.exe", windows.RelativeExecutable);
+        Assert.NotNull(InstallLocation.Find("/apps/sf/TheSharpFactory", AppPlatform.Windows).Problem);
+
+        var linux = InstallLocation.Find("/opt/sf/TheSharpFactory", AppPlatform.Linux);
+        Assert.Null(linux.Problem);
+        Assert.Equal("TheSharpFactory", linux.RelativeExecutable);
+        Assert.NotNull(InstallLocation.Find("/opt/sf/TheSharpFactory.exe", AppPlatform.Linux).Problem);
+
+        Assert.NotNull(InstallLocation.Find("/opt/sf/TheSharpFactory", AppPlatform.MacOS).Problem);
     }
 
     [Fact]
     public void OnMacOSTheWholeAppBundleIsUpdatedUnlessMacOSRunsATemporaryCopy()
     {
-        var bundle = InstallLocation.Find("/Applications/TheSharpFactory.app/Contents/MacOS/TheSharpFactory", true);
+        var bundle = InstallLocation.Find("/Applications/TheSharpFactory.app/Contents/MacOS/TheSharpFactory", AppPlatform.MacOS);
         Assert.Null(bundle.Problem);
         Assert.Equal("Applications", Path.GetFileName(bundle.Folder));
         Assert.Equal("TheSharpFactory.app", Path.GetFileName(bundle.Bundle));
@@ -247,8 +265,8 @@ public sealed class UpdateTests
         Assert.Equal("open", startInfo.FileName);
         Assert.Equal($"-n|{bundle.Bundle}|--args|/Users/me/Model.edmj", string.Join("|", startInfo.ArgumentList));
 
-        Assert.NotNull(InstallLocation.Find("/private/var/folders/x/T/AppTranslocation/1234/d/TheSharpFactory.app/Contents/MacOS/TheSharpFactory", true).Problem);
-        Assert.NotNull(InstallLocation.Find("/Applications/Other.app/Contents/MacOS/TheSharpFactory", true).Problem);
+        Assert.NotNull(InstallLocation.Find("/private/var/folders/x/T/AppTranslocation/1234/d/TheSharpFactory.app/Contents/MacOS/TheSharpFactory", AppPlatform.MacOS).Problem);
+        Assert.NotNull(InstallLocation.Find("/Applications/Other.app/Contents/MacOS/TheSharpFactory", AppPlatform.MacOS).Problem);
     }
 
     [Fact]
@@ -268,13 +286,13 @@ public sealed class UpdateTests
     [Fact]
     public async Task TheUpdateReplacesTheAppsFilesAndLeavesOthersAlone()
     {
-        using(var folder = new TempFolder())
+        using(var folder = new TestFolder())
         {
             var install = CreateInstall(Path.Combine(folder.Path, "app"));
             var handler = new FakeHttpHandler();
             var release = PublishPackage(handler, folder.Path, "TheSharpFactory-test.zip", null);
 
-            await new UpdateInstaller(new HttpClient(handler), release, install, new Version(1, 0), null, CancellationToken.None).RunAsync();
+            await new UpdateInstaller(new HttpClient(handler), release, install, new Version(1, 0), null, null).RunAsync();
 
             Assert.Equal("new app", File.ReadAllText(Path.Combine(install.Folder, "TheSharpFactory.exe")));
             Assert.Equal("new cli", File.ReadAllText(Path.Combine(install.Folder, "sharpfactory.exe")));
@@ -293,13 +311,13 @@ public sealed class UpdateTests
     [Fact]
     public async Task ATarGzDownloadIsUnpackedToo()
     {
-        using(var folder = new TempFolder())
+        using(var folder = new TestFolder())
         {
             var install = CreateInstall(Path.Combine(folder.Path, "app"));
             var handler = new FakeHttpHandler();
             var release = PublishPackage(handler, folder.Path, "TheSharpFactory-test.tar.gz", null);
 
-            await new UpdateInstaller(new HttpClient(handler), release, install, new Version(1, 0), null, CancellationToken.None).RunAsync();
+            await new UpdateInstaller(new HttpClient(handler), release, install, new Version(1, 0), null, null).RunAsync();
 
             Assert.Equal("new app", File.ReadAllText(Path.Combine(install.Folder, "TheSharpFactory.exe")));
             Assert.Equal("new cli", File.ReadAllText(Path.Combine(install.Folder, "sharpfactory.exe")));
@@ -309,14 +327,14 @@ public sealed class UpdateTests
     [Fact]
     public async Task ADamagedDownloadChangesNothing()
     {
-        using(var folder = new TempFolder())
+        using(var folder = new TestFolder())
         {
             var install = CreateInstall(Path.Combine(folder.Path, "app"));
             var handler = new FakeHttpHandler();
             var release = PublishPackage(handler, folder.Path, "TheSharpFactory-test.zip", new string('0', 64));
             var before = ListFolder(install.Folder);
 
-            var error = await Assert.ThrowsAsync<UpdateException>(new UpdateInstaller(new HttpClient(handler), release, install, new Version(1, 0), null, CancellationToken.None).RunAsync);
+            var error = await Assert.ThrowsAsync<UpdateException>(new UpdateInstaller(new HttpClient(handler), release, install, new Version(1, 0), null, null).RunAsync);
 
             Assert.Contains("damaged", error.Message, StringComparison.Ordinal);
             Assert.Equal(before, ListFolder(install.Folder));
@@ -327,7 +345,7 @@ public sealed class UpdateTests
     [Fact]
     public async Task AConnectionLostDuringTheDownloadChangesNothing()
     {
-        using(var folder = new TempFolder())
+        using(var folder = new TestFolder())
         {
             var install = CreateInstall(Path.Combine(folder.Path, "app"));
             var handler = new FakeHttpHandler();
@@ -335,7 +353,7 @@ public sealed class UpdateTests
             handler.DropWhileReading = release.PackageUri.ToString();
             var before = ListFolder(install.Folder);
 
-            var error = await Assert.ThrowsAsync<UpdateException>(new UpdateInstaller(new HttpClient(handler), release, install, new Version(1, 0), null, CancellationToken.None).RunAsync);
+            var error = await Assert.ThrowsAsync<UpdateException>(new UpdateInstaller(new HttpClient(handler), release, install, new Version(1, 0), null, null).RunAsync);
 
             Assert.StartsWith("The download failed", error.Message, StringComparison.Ordinal);
             Assert.EndsWith("Nothing was changed.", error.Message, StringComparison.Ordinal);
@@ -346,7 +364,7 @@ public sealed class UpdateTests
     [Fact]
     public async Task ADownloadWithoutTheProgramChangesNothing()
     {
-        using(var folder = new TempFolder())
+        using(var folder = new TestFolder())
         {
             var install = CreateInstall(Path.Combine(folder.Path, "app"));
             install.Executable = Path.Combine(install.Folder, "Renamed.exe");
@@ -354,10 +372,112 @@ public sealed class UpdateTests
             var release = PublishPackage(handler, folder.Path, "TheSharpFactory-test.zip", null);
             var before = ListFolder(install.Folder);
 
-            var error = await Assert.ThrowsAsync<UpdateException>(new UpdateInstaller(new HttpClient(handler), release, install, new Version(1, 0), null, CancellationToken.None).RunAsync);
+            var error = await Assert.ThrowsAsync<UpdateException>(new UpdateInstaller(new HttpClient(handler), release, install, new Version(1, 0), null, null).RunAsync);
 
             Assert.Contains("Renamed.exe", error.Message, StringComparison.Ordinal);
             Assert.Equal(before, ListFolder(install.Folder));
+        }
+    }
+
+    [Fact]
+    public async Task AnUpdateInProgressIsLeftAloneByAnotherCopyOfTheApp()
+    {
+        using(var folder = new TestFolder())
+        {
+            var install = CreateInstall(Path.Combine(folder.Path, "app"));
+            var staging = Path.Combine(install.Folder, UpdateInstaller.StagingFolderName);
+            Directory.CreateDirectory(staging);
+            File.WriteAllText(Path.Combine(staging, "TheSharpFactory-test.zip"), "half a download");
+            File.WriteAllText(Path.Combine(install.Folder, "TheSharpFactory.exe" + UpdateInstaller.OldSuffix), "left over");
+            var handler = new FakeHttpHandler();
+            var release = PublishPackage(handler, folder.Path, "TheSharpFactory-test.zip", null);
+
+            //the first copy is updating: it holds the lock
+            using(new FileStream(Path.Combine(staging, UpdateInstaller.LockFileName), FileMode.CreateNew, FileAccess.Write, FileShare.None))
+            {
+                Assert.True(UpdateInstaller.IsStagingInUse(staging));
+
+                //a second copy starts: its clean-up deletes what is left over, not the download in progress
+                UpdateInstaller.TryCleanUp(install.Folder);
+                Assert.True(File.Exists(Path.Combine(staging, "TheSharpFactory-test.zip")));
+                Assert.False(File.Exists(Path.Combine(install.Folder, "TheSharpFactory.exe" + UpdateInstaller.OldSuffix)));
+
+                //and its own update stops without touching it
+                var error = await Assert.ThrowsAsync<UpdateException>(new UpdateInstaller(new HttpClient(handler), release, install, new Version(1, 0), null, null).RunAsync);
+                Assert.StartsWith("Another copy of the app is updating", error.Message, StringComparison.Ordinal);
+                Assert.True(File.Exists(Path.Combine(staging, "TheSharpFactory-test.zip")));
+                Assert.Empty(handler.Requests);
+            }
+
+            //once the first copy is done (or gone), what it left is cleaned up
+            Assert.False(UpdateInstaller.IsStagingInUse(staging));
+            Assert.True(UpdateInstaller.TryCleanUp(install.Folder));
+            Assert.False(Directory.Exists(staging));
+        }
+    }
+
+    [Fact]
+    public void CancelAndReplacingTheFilesCannotBothWin()
+    {
+        using(var cancelledFirst = new UpdateCancellation())
+        {
+            Assert.True(cancelledFirst.TryCancel());
+            Assert.True(cancelledFirst.Token.IsCancellationRequested);
+            Assert.False(cancelledFirst.TryBeginReplacing());
+            Assert.True(cancelledFirst.IsCancelled);
+        }
+
+        using(var replacingFirst = new UpdateCancellation())
+        {
+            Assert.True(replacingFirst.TryBeginReplacing());
+            Assert.False(replacingFirst.TryCancel());
+            Assert.False(replacingFirst.Token.IsCancellationRequested);
+            Assert.False(replacingFirst.IsCancelled);
+        }
+    }
+
+    [Fact]
+    public async Task ACancelledUpdateStopsBeforeReplacingAnything()
+    {
+        using(var folder = new TestFolder())
+        {
+            var install = CreateInstall(Path.Combine(folder.Path, "app"));
+            var handler = new FakeHttpHandler();
+            var release = PublishPackage(handler, folder.Path, "TheSharpFactory-test.zip", null);
+            var before = ListFolder(install.Folder);
+            var steps = new RecordingProgress();
+
+            using(var cancellation = new UpdateCancellation())
+            {
+                Assert.True(cancellation.TryCancel());
+                await Assert.ThrowsAnyAsync<OperationCanceledException>(new UpdateInstaller(new HttpClient(handler), release, install, new Version(1, 0), steps, cancellation).RunAsync);
+            }
+
+            Assert.Equal(before, ListFolder(install.Folder));
+            Assert.DoesNotContain(UpdateStage.Replacing, steps.Stages);
+        }
+    }
+
+    [Fact]
+    public async Task ReplacingTheFilesIsReportedOnceCancelNoLongerWorks()
+    {
+        using(var folder = new TestFolder())
+        {
+            var install = CreateInstall(Path.Combine(folder.Path, "app"));
+            var handler = new FakeHttpHandler();
+            var release = PublishPackage(handler, folder.Path, "TheSharpFactory-test.zip", null);
+            var steps = new RecordingProgress();
+
+            using(var cancellation = new UpdateCancellation())
+            {
+                await new UpdateInstaller(new HttpClient(handler), release, install, new Version(1, 0), steps, cancellation).RunAsync();
+
+                Assert.False(cancellation.TryCancel());
+            }
+
+            Assert.Equal(UpdateStage.Replacing, steps.Stages[steps.Stages.Count - 1]);
+            Assert.Equal(UpdateStage.Downloading, steps.Stages[0]);
+            Assert.Equal("new app", File.ReadAllText(Path.Combine(install.Folder, "TheSharpFactory.exe")));
         }
     }
 
@@ -367,7 +487,7 @@ public sealed class UpdateTests
         //a file open without sharing cannot be renamed on Windows; Linux and macOS rename it anyway
         Assert.SkipUnless(OperatingSystem.IsWindows(), "Only Windows refuses to rename an open file.");
 
-        using(var folder = new TempFolder())
+        using(var folder = new TestFolder())
         {
             var install = CreateInstall(Path.Combine(folder.Path, "app"));
             var handler = new FakeHttpHandler();
@@ -376,7 +496,7 @@ public sealed class UpdateTests
 
             using(new FileStream(Path.Combine(install.Folder, "LICENSE"), FileMode.Open, FileAccess.Read, FileShare.None))
             {
-                var error = await Assert.ThrowsAsync<UpdateException>(new UpdateInstaller(new HttpClient(handler), release, install, new Version(1, 0), null, CancellationToken.None).RunAsync);
+                var error = await Assert.ThrowsAsync<UpdateException>(new UpdateInstaller(new HttpClient(handler), release, install, new Version(1, 0), null, null).RunAsync);
                 Assert.Contains("left as it was", error.Message, StringComparison.Ordinal);
             }
 
@@ -393,7 +513,7 @@ public sealed class UpdateTests
         //what makes the update work on Windows: a running program cannot be overwritten or deleted, but renamed
         Assert.SkipUnless(OperatingSystem.IsWindows(), "Linux and macOS replace a running program without renaming tricks.");
 
-        using(var folder = new TempFolder())
+        using(var folder = new TestFolder())
         {
             var install = CreateInstall(Path.Combine(folder.Path, "app"));
             var program = Path.Combine(install.Folder, "TheSharpFactory.exe");
@@ -407,7 +527,7 @@ public sealed class UpdateTests
                 var deleteError = Record.Exception(() => File.Delete(program));
                 Assert.True(deleteError is IOException || deleteError is UnauthorizedAccessException);
 
-                await new UpdateInstaller(new HttpClient(handler), release, install, new Version(1, 0), null, CancellationToken.None).RunAsync();
+                await new UpdateInstaller(new HttpClient(handler), release, install, new Version(1, 0), null, null).RunAsync();
 
                 Assert.Equal("new app", File.ReadAllText(program));
                 Assert.False(running.HasExited);
@@ -592,6 +712,9 @@ public sealed class UpdateTests
             Assert.Equal(modelFile, Assert.Single(host.Started.ArgumentList));
             Assert.Same(app.ViewModel.About, app.ViewModel.CurrentPage);
             Assert.Equal("Version 9.0.0.0 is installed. Restarting…", updates.StatusText);
+            //the files were replaced: Cancel is gone
+            Assert.True(updates.IsReplacing);
+            Assert.False(updates.CanCancel);
 
             //the real host closes the app here; this one does not, so the window can close at the end of the test
             app.ViewModel.IsBusy = false;
@@ -902,27 +1025,19 @@ internal sealed class FakeAppHost : IAppHost
 }
 
 /// <summary>
-/// A temporary folder deleted at the end of the test.
+/// Keeps every stage reported, synchronously (Progress&lt;T&gt; would post them later).
 /// </summary>
-internal sealed class TempFolder : IDisposable
+internal sealed class RecordingProgress : IProgress<UpdateProgress>
 {
-    public TempFolder()
-    {
-        Path = System.IO.Path.Combine(System.IO.Path.GetTempPath(), "sharpfactory-update-tests", Guid.NewGuid().ToString("N"));
-        Directory.CreateDirectory(Path);
-    }
+    private readonly Lock _syncRoot = new Lock();
 
-    public string Path { get; }
+    public List<UpdateStage> Stages { get; } = new List<UpdateStage>();
 
-    public void Dispose()
+    public void Report(UpdateProgress value)
     {
-        try
+        lock(_syncRoot)
         {
-            Directory.Delete(Path, true);
-        }
-        catch(IOException)
-        {
-            //cleaned with the temp folder later
+            Stages.Add(value.Stage);
         }
     }
 }

@@ -42,7 +42,7 @@
             <StackPanel Orientation="Horizontal" Spacing="10">
               <Button Name="CheckForUpdatesButton" Content="Check for updates" Command="{Binding CheckNowCommand}" IsEnabled="{Binding IsIdle}" />
               <Button Name="UpdateNowButton" Classes="accent" Content="{Binding UpdateButtonText}" Command="{Binding UpdateNowCommand}" IsVisible="{Binding HasUpdate}" IsEnabled="{Binding IsIdle}" />
-              <Button Name="CancelUpdateButton" Content="Cancel" Command="{Binding CancelUpdateCommand}" IsVisible="{Binding IsInstalling}" ToolTip.Tip="Stop the download; the app stays as it is" />
+              <Button Name="CancelUpdateButton" Content="Cancel" Command="{Binding CancelUpdateCommand}" IsVisible="{Binding CanCancel}" ToolTip.Tip="Stop the download; the app stays as it is" />
             </StackPanel>
             <TextBlock Name="UpdateStatus" Text="{Binding StatusText}" TextWrapping="Wrap" IsVisible="{Binding StatusText, Converter={x:Static StringConverters.IsNotNullOrEmpty}}" />
             <ProgressBar Name="UpdateProgress" Height="4" Minimum="0" Maximum="100" Value="{Binding DownloadPercent}" IsIndeterminate="{Binding !IsDownloadPercentKnown}" IsVisible="{Binding IsInstalling}" />

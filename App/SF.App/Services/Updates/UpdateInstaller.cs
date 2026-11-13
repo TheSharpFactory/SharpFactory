@@ -24,6 +24,12 @@ internal sealed class UpdateInstaller
     public const string OldSuffix = ".sf-old";
     public const string StagingFolderName = ".sharpfactory-update";
 
+    /// <summary>
+    /// Held open, unshared, in the download folder while an update runs: another copy of the app (its clean-up when
+    /// it starts, or its own update) leaves that folder alone.
+    /// </summary>
+    public const string LockFileName = ".lock";
+
     private static readonly TimeSpan _checksumsTimeout = TimeSpan.FromSeconds(60);
     private static readonly TimeSpan _downloadTimeout = TimeSpan.FromMinutes(30);
 
@@ -31,17 +37,22 @@ internal sealed class UpdateInstaller
     private readonly ReleaseInfo _release;
     private readonly InstallLocation _location;
     private readonly Version _currentVersion;
-    private readonly IProgress<int> _progress;
+    private readonly IProgress<UpdateProgress> _progress;
+    private readonly UpdateCancellation _cancellation;
     private readonly CancellationToken _cancellationToken;
 
-    public UpdateInstaller(HttpClient http, ReleaseInfo release, InstallLocation location, Version currentVersion, IProgress<int> progress, CancellationToken cancellationToken)
+    /// <summary>
+    /// <paramref name="progress"/> and <paramref name="cancellation"/> may be null (no progress, no Cancel).
+    /// </summary>
+    public UpdateInstaller(HttpClient http, ReleaseInfo release, InstallLocation location, Version currentVersion, IProgress<UpdateProgress> progress, UpdateCancellation cancellation)
     {
         _http = http;
         _release = release;
         _location = location;
         _currentVersion = currentVersion;
         _progress = progress;
-        _cancellationToken = cancellationToken;
+        _cancellation = cancellation;
+        _cancellationToken = cancellation != null ? cancellation.Token : CancellationToken.None;
     }
 
     /// <summary>
@@ -50,21 +61,28 @@ internal sealed class UpdateInstaller
     public async Task RunAsync()
     {
         var staging = Path.Combine(_location.Folder, StagingFolderName);
+        //outside the try: when another copy is updating, its download folder must not be deleted here
+        var stagingLock = CreateStaging(staging);
         try
         {
-            CreateStaging(staging);
             var package = Path.Combine(staging, _release.PackageName);
             await DownloadAsync(package);
             var unpacked = Path.Combine(staging, "package");
             Unpack(package, unpacked);
             CheckPackage(unpacked);
 
-            //the last moment Cancel works: the swap is quick, and stopping it halfway would only mean putting files back
-            _cancellationToken.ThrowIfCancellationRequested();
+            //the point of no return: Cancel works until here, never after (the swap is quick, and stopping it halfway
+            //would only mean putting files back)
+            if(_cancellation != null && !_cancellation.TryBeginReplacing())
+                throw new OperationCanceledException(_cancellationToken);
+
+            //from here on Cancel no longer works
+            _progress?.Report(new UpdateProgress { Stage = UpdateStage.Replacing });
             Swap(unpacked);
         }
         finally
         {
+            stagingLock.Dispose();
             DeleteQuietly(staging);
         }
     }
@@ -97,16 +115,46 @@ internal sealed class UpdateInstaller
         }
     }
 
-    private void CreateStaging(string staging)
+    /// <summary>
+    /// A fresh download folder, and its lock (held until the update ends).
+    /// </summary>
+    private FileStream CreateStaging(string staging)
     {
+        if(IsStagingInUse(staging))
+            throw new UpdateException("Another copy of the app is updating this folder right now. Wait for it to finish.");
+
         try
         {
             DeleteEntry(staging);
             Directory.CreateDirectory(staging);
+            return new FileStream(Path.Combine(staging, LockFileName), FileMode.CreateNew, FileAccess.Write, FileShare.None);
         }
         catch(Exception ex) when(ex is IOException || ex is UnauthorizedAccessException)
         {
             throw new UpdateException($"The app cannot write to {_location.Folder}, so it cannot update itself there.", ex);
+        }
+    }
+
+    /// <summary>
+    /// True while an update (of this copy or another) holds the download folder's lock. On Linux and macOS .NET
+    /// takes an advisory lock for FileShare.None, so this works there too.
+    /// </summary>
+    public static bool IsStagingInUse(string staging)
+    {
+        var lockFile = Path.Combine(staging, LockFileName);
+        if(!File.Exists(lockFile))
+            return false;
+
+        try
+        {
+            using(new FileStream(lockFile, FileMode.Open, FileAccess.Write, FileShare.None))
+            {
+                return false;
+            }
+        }
+        catch(Exception ex) when(ex is IOException || ex is UnauthorizedAccessException)
+        {
+            return true;
         }
     }
 
@@ -186,7 +234,7 @@ internal sealed class UpdateInstaller
                                     if(percent != lastPercent)
                                     {
                                         lastPercent = percent;
-                                        _progress?.Report(percent);
+                                        _progress?.Report(new UpdateProgress { Stage = UpdateStage.Downloading, Percent = percent });
                                     }
                                 }
 
@@ -359,7 +407,12 @@ internal sealed class UpdateInstaller
             foreach(var entry in Directory.GetFileSystemEntries(folder))
             {
                 var name = Path.GetFileName(entry);
-                if(!name.EndsWith(OldSuffix, StringComparison.Ordinal) && !string.Equals(name, StagingFolderName, StringComparison.Ordinal))
+                var isStaging = string.Equals(name, StagingFolderName, StringComparison.Ordinal);
+                if(!name.EndsWith(OldSuffix, StringComparison.Ordinal) && !isStaging)
+                    continue;
+
+                //another copy of the app is updating: its download is not left over
+                if(isStaging && IsStagingInUse(entry))
                     continue;
 
                 try

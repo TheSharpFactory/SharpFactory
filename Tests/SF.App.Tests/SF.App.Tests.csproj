@@ -24,6 +24,11 @@
   </ItemGroup>
 
   <ItemGroup>
+    <!-- the engine tests' temporary folder, shared -->
+    <Compile Include="..\SF.Tests\TestFolder.cs" Link="Shared\TestFolder.cs" />
+  </ItemGroup>
+
+  <ItemGroup>
     <None Include="..\SF.Tests\Fixtures\Coverage.edmj" Link="Fixtures\Coverage.edmj">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </None>

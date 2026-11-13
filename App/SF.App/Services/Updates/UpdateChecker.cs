@@ -1,6 +1,5 @@
 #region Usings
 using System;
-using System.IO;
 using System.Net.Http;
 using System.Net.Http.Headers;
 using System.Text.Json;
@@ -114,12 +113,8 @@ internal sealed class UpdateChecker
         }
         catch(HttpRequestException ex)
         {
+            //also a connection lost while the answer was read: SendAsync reads it in full and reports that as this
             return Fail($"GitHub could not be reached ({ex.Message}).");
-        }
-        catch(IOException ex)
-        {
-            //the connection was lost while the answer was read (HttpIOException)
-            return Fail($"The connection to GitHub was lost ({ex.Message}).");
         }
     }
 

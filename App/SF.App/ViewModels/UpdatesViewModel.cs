@@ -30,7 +30,7 @@ internal sealed partial class UpdatesViewModel : ViewModelBase
     private InstallLocation _location;
 
     //set while an update downloads: Cancel stops it
-    private CancellationTokenSource _installCancellation;
+    private UpdateCancellation _installCancellation;
 
     //a newer release was found while the user was busy (a dialog, a wizard, a Sync): asked at the next tick
     private bool _promptPending;
@@ -53,6 +53,12 @@ internal sealed partial class UpdatesViewModel : ViewModelBase
     [ObservableProperty]
     private int _downloadPercent;
 
+    /// <summary>
+    /// The files are being replaced: too late to cancel.
+    /// </summary>
+    [ObservableProperty]
+    private bool _isReplacing;
+
     public UpdatesViewModel(MainWindowViewModel shell)
     {
         _shell = shell;
@@ -72,7 +78,7 @@ internal sealed partial class UpdatesViewModel : ViewModelBase
         get
         {
             if(_location == null)
-                _location = InstallLocation.Find(Environment.ProcessPath, OperatingSystem.IsMacOS());
+                _location = InstallLocation.Find(Environment.ProcessPath, InstallLocation.CurrentPlatform);
 
             return _location;
         }
@@ -140,6 +146,17 @@ internal sealed partial class UpdatesViewModel : ViewModelBase
         }
     }
 
+    /// <summary>
+    /// The About page's Cancel: while an update downloads and unpacks, not once the files are being replaced.
+    /// </summary>
+    public bool CanCancel
+    {
+        get
+        {
+            return IsInstalling && !IsReplacing;
+        }
+    }
+
     public bool IsDownloadPercentKnown
     {
         get
@@ -156,6 +173,12 @@ internal sealed partial class UpdatesViewModel : ViewModelBase
     partial void OnIsInstallingChanged(bool value)
     {
         OnPropertyChanged(nameof(IsIdle));
+        OnPropertyChanged(nameof(CanCancel));
+    }
+
+    partial void OnIsReplacingChanged(bool value)
+    {
+        OnPropertyChanged(nameof(CanCancel));
     }
 
     partial void OnAvailableReleaseChanged(ReleaseInfo value)
@@ -335,19 +358,20 @@ internal sealed partial class UpdatesViewModel : ViewModelBase
 
         var modelFile = _shell.Document?.FilePath;
         _shell.Navigate(_shell.About);
+        IsReplacing = false;
         IsInstalling = true;
         DownloadPercent = 0;
         _shell.IsBusy = true;
         StatusText = $"Downloading version {release.Version}…";
-        using(var cancellation = new CancellationTokenSource())
+        using(var cancellation = new UpdateCancellation())
         {
             _installCancellation = cancellation;
             try
             {
-                var installer = new UpdateInstaller(Http, release, location, CurrentVersion, new Progress<int>(OnDownloadProgress), cancellation.Token);
+                var installer = new UpdateInstaller(Http, release, location, CurrentVersion, new Progress<UpdateProgress>(OnInstallProgress), cancellation);
                 await Task.Run(installer.RunAsync);
             }
-            catch(OperationCanceledException) when(cancellation.IsCancellationRequested)
+            catch(OperationCanceledException) when(cancellation.IsCancelled)
             {
                 StopInstalling($"The update was cancelled. You still have version {CurrentVersion}.");
                 return;
@@ -374,31 +398,40 @@ internal sealed partial class UpdatesViewModel : ViewModelBase
     }
 
     /// <summary>
-    /// Stops the download (the About page's Cancel). Once the files are being replaced it is too late: that takes a
-    /// moment and finishes.
+    /// Stops the download (the About page's Cancel). Once the files are being replaced it is too late, and Cancel says
+    /// so: the swap takes a moment and finishes.
     /// </summary>
     [RelayCommand]
     private void CancelUpdate()
     {
-        if(_installCancellation == null || _installCancellation.IsCancellationRequested)
+        if(_installCancellation == null || _installCancellation.IsCancelled)
             return;
 
-        _installCancellation.Cancel();
-        StatusText = "Cancelling the update…";
+        StatusText = _installCancellation.TryCancel() ? "Cancelling the update…" : "Too late to cancel: the files are being replaced.";
     }
 
     private void StopInstalling(string statusText)
     {
         IsInstalling = false;
+        IsReplacing = false;
         _shell.IsBusy = false;
         StatusText = statusText;
     }
 
-    private void OnDownloadProgress(int percent)
+    private void OnInstallProgress(UpdateProgress progress)
     {
-        DownloadPercent = percent;
-        if(percent >= 0 && AvailableRelease != null && _installCancellation != null && !_installCancellation.IsCancellationRequested)
-            StatusText = $"Downloading version {AvailableRelease.Version}… {percent}%";
+        if(progress.Stage == UpdateStage.Replacing)
+        {
+            IsReplacing = true;
+            if(AvailableRelease != null)
+                StatusText = $"Replacing the files with version {AvailableRelease.Version}…";
+
+            return;
+        }
+
+        DownloadPercent = progress.Percent;
+        if(progress.Percent >= 0 && AvailableRelease != null && _installCancellation != null && !_installCancellation.IsCancelled)
+            StatusText = $"Downloading version {AvailableRelease.Version}… {progress.Percent}%";
     }
 
     private async Task OfferReleasePageAsync(ReleaseInfo release, string problem)

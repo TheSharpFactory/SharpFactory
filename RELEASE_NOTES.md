@@ -4,6 +4,45 @@ Newest first. One entry per change set. Version rules: see [BACKLOG.md](BACKLOG.
 
 ---
 
+## 1.2.0.6 — 2026-11-12
+
+Changes
+- SF-176: the full code review of 1.2.0.3 to 1.2.0.5 (user, 2026-11-12: "full code review and test again", then "Fix all 7"; the eighth, the 1.2.0.4 notes' walk result, was filled in when the walk finished).
+  - **Cancel cannot be ignored any more.** Cancel and the start of the file swap go through one atomic state (`UpdateCancellation`): either the update stops with the app unchanged, or Cancel says "Too late to cancel: the files are being replaced." The installer reports when the swap starts (`UpdateProgress`, stage `Replacing`; the download percentage is stage `Downloading`) and the About page hides Cancel then (`UpdatesViewModel.CanCancel`). Before, a Cancel clicked after unpacking said "Cancelling the update…" and the app restarted as the new version anyway.
+  - **An update in progress is left alone by another copy of the app.** The download folder holds a lock file, open and unshared, for the whole update (`.sharpfactory-update/.lock`; on Linux and macOS .NET takes an advisory lock for that). A second copy's clean-up when it starts skips a locked download folder, and its own update stops with "Another copy of the app is updating this folder right now." Before, it deleted the first copy's download.
+  - `InstallLocation.Find` takes the system (`AppPlatform`: Windows, Linux, macOS) instead of deciding Windows or Linux itself, so all three layouts are tested on every system.
+  - `WindowAppHost` moved next to the window (`Views`), so the services no longer depend on a view.
+  - The update check's `IOException` catch is gone: `HttpClient` reports a connection lost while reading the answer as `HttpRequestException`, which was already handled.
+  - Tests: the paging test also checks the total of a paged query with a to-many navigation property (25 records, 3 pages); the app tests use the engine tests' `TestFolder` (linked; `Fixtures` moved to its own file) instead of a copy.
+  - The 1.2.0.4 notes' verification has the walk's result: no paged read fails any more.
+  - From the second full review (user, 2026-11-12: "fix the two minor issues"): `CHANGELOG.md` has the 1.2.0.6 section the Release workflow needs before a tag, for users: regenerate (paged reads were broken in 1.1.8.8), automatic updates, the command line in the app downloads, the fixes since 1.1.8.8, and the downloads table with `SHA256SUMS.txt`. The install stage is a type (`UpdateProgress`) instead of the progress value 101 sent with the download percentage.
+- Tests: `UpdateTests` +5 (39): each system's program name, an update in progress left alone by another copy, Cancel and the swap cannot both win, a cancelled update stops before replacing anything, the swap is reported once Cancel no longer works; Update now also checks that Cancel is gone after the swap.
+
+Verification
+- `dotnet test SF.slnx -c Release` with the database tests on: `SF.Tests` 63 passed, `SF.App.Tests` 103 passed, none skipped. 0 build warnings.
+- Against the reference solution (outside the repository), with the 1.2.0.6 command line: the current reference model (it gained `Trader.BettingEventProfile.SapMarketControl` today) generates 1,790 files that differ from the published 1.1.9.8's output only in `RepositoryBase.cs` (the paging fix); the test model (1,424) and Coverage (174) the same. Against the reference code: 374 identical, 719 changed by the query redesign, 436 renamed enum files, 261 new containers, 3 retired, as before. A re-sync changes 1 file, a fresh sync is identical, both compile with 0 warnings. SchemaCheck: 0 differences on the test model. The 16 business-layer cases: byte-identical results and identical SQL.
+- Paired benchmark, reference code against 1.2.0.6 code, 16 real queries, two sessions (results byte-identical in both): CPU per call -12.4% (11 queries less, none more), memory per call -67.0% (12,034 KB to 3,967 KB), garbage collections -54.5%, wall-clock -22.3% (9 faster, none slower). The last benchmark (1.1.9.5) had CPU -7.1%, memory -65.1%, wall-clock +4.7%.
+- The real-package check again (outside the repository): a published single-file 1.2.0.3 in an install folder updated itself from a local feed on `127.0.0.1` to a throwaway test build stamped 9.9.9.9 (a made-up version, higher than any release, built only for this check); the bundled `sharpfactory.exe --version` then printed `sharpfactory 9.9.9.9`.
+
+Commit details
+
+```
+Make Cancel atomic and protect an update in progress
+
+Cancel and the start of the file swap share one atomic state, and
+Cancel is hidden once the swap starts. The download folder holds a
+lock so another copy of the app leaves it alone. Find takes the
+platform; WindowAppHost moves to Views; the app tests share TestFolder.
+The install stage is a type instead of progress value 101, and
+CHANGELOG.md has the 1.2.0.6 section for the next release.
+
+Bump version to 1.2.0.6.
+
+Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>
+```
+
+---
+
 ## 1.2.0.5 — 2026-11-12
 
 Changes
@@ -51,7 +90,7 @@ Changes
 
 Verification
 - `dotnet test Tests/SF.Tests/SF.Tests.csproj -c Release` with `SHARPFACTORY_TEST_EDMJ` set: 63 passed, none skipped.
-- The full repository walk of the reference model against its test database, the fixed code against the reference code: running when these notes were written; the result is added below when it finishes.
+- The full repository walk of the reference model against its test database, the fixed code against the reference code: of 7,879 operations, no paged read fails any more (937 did in 1.2.0.2). 7,337 give the same result; 347 that threw in the reference code now work (the SF-121 and SF-122 fixes); 187 differ only in the async task type the walk prints (the await pass-through); 6 paged reads with navigation properties on the very large `Grading.PeriodSummary` table that the reference code rejected ("Incorrect syntax near ORDER") now run and hit the 30-second timeout; 1 paged read hits a column missing from the test database, as other reads do in both runs.
 
 Commit details
 

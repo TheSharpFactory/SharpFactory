@@ -78,6 +78,8 @@ internal static class Program
         }
 
         Console.WriteLine("PASS page with a to-many navigation property, its rows");
+        //the navigation property's result set must not change the page's total
+        CheckTotal("page with a to-many navigation property", withStores.RecordCount, withStores.PageCount, _regionCount, 3);
 
         //a to-one navigation property on a paged query, sync and async
         var storePage = StorePage();

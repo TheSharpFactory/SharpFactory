@@ -36,6 +36,20 @@ internal sealed class InstallLocation
     public string Problem { get; set; }
 
     /// <summary>
+    /// The system the app runs on (each has its own release layout).
+    /// </summary>
+    public static AppPlatform CurrentPlatform
+    {
+        get
+        {
+            if(OperatingSystem.IsWindows())
+                return AppPlatform.Windows;
+
+            return OperatingSystem.IsMacOS() ? AppPlatform.MacOS : AppPlatform.Linux;
+        }
+    }
+
+    /// <summary>
     /// The running program's path relative to <see cref="Folder"/>, which is where it is in the download too.
     /// </summary>
     public string RelativeExecutable
@@ -50,17 +64,17 @@ internal sealed class InstallLocation
     /// Finds the release layout around the running program. A build run from the source (TheSharpFactory.dll next
     /// to the program) and a macOS app run from its temporary read-only copy cannot be updated in place.
     /// </summary>
-    public static InstallLocation Find(string processPath, bool isMacOS)
+    public static InstallLocation Find(string processPath, AppPlatform platform)
     {
         if(string.IsNullOrWhiteSpace(processPath))
             return new InstallLocation { Problem = "The app could not find where it runs from." };
 
         var folder = Path.GetDirectoryName(processPath);
         var fileName = Path.GetFileName(processPath);
-        if(isMacOS)
+        if(platform == AppPlatform.MacOS)
             return FindBundle(processPath, folder, fileName);
 
-        var expected = OperatingSystem.IsWindows() ? AppName + ".exe" : AppName;
+        var expected = platform == AppPlatform.Windows ? AppName + ".exe" : AppName;
         if(!string.Equals(fileName, expected, StringComparison.OrdinalIgnoreCase) || File.Exists(Path.Combine(folder, AppName + ".dll")))
             return new InstallLocation { Executable = processPath, Problem = "This copy of the app is not a release download, so it cannot update itself." };
 
@@ -118,4 +132,14 @@ internal sealed class InstallLocation
 
         return startInfo;
     }
+}
+
+/// <summary>
+/// The systems the app is released for.
+/// </summary>
+internal enum AppPlatform
+{
+    Windows,
+    Linux,
+    MacOS,
 }
