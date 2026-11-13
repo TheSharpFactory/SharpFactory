@@ -84,6 +84,9 @@ jobs:
             tar -czf dist/sharpfactory-cli-$rid.tar.gz -C out/cli-$rid .
           done
 
+          # the app checks the download it updates itself with against this file
+          (cd dist && sha256sum * > SHA256SUMS.txt)
+
           ls -la dist
 
       - uses: softprops/action-gh-release@v2

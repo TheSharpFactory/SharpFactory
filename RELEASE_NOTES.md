@@ -4,6 +4,40 @@ Newest first. One entry per change set. Version rules: see [BACKLOG.md](BACKLOG.
 
 ---
 
+## 1.2.0.5 — 2026-11-12
+
+Changes
+- SF-175: automatic updates (user, 2026-11-12: "it should check automatically once a day, it should check on button click inside the about tab and should update once the user accepts").
+  - **The check:** once the window is up, and every hour while the app is open, the app asks GitHub for the latest release (`api.github.com/repos/TheSharpFactory/SharpFactory/releases/latest`, which never returns drafts or pre-releases) when the last successful check was a day ago or more. The request sends only `User-Agent: TheSharpFactory/<version>`. A failed automatic check says nothing and is tried again later. The About page has **Check for updates** and a "Check for updates once a day" box (`AppSettings.CheckForUpdates`, on by default; `LastUpdateCheck` holds the time of the last successful check).
+  - **The question:** "An update is available", with the release text shortened to plain text (`ReleaseNotes.Summarize`: what comes before its Downloads section, at most about 700 characters), and **Later** or **Update now**. An automatic check never interrupts a dialog, a wizard or a running Sync: it asks at the next hourly tick. Nothing is downloaded before **Update now**.
+  - **The install:** asks about unsaved changes first, then downloads this system's package into `.sharpfactory-update` next to the app, checks it against the release's new `SHA256SUMS.txt` (`release.yml` now publishes it), unpacks it (.zip, or .tar.gz on Linux), renames each file and folder it replaces (the app, `sharpfactory`, the licenses; on macOS the whole `TheSharpFactory.app`) to `*.sf-old`, moves the new ones in and starts the new version with the model file that was open. A running program cannot be overwritten on Windows but can be renamed, which is what makes this work. The new version deletes the `*.sf-old` files when it starts (trying again for a few seconds while the old one exits). If a step fails, the files already moved are put back and the user is told; if even that fails, the user is told to download the release again. **Cancel** on the About page stops the download; the app stays as it was.
+  - **Where it cannot update itself** (a build from the source, a renamed program, a folder it cannot write to, macOS running the app from its temporary copy, a release without checksums or without this system's download), it offers to open the release page instead.
+  - The comment that the app "connects to nothing but the database" now says it also connects to GitHub for the update check; the close message while busy says "A model build, Sync or update is running".
+- Tests: `UpdateTests` (34): reading GitHub's answer (versions, downloads, https only, errors, a dropped connection, the User-Agent), the once-a-day rule, the release text, the checksums file, where the app runs from (Windows/Linux layout, the macOS bundle and its temporary copy, a build from the source), the zip and tar.gz installs, a damaged download, a dropped download, a download without the program, putting the files back when one cannot be replaced (Windows), replacing a running program (Windows), and in the headless app: up to date, Later, a failed check, the daily rule and the check box, not interrupting a dialog, Update now with the restart, unsaved changes asked first, a failed update, Cancel, and the release page offer. No test uses the network (a fake HTTP handler answers).
+- Code review (two rounds, 10 findings, all fixed): the swap and the clean-up take the folder's list before changing it; dropped connections and the time limit while reading become messages ("Nothing was changed"); Cancel; a failed roll-back says so; the running-program test waits for the clean-up; code rules (`var`, verb-first names); the release-text summary moved to `ReleaseNotes`.
+
+Verification
+- `dotnet test SF.slnx -c Release` with the database tests on (`SHARPFACTORY_TEST_EDMJ`, `SHARPFACTORY_QUOTED_NAMES_DB`, `SHARPFACTORY_DOCS_DB`): `SF.Tests` 63 passed, `SF.App.Tests` 98 passed, none skipped. 0 build warnings.
+- End to end outside the repository: a published single-file 1.2.0.3 build in an install folder and a 9.9.9.9 package (made like `release.yml` makes them) served from `127.0.0.1` with a real HTTP client: the app found 9.9.9.9, downloaded and checked the 84 MB zip against a `sha256sum` file, and swapped the folder; the bundled `sharpfactory.exe --version` then printed `sharpfactory 9.9.9.9`. Not run: starting the new version (it opens the app window), macOS and Linux, and the real GitHub check (it needs a release made after this change).
+
+Commit details
+
+```
+Check for updates and update the app in place
+
+Once a day (and from the About page) the app asks GitHub for the latest
+release; after the user accepts it downloads the package, checks it
+against the release's SHA256SUMS.txt, swaps the files by renaming the
+running ones and restarts. Where it cannot update itself it offers the
+release page. release.yml publishes SHA256SUMS.txt.
+
+Bump version to 1.2.0.5.
+
+Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>
+```
+
+---
+
 ## 1.2.0.4 — 2026-11-12
 
 Changes

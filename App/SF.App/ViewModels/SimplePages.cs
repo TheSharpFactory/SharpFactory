@@ -256,10 +256,22 @@ internal sealed class AboutPageViewModel : PageViewModel
 
     public Uri Website { get; } = new Uri("https://www.thesharpfactory.com");
 
-    //opened in the browser only when clicked: the app connects to nothing but the database
+    //opened in the browser only when clicked. Besides the database, the app connects only to GitHub, to check for
+    //updates (once a day unless turned off, and from the About page)
     public Uri Releases { get; } = new Uri("https://github.com/TheSharpFactory/SharpFactory/releases");
 
     public Uri Issues { get; } = new Uri("https://github.com/TheSharpFactory/SharpFactory/issues");
+
+    /// <summary>
+    /// Check for updates, the update, and the once-a-day check box.
+    /// </summary>
+    public UpdatesViewModel Updates
+    {
+        get
+        {
+            return Shell.Updates;
+        }
+    }
 
     public string LogsFolder { get; } = AppPaths.LogsFolder;
 

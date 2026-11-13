@@ -43,7 +43,7 @@ internal sealed partial class MainWindow : Window
         if(viewModel.IsBusy)
         {
             e.Cancel = true;
-            _ = viewModel.ShowMessageAsync("Please wait", "A model build or Sync is running. Close the app when it has finished.", false);
+            _ = viewModel.ShowMessageAsync("Please wait", "A model build, Sync or update is running. Close the app when it has finished.", false);
             return;
         }
 
@@ -52,6 +52,15 @@ internal sealed partial class MainWindow : Window
 
         e.Cancel = true;
         _ = ConfirmAndCloseAsync(viewModel);
+    }
+
+    /// <summary>
+    /// Closes the app without the unsaved-changes question (the update asked it before it started).
+    /// </summary>
+    public void CloseWithoutAsking()
+    {
+        _closeConfirmed = true;
+        Close();
     }
 
     private async Task ConfirmAndCloseAsync(MainWindowViewModel viewModel)

@@ -24,6 +24,16 @@ public sealed class AppSettings
     /// The widths the user dragged the split panes to, by pane ("Models.Tree", "Sync.Files").
     /// </summary>
     public Dictionary<string, double> PaneWidths { get; set; } = new Dictionary<string, double>();
+
+    /// <summary>
+    /// The app looks for a newer release once a day (turned off on the About page).
+    /// </summary>
+    public bool CheckForUpdates { get; set; } = true;
+
+    /// <summary>
+    /// When the app last asked GitHub for the latest release (UTC); null before the first check.
+    /// </summary>
+    public DateTime? LastUpdateCheck { get; set; }
 }
 
 /// <summary>

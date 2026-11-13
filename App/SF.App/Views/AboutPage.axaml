@@ -37,6 +37,20 @@
           </StackPanel>
         </Grid>
         <Border BorderBrush="{DynamicResource CardBorder}" BorderThickness="0,1,0,0" Padding="24,16">
+          <StackPanel Spacing="10" DataContext="{Binding Updates}" x:DataType="vm:UpdatesViewModel">
+            <TextBlock Classes="sectionTitle" Text="Updates" Margin="0" />
+            <StackPanel Orientation="Horizontal" Spacing="10">
+              <Button Name="CheckForUpdatesButton" Content="Check for updates" Command="{Binding CheckNowCommand}" IsEnabled="{Binding IsIdle}" />
+              <Button Name="UpdateNowButton" Classes="accent" Content="{Binding UpdateButtonText}" Command="{Binding UpdateNowCommand}" IsVisible="{Binding HasUpdate}" IsEnabled="{Binding IsIdle}" />
+              <Button Name="CancelUpdateButton" Content="Cancel" Command="{Binding CancelUpdateCommand}" IsVisible="{Binding IsInstalling}" ToolTip.Tip="Stop the download; the app stays as it is" />
+            </StackPanel>
+            <TextBlock Name="UpdateStatus" Text="{Binding StatusText}" TextWrapping="Wrap" IsVisible="{Binding StatusText, Converter={x:Static StringConverters.IsNotNullOrEmpty}}" />
+            <ProgressBar Name="UpdateProgress" Height="4" Minimum="0" Maximum="100" Value="{Binding DownloadPercent}" IsIndeterminate="{Binding !IsDownloadPercentKnown}" IsVisible="{Binding IsInstalling}" />
+            <CheckBox Name="CheckForUpdatesAutomatically" IsChecked="{Binding CheckAutomatically}" Content="Check for updates once a day" />
+            <TextBlock Classes="subtle" FontSize="12" TextWrapping="Wrap" Text="The check asks GitHub for the latest release and sends only the app's name and version. Nothing is downloaded until you choose Update." />
+          </StackPanel>
+        </Border>
+        <Border BorderBrush="{DynamicResource CardBorder}" BorderThickness="0,1,0,0" Padding="24,16">
           <StackPanel Spacing="12">
             <TextBlock Classes="sectionTitle" Text="Diagnostics" Margin="0" />
             <Grid ColumnDefinitions="110,*,Auto" RowDefinitions="Auto,Auto">

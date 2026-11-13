@@ -63,6 +63,7 @@ internal sealed partial class MainWindowViewModel : ViewModelBase
         Sync = new SyncPageViewModel(this);
         Documentation = new DocumentationPageViewModel(this);
         About = new AboutPageViewModel(this);
+        Updates = new UpdatesViewModel(this);
 
         //Home and Sync are the pages used most: Sync comes right under Home
         NavItems.Add(new NavItemViewModel { Title = "Home", IconKey = "IconHome", Page = Welcome });
@@ -88,6 +89,12 @@ internal sealed partial class MainWindowViewModel : ViewModelBase
     public SyncPageViewModel Sync { get; }
     public DocumentationPageViewModel Documentation { get; }
     public AboutPageViewModel About { get; }
+    public UpdatesViewModel Updates { get; }
+
+    /// <summary>
+    /// The browser and the restart after an update; null in tests that do not need them.
+    /// </summary>
+    public IAppHost Host { get; set; }
 
     public IFileDialogs FileDialogs
     {

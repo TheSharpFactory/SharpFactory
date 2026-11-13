@@ -32,7 +32,7 @@ internal sealed partial class App : Application
             var settings = AppSettingsStore.Load();
 
             var window = new MainWindow();
-            var viewModel = new MainWindowViewModel(new StorageFileDialogs(window), settings, new Versionable().CurrentVersion);
+            var viewModel = new MainWindowViewModel(new StorageFileDialogs(window), settings, new Versionable().CurrentVersion) { Host = new WindowAppHost(window) };
             window.DataContext = viewModel;
             desktop.MainWindow = window;
             _viewModel = viewModel;
@@ -44,6 +44,9 @@ internal sealed partial class App : Application
             //macOS hands over a double-clicked .edmj through an activation event, not the command line
             if(TryGetFeature(typeof(IActivatableLifetime)) is IActivatableLifetime activatable)
                 activatable.Activated += OnActivated;
+
+            //the once-a-day update check (never in the tests, which build the view model themselves)
+            viewModel.Updates.Start();
         }
 
         base.OnFrameworkInitializationCompleted();
