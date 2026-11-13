@@ -3,6 +3,22 @@
 What changed in each published release of The Sharp Factory, newest first. Each section is also the text of that
 release on GitHub, with its downloads.
 
+## 1.2.1.3 — 2026-11-13
+
+### What's new
+
+- **Changes typed by entity.** `XUtils.GetChanges`, `XProperty.CreateChange` and `QueryFilter.New` return
+  `IQueryFilter<XProperty>`, and an update's `Set(change)` takes only changes of its own entity: passing another
+  entity's change no longer compiles. Code that uses `var` for the changes needs no change. Sync your solutions to
+  get it; the SQL does not change.
+
+### Downloads
+
+| Download | What |
+|
+
+---
+
 ## 1.2.1.2 — 2026-11-13
 
 **Important if one solution uses another solution's generated projects:** in earlier versions, a Sync into a

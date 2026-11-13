@@ -97,7 +97,7 @@ public static partial class QueryGenerator
             {
                 Name = "CreateFilter",
                 AccessModifier = AccessModifiers.Internal,
-                ReturnType = new TypeInfo(Common.Names.PropertyFilter),
+                ReturnType = new TypeInfo($"{Common.Names.PropertyFilter}<{Common.Names.GenericProp}>"),
                 Parameters = new List<MethodParameter>(3)
                 {
                     new MethodParameter { Name = "condition", ParamType = _conditionEnumType },
@@ -108,7 +108,7 @@ public static partial class QueryGenerator
 
             CSharpFile.DeclareMethod(method);
             CSharpFile.OpenBlock();
-            CSharpFile.Return($"new {Common.Names.PropertyFilter}(_enumValue, _name, _filterType, _isNullable, _isBinary, condition, op, value)");
+            CSharpFile.Return($"new {Common.Names.PropertyFilter}<{Common.Names.GenericProp}>(_enumValue, _name, _filterType, _isNullable, _isBinary, condition, op, value)");
             CSharpFile.CloseBlock();
 
             method.Name = "CreateSort";
@@ -543,7 +543,7 @@ public static partial class QueryGenerator
             {
                 Name = "CreateChange",
                 IsStatic = true,
-                ReturnType = new TypeInfo(Common.Names.IQueryFilter),
+                ReturnType = new TypeInfo($"{Common.Names.IQueryFilter}<{Common.GeneratePropClassName(entity)}>"),
                 Parameters = new List<MethodParameter>
                 {
                   new MethodParameter { Name = "propertyId", ParamType = "int", Description = $"The property's id: its {propEnum} value." },

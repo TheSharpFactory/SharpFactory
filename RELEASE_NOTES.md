@@ -4,6 +4,33 @@ Newest first. One entry per change set. Version rules: see [BACKLOG.md](BACKLOG.
 
 ---
 
+## 1.2.1.3 — 2026-11-13
+
+Changes
+- SF-184: `QueryFilterGenerator` adds `IQueryFilter<TProps> : IQueryFilter where TProps : PropertyContainer` to the `IQueryFilter` file and makes `QueryFilter.New` return it. `PropertyFilterGenerator` drops `sealed` from `PropertyFilter` and adds `internal sealed class PropertyFilter<TProps> : PropertyFilter, IQueryFilter<TProps>` (constructor only); `PropGenerator` makes `Prop.CreateFilter` build and return it, and `CreateChange` return `IQueryFilter<XProperty>`. `EntityUtilGenerator`/`EntityUtilsMethodSignatures`: `GetChanges` returns `List<IQueryFilter<XProperty>>`. `EntityRepoGenerator`: the repository's `GetChanges` copies the typed list into a `List<IQueryFilter>` for the engine (null when nothing changed, as before). `UpdateValuesBuilderGenerator`: `Set(IQueryFilter<TProps> change)`. `CSharpFile` writes interface inheritance as ` : X, Y` (no generated interface inherited before).
+- Nothing in the SQL engine or the repository base classes changes, so the SQL is the same.
+
+Verification
+- The reference model regenerated: 1,790 files, of which the utils (246), the containers (246), the repositories and five query files change, in the lines above.
+- A copy of the reference solution's sources with the regenerated code: the two business-logic projects that use `GetChanges`, `Set(change)` and `CreateChange` build with 0 errors and 0 warnings, unchanged.
+- `SF.Tests` 66 passed with the database tests on (the SQL Server run compiles the generated code and updates through `GetChanges` and `CreateChange`); `GeneratedChangesTests` checks the typed signatures. `SF.App.Tests` 106 passed.
+
+Commit details
+
+```
+Type changes by entity: IQueryFilter<TProps>
+
+GetChanges, CreateChange and QueryFilter.New return IQueryFilter<TProps>
+and an update's Set(change) takes only its own entity's changes, so a
+change of another entity does not compile. PropertyFilter<TProps> adds the
+interface to the filter the SQL engine reads; the repository copies the
+typed changes into the engine's plain list. Same SQL.
+
+Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>
+```
+
+---
+
 ## 1.2.1.2 — 2026-11-13
 
 Changes

@@ -39,14 +39,7 @@ public static partial class CSharpFile
         if(!type.ImplementsInterfaces)
             return;
 
-        _b.Append(":");
-
-        foreach(var i in type.Interfaces)
-        {
-            _b.Append(i).Append(',');
-        }
-
-        _b.Length--;//remove last unused comma
+        _b.Append(" : ").Append(string.Join(", ", type.Interfaces));
     }
     public static void CloseInterface()
     {

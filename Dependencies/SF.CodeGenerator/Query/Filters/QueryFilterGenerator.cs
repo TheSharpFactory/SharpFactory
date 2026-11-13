@@ -79,7 +79,21 @@ public static partial class QueryGenerator
 
             PropertyExtensions.InterfaceAutoNoSetter(TypeInfo.Int, "EndExpressions", "Gets the number of expressions that end on this filter.  Used for grouping conditions inside parenthesis.");
 
-            CSharpFile.CloseTypeWithNamespace();
+            CSharpFile.CloseType();
+
+            //the same filter, of a property of TProps: what GetChanges, CreateChange and QueryFilter.New give, and what
+            //an update of TProps takes
+            CSharpFile.OpenInterface(new InterfaceDeclaration
+            {
+                Name = Common.Names.IQueryFilter,
+                Namespace = typeNamespace,
+                GenericParams = new GenericParameterList { _genericProp },
+                Interfaces = new List<string> { Common.Names.IQueryFilter },
+                Summary = new List<string> { "A filter on a property of TProps." }
+            });
+            CSharpFile.CloseType();
+
+            CSharpFile.CloseNamespace();
             CSharpFile.Footer();
 
             return CSharpFile.ToString();
@@ -120,7 +134,7 @@ public static partial class QueryGenerator
                   new MethodParameter { Name = "condition", ParamType = _conditionEnumType, Description = "The condition to apply to the filter." },
                   new MethodParameter { Name = "val", ParamType = Common.Names.GenericValue, Description = "The value to filter by." },
                 },
-                ReturnType = new TypeInfo(Common.Names.IQueryFilter),
+                ReturnType = new TypeInfo($"{Common.Names.IQueryFilter}<{Common.Names.GenericProp}>"),
                 Summary = new List<string> { "Initializes a new filter on a property of a container. The value must be of the property's type." }
             };
             CSharpFile.DeclareMethod(method);

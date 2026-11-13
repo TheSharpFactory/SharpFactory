@@ -79,7 +79,7 @@ internal static class EntityUtilsMethodSignatures
     {
         //var entityFullName = Common.GenerateTypeFullName(model.Layers.Entities, schema, entity.Name);
         var containerName = Common.GeneratePropClassName(entity);
-        var filterCollection = $"List<{Common.Names.IQueryFilter}>";
+        var filterCollection = $"List<{Common.Names.IQueryFilter}<{containerName}>>";
         var typeName = Common.GenerateTypeName(entity);
         var summary = $"Get a list of {Common.Names.QueryFilter} that represent changed fields.";
         var returnType = filterCollection;

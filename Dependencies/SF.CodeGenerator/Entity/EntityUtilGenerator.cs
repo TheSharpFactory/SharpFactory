@@ -123,7 +123,7 @@ public static class EntityUtilGenerator
     {
         var containerName = Common.GeneratePropClassName(entity);
         var filterConditionsEnum = Common.Names.FilterConditionsEnum;
-        var filterCollection = $"List<{Common.Names.IQueryFilter}>";
+        var filterCollection = $"List<{Common.Names.IQueryFilter}<{containerName}>>";
         var filterName = Common.Names.QueryFilter;
 
         var propCount = entity.Ps.Count;

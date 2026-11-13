@@ -32,7 +32,6 @@ public static partial class QueryGenerator
                 Name = Common.Names.PropertyFilter,
                 Namespace = typeNamespace,
                 AccessModifier = AccessModifiers.Internal,
-                InheritanceModifier = InheritanceModifiers.Sealed,
                 Interfaces = new List<string> { Common.Names.IQueryFilter },
                 Summary = new List<string>
                 {
@@ -53,6 +52,9 @@ public static partial class QueryGenerator
             GenerateSupportsCondition();
 
             CSharpFile.CloseType();
+
+            GenerateTypedFilter();
+
             CSharpFile.CloseNamespace();
             CSharpFile.Footer();
 
@@ -91,6 +93,45 @@ public static partial class QueryGenerator
             CSharpFile.Line($"private {_operatorEnumType} _operator");
             CSharpFile.Line("private int _startExpressions");
             CSharpFile.Line("private int _endExpressions");
+        }
+
+        /// <summary>
+        /// PropertyFilter&lt;TProps&gt;: the same filter, typed by the property container it belongs to (IQueryFilter&lt;TProps&gt;).
+        /// </summary>
+        private static void GenerateTypedFilter()
+        {
+            CSharpFile.OpenClass(new ClassDeclaration
+            {
+                Name = Common.Names.PropertyFilter,
+                AccessModifier = AccessModifiers.Internal,
+                InheritanceModifier = InheritanceModifiers.Sealed,
+                GenericParams = new GenericParameterList { _genericProp },
+                BaseClass = Common.Names.PropertyFilter,
+                Interfaces = new List<string> { $"{Common.Names.IQueryFilter}<{Common.Names.GenericProp}>" },
+                Summary = new List<string> { "A filter on a property of TProps." }
+            });
+
+            CSharpFile.Constructor(new ConstructorDeclaration
+            {
+                Name = Common.Names.PropertyFilter,
+                AccessModifier = AccessModifiers.Internal,
+                BaseConstructor = "base(propertyId, propertyName, filterType, isNullable, isBinary, condition, op, value)",
+                Parameters = new List<MethodParameter>(8)
+                {
+                    new MethodParameter { Name = "propertyId", ParamType = "int" },
+                    new MethodParameter { Name = "propertyName", ParamType = "string" },
+                    new MethodParameter { Name = "filterType", ParamType = "Type" },
+                    new MethodParameter { Name = "isNullable", ParamType = "bool" },
+                    new MethodParameter { Name = "isBinary", ParamType = "bool" },
+                    new MethodParameter { Name = "condition", ParamType = _conditionEnumType },
+                    new MethodParameter { Name = "op", ParamType = _operatorEnumType },
+                    new MethodParameter { Name = "value", ParamType = "object" }
+                }
+            });
+            CSharpFile.OpenBlock();
+            CSharpFile.CloseBlock();
+
+            CSharpFile.CloseType();
         }
 
         private static void GenerateConstructor()

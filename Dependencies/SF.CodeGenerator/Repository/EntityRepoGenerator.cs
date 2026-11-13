@@ -1127,7 +1127,14 @@ public static partial class RepoGenerator
 
                 CSharpFile.DeclareMethod(method);
                 CSharpFile.OpenBlock();
-                CSharpFile.Return($"{getChanges}(original, changed)");
+                //the utils give the entity's typed changes; the SQL engine reads plain filters
+                CSharpFile.Line($"var changes = {getChanges}(original, changed)");
+                CSharpFile.If("changes == null");
+                CSharpFile.LineIndented("return null");
+                CSharpFile.EmptyLine();
+                CSharpFile.Line($"var result = new {filterCollection}(changes.Count)");
+                CSharpFile.Line("result.AddRange(changes)");
+                CSharpFile.Return("result");
                 CSharpFile.CloseBlock();
             }
             private static void GenerateMerge(Entity entity, UsingNamespace entityNamespace)

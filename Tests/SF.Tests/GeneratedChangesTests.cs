@@ -26,11 +26,14 @@ public sealed class GeneratedChangesTests
             var builder = Read(output, "UpdateValuesBuilder.cs");
             var region = Read(output, "RegionProperty.cs");
 
-            Assert.Contains("    public UpdateValuesBuilder<TProps> Set(IQueryFilter change)\n    {\n        if(SetValues == null)\n            SetValues = new List<IQueryFilter>();\n        SetValues.Add(change);\n        return this;\n    }", builder, StringComparison.Ordinal);
+            Assert.Contains("    public UpdateValuesBuilder<TProps> Set(IQueryFilter<TProps> change)\n    {\n        if(SetValues == null)\n            SetValues = new List<IQueryFilter>();\n        SetValues.Add(change);\n        return this;\n    }", builder, StringComparison.Ordinal);
 
             //one case per property, each the typed property's change
             //a switch on the property enum: no strings compared
-            Assert.Contains("    public static IQueryFilter CreateChange(int propertyId, object value)\n", region, StringComparison.Ordinal);
+            Assert.Contains("    public static IQueryFilter<RegionProperty> CreateChange(int propertyId, object value)\n", region, StringComparison.Ordinal);
+            //typed by the entity: GetChanges and CreateChange give IQueryFilter<RegionProperty>, an update of Region takes only those
+            Assert.Contains("public interface IQueryFilter<TProps> : IQueryFilter where TProps : PropertyContainer", Read(output, "IQueryFilter.cs"), StringComparison.Ordinal);
+            Assert.Contains("    public static List<IQueryFilter<RegionProperty>> GetChanges(Region original, Region changed)\n", Read(output, "RegionUtils.cs"), StringComparison.Ordinal);
             Assert.Contains("        switch((RegionProp)propertyId)\n", region, StringComparison.Ordinal);
             Assert.Contains("            case RegionProp.Name:\n                return QueryFilter.New(Name, FilterConditions.Equals, (string)value);\n", region, StringComparison.Ordinal);
             Assert.Contains("throw new ArgumentException($\"{propertyId} is not a property of Region.\", nameof(propertyId));", region, StringComparison.Ordinal);

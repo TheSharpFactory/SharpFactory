@@ -88,7 +88,7 @@ public static partial class QueryGenerator
                 ReturnType = type.ReturnType,
                 Parameters = new List<MethodParameter>
                 {
-                  new MethodParameter { Name = "change", ParamType = Common.Names.IQueryFilter, Description = "A change of a property of TProps: from GetChanges of the entity's utils, or CreateChange of its property container." },
+                  new MethodParameter { Name = "change", ParamType = $"{Common.Names.IQueryFilter}<{_genericProp}>", Description = "A change of a property of TProps: from GetChanges of the entity's utils, or CreateChange of its property container." },
                 },
                 Summary = new List<string> { "Adds a Set clause for a change made by GetChanges or CreateChange: the same clause Set(prop, value) adds. Used only for UPDATE operations." }
             });
