@@ -8,8 +8,6 @@
     <RootNamespace>SF.App</RootNamespace>
     <ApplicationIcon>Assets\SharpFactory.ico</ApplicationIcon>
     <AvaloniaUseCompiledBindingsByDefault>true</AvaloniaUseCompiledBindingsByDefault>
-    <!-- System.Management (WMI, used to find the solutions open in an IDE) is built on COM interop -->
-    <BuiltInComInteropSupport>true</BuiltInComInteropSupport>
   </PropertyGroup>
 
   <ItemGroup>

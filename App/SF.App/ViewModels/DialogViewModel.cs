@@ -15,6 +15,25 @@ internal sealed partial class DialogViewModel : ViewModelBase
 
     public string Title { get; set; }
     public string Message { get; set; }
+
+    /// <summary>
+    /// Longer text under the message, in its own box that scrolls (the release notes of an update). Null for none.
+    /// </summary>
+    public string Details { get; set; }
+
+    /// <summary>
+    /// The small heading over <see cref="Details"/>.
+    /// </summary>
+    public string DetailsTitle { get; set; }
+
+    public bool HasDetails
+    {
+        get
+        {
+            return !string.IsNullOrWhiteSpace(Details);
+        }
+    }
+
     public bool IsError { get; set; }
 
     /// <summary>

@@ -20,8 +20,8 @@ using System.Threading.Tasks;
 namespace SF.App.ViewModels;
 
 /// <summary>
-/// Sync: choose a target solution (open in an IDE, synced before, near the model, browse, or new), preview
-/// what changes, then write it.
+/// Sync: choose a target solution (synced before, near the model, browse, or new), preview what changes, then
+/// write it. A Sync into another solution than the model's own is confirmed first.
 /// </summary>
 internal sealed partial class SyncPageViewModel : PageViewModel
 {
@@ -364,7 +364,7 @@ internal sealed partial class SyncPageViewModel : PageViewModel
     }
 
     /// <summary>
-    /// What the "Sync into" strip says about the target: open in an IDE, synced before, or new.
+    /// What the "Sync into" strip says about the target: synced before, near the model, or new.
     /// </summary>
     public string TargetBadge
     {
@@ -378,11 +378,11 @@ internal sealed partial class SyncPageViewModel : PageViewModel
 
             if(SelectedCandidate != null && string.Equals(SelectedCandidate.SolutionPath, TargetPath, StringComparison.OrdinalIgnoreCase))
             {
-                if(SelectedCandidate.IsOpen)
-                    return "Open in an IDE";
-
                 if(SelectedCandidate.LastSynced.HasValue)
                     return "Synced " + TimeText.Ago(SelectedCandidate.LastSynced.Value, DateTime.Now).ToLowerInvariant();
+
+                if(SelectedCandidate.NearModel)
+                    return "Near the model file";
             }
 
             return null;
@@ -600,18 +600,19 @@ internal sealed partial class SyncPageViewModel : PageViewModel
         if(_found == null || Shell.Document == null)
             return;
 
-        var found = TargetSolutionFinder.Find(Shell.Document.FilePath, Shell.Settings, _found.OpenSolutions, _found.RecentSolutions, _found.NearModel);
+        var found = TargetSolutionFinder.Find(Shell.Document.FilePath, Shell.Settings, _found.NearModel);
         var previousTarget = TargetPath;
         Candidates.Clear();
         foreach(var candidate in found)
             Candidates.Add(new SolutionCandidateViewModel(candidate));
 
-        //keep the current choice (highlighted when it is in the list); otherwise suggest the first open or
-        //recently synced solution
+        //keep the current choice (highlighted when it is in the list); otherwise suggest the solution this model
+        //was last synced to, or when it never was, the one nearest the model file; otherwise none
+        var suggested = TargetSolutionFinder.FindSuggested(found);
         if(!string.IsNullOrWhiteSpace(previousTarget))
             SelectedCandidate = FindCandidate(previousTarget);
-        else if(Candidates.Count > 0 && (Candidates[0].IsOpen || Candidates[0].LastSynced != null))
-            SelectedCandidate = Candidates[0];
+        else if(suggested != null)
+            SelectedCandidate = FindCandidate(suggested.SolutionPath);
 
         OnPropertyChanged(nameof(HasCandidates));
         OnPropertyChanged(nameof(ShowNoCandidates));
@@ -712,11 +713,64 @@ internal sealed partial class SyncPageViewModel : PageViewModel
     }
 
     /// <summary>
+    /// Asks before a Sync into a solution that is not the model's own: another one than the model was last synced
+    /// to, or, when it never was, one whose folder does not have the model file. True to go on.
+    /// </summary>
+    private async Task<bool> ConfirmTargetAsync()
+    {
+        var modelFile = Shell.Document.FilePath;
+        if(string.IsNullOrWhiteSpace(modelFile))
+            return true;
+
+        var target = Path.GetFullPath(TargetPath);
+        var lastSynced = TargetSolutionFinder.FindLastSynced(modelFile, Shell.Settings);
+        var modelName = Path.GetFileName(modelFile);
+        var message = (string)null;
+        var details = (string)null;
+        if(lastSynced != null)
+        {
+            if(!TargetSolutionFinder.IsSamePath(lastSynced, target))
+            {
+                message = $"{modelName} was last synced into {Path.GetFileName(lastSynced)}. Sync it into {Path.GetFileName(target)} instead?";
+                details = $"Last synced into: {lastSynced}{Environment.NewLine}This Sync: {target}";
+            }
+        }
+        else if(!TargetSolutionFinder.IsModelInSolutionFolder(modelFile, target))
+        {
+            message = $"{Path.GetFileName(target)} is not in the folder of {modelName}. Sync into it anyway?";
+            details = $"Model file: {Path.GetFullPath(modelFile)}{Environment.NewLine}This Sync: {target}";
+        }
+
+        if(message == null)
+            return true;
+
+        var dialog = new DialogViewModel
+        {
+            Title = "Sync into another solution?",
+            IsWarning = true,
+            Message = message,
+            DetailsTitle = "Where",
+            Details = details,
+            Buttons = new List<DialogButton>
+            {
+                new DialogButton { Text = "Cancel", Result = DialogResults.No },
+                new DialogButton { Text = "Sync", Result = DialogResults.Yes, IsPrimary = true },
+            },
+        };
+
+        var answer = await Shell.ShowDialogAsync(dialog);
+        return string.Equals(answer, DialogResults.Yes, StringComparison.Ordinal);
+    }
+
+    /// <summary>
     /// Runs a preview or a Sync on a background thread and shows the report.
     /// </summary>
     public async Task RunAsync(bool preview)
     {
         if(!CanRun)
+            return;
+
+        if(!preview && !await ConfirmTargetAsync())
             return;
 
         ClearReport();
@@ -905,7 +959,7 @@ internal sealed partial class SyncPageViewModel : PageViewModel
     }
 
     /// <summary>
-    /// Finds the target candidates (scans running IDEs, so it runs on a background thread).
+    /// Finds the solutions near the model (a folder search, so it runs on a background thread).
     /// </summary>
     private sealed class FindTargetsJob
     {
@@ -916,8 +970,6 @@ internal sealed partial class SyncPageViewModel : PageViewModel
             _modelFile = modelFile;
         }
 
-        public List<OpenSolutionHint> OpenSolutions { get; set; } = new List<OpenSolutionHint>();
-        public List<string> RecentSolutions { get; set; } = new List<string>();
         public List<string> NearModel { get; set; } = new List<string>();
 
         /// <summary>
@@ -925,8 +977,6 @@ internal sealed partial class SyncPageViewModel : PageViewModel
         /// </summary>
         public void Run()
         {
-            OpenSolutions = RunningIdeScanner.Scan();
-            RecentSolutions = RecentSolutionsReader.Read();
             NearModel = TargetSolutionFinder.FindNearModel(_modelFile);
         }
     }
@@ -967,7 +1017,7 @@ internal sealed class SolutionCandidateViewModel
         SolutionPath = candidate.SolutionPath;
         Name = candidate.Name;
         Description = candidate.Description;
-        IsOpen = candidate.IsOpen;
+        NearModel = candidate.NearModel;
         LastSynced = candidate.LastSynced;
         Extension = Path.GetExtension(candidate.SolutionPath);
     }
@@ -975,7 +1025,7 @@ internal sealed class SolutionCandidateViewModel
     public string SolutionPath { get; }
     public string Name { get; }
     public string Description { get; }
-    public bool IsOpen { get; }
+    public bool NearModel { get; }
     public DateTime? LastSynced { get; }
     public string Extension { get; }
 }

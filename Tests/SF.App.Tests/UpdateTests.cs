@@ -32,7 +32,7 @@ public sealed class UpdateTests
     private const string _feed = "https://api.github.com/repos/TheSharpFactory/SharpFactory/releases/latest";
     private const string _downloads = "https://github.com/TheSharpFactory/SharpFactory/releases/download/v9.0.0.0/";
 
-    private static string ComposeReleaseJson(string tag, string packageName, bool withChecksums, string body = "## 9.0.0.0\n\nBetter things.")
+    private static string ComposeReleaseJson(string tag, string packageName, bool withChecksums, string body = "Better things.")
     {
         var assets = new StringBuilder();
         assets.Append($"{{\"name\":\"{packageName}\",\"browser_download_url\":\"{_downloads}{packageName}\"}}");
@@ -205,11 +205,20 @@ public sealed class UpdateTests
 
         var text = ReleaseNotes.Summarize(markdown, 700);
 
-        Assert.Equal("The first release: a desktop app and a sharpfactory command line.\n\nWhat it does\n\n- Reads a database.\n- Generates the data access.", text);
+        Assert.Equal("The first release: a desktop app and a sharpfactory command line.\n\nWhat it does\n• Reads a database.\n• Generates the data access.", text);
         Assert.Null(ReleaseNotes.Summarize("  ", 700));
 
-        var cut = ReleaseNotes.Summarize("Line one is here.\nLine two is here.\nLine three is here.", 40);
-        Assert.Equal("Line one is here.\nLine two is here.\n…", cut);
+        var cut = ReleaseNotes.Summarize("First paragraph here.\n\nSecond paragraph here.\n\nThird paragraph here.", 40);
+        Assert.Equal("First paragraph here.\n…", cut);
+    }
+
+    [Fact]
+    public void TheLinesTheChangelogWasWrappedOverAreJoinedAgain()
+    {
+        //CHANGELOG.md wraps at 120 characters; the dialog wraps at its own width
+        var markdown = "**Regenerate your code:** paged reads\r\nfailed. Sync to fix it.\r\n\r\n### What's new\r\n\r\n- **Automatic updates.** The app looks\r\n  for a newer release.\r\n- The command line comes\r\n  with the app. See [the docs](https://example.com).\r\n\r\n---\r\n";
+
+        Assert.Equal("Regenerate your code: paged reads failed. Sync to fix it.\n\nWhat's new\n• Automatic updates. The app looks for a newer release.\n• The command line comes with the app. See the docs.", ReleaseNotes.Summarize(markdown, 1500));
     }
     #endregion
 
@@ -665,7 +674,7 @@ public sealed class UpdateTests
         using(var app = new AppHarness("1.2.0.3"))
         {
             var handler = new FakeHttpHandler();
-            handler.Add(_feed, ComposeReleaseJson("v9.0.0.0", FindPackageName(), true, "## 9.0.0.0\n\nThe **best** version.\n\n### Downloads\n\n| a | b |"));
+            handler.Add(_feed, ComposeReleaseJson("v9.0.0.0", FindPackageName(), true, "The **best** version.\n\n### Downloads\n\n| a | b |"));
             var updates = app.ViewModel.Updates;
             updates.Http = new HttpClient(handler);
             app.ViewModel.Navigate(app.ViewModel.About);
@@ -676,9 +685,10 @@ public sealed class UpdateTests
 
             var dialog = app.ViewModel.Dialog;
             Assert.Equal("An update is available", dialog.Title);
-            Assert.Contains("Version 9.0.0.0 of The Sharp Factory is available (you have 1.2.0.3)", dialog.Message, StringComparison.Ordinal);
-            Assert.Contains("The best version.", dialog.Message, StringComparison.Ordinal);
-            Assert.DoesNotContain("Downloads", dialog.Message, StringComparison.Ordinal);
+            Assert.Contains("Version 9.0.0.0 is ready (you have 1.2.0.3)", dialog.Message, StringComparison.Ordinal);
+            //the release notes are in their own box, not in the question
+            Assert.Equal("The best version.", dialog.Details);
+            Assert.DoesNotContain("best", dialog.Message, StringComparison.Ordinal);
 
             dialog.ChooseCommand.Execute(dialog.Buttons[0]);
             app.PumpUntil(() => check.IsCompleted);
@@ -765,10 +775,65 @@ public sealed class UpdateTests
             var next = updates.CheckIfDueAsync();
             app.PumpUntil(() => app.ViewModel.Dialog != null);
             Assert.Equal("An update is available", app.ViewModel.Dialog.Title);
+            Assert.Equal("Version 9.0.0.0 is ready (you have 1.2.0.3). Update now downloads it, replaces this copy and restarts the app.", app.ViewModel.Dialog.Message);
+            Assert.Equal("What's new", app.ViewModel.Dialog.DetailsTitle);
+            Assert.Equal("Better things.", app.ViewModel.Dialog.Details);
             app.ViewModel.Dialog.Cancel();
             app.PumpUntil(() => next.IsCompleted);
             Assert.Single(handler.Requests);
         }
+    }
+
+    [AvaloniaFact]
+    public void TheUpdateQuestionShowsTheReleaseNotesInTheirOwnBox()
+    {
+        using(var app = new AppHarness("1.2.0.8"))
+        {
+            //a real, long release text: the 1.2.0.8 section of CHANGELOG.md, wrapped at 120 characters
+            var handler = new FakeHttpHandler();
+            handler.Add(_feed, ComposeReleaseJson("v9.0.0.0", FindPackageName(), true, ReadChangelogSection("1.2.0.8")));
+            var updates = app.ViewModel.Updates;
+            updates.Http = new HttpClient(handler);
+            app.ViewModel.Navigate(app.ViewModel.About);
+
+            var check = updates.CheckAsync(true);
+            app.PumpUntil(() => app.ViewModel.Dialog != null);
+            var details = app.ViewModel.Dialog.Details;
+
+            //the dialog's view is made on the next layout pass
+            app.PumpUntil(() => app.Find<Avalonia.Controls.StackPanel>("DialogDetails") != null);
+            Assert.True(app.Find<Avalonia.Controls.StackPanel>("DialogDetails").IsVisible);
+            //no line ends where the changelog wrapped: each paragraph or list item is one line
+            foreach(var line in details.Split('\n'))
+                Assert.False(line.Length > 0 && char.IsLower(line[0]), "a wrapped line was not joined: " + line);
+
+            Assert.DoesNotContain("**", details, StringComparison.Ordinal);
+            //the Downloads section (a table of file names) is left out
+            Assert.DoesNotContain("SHA256SUMS", details, StringComparison.Ordinal);
+            Assert.DoesNotContain("|", details, StringComparison.Ordinal);
+            app.Screenshot("about-update-available");
+
+            app.ViewModel.Dialog.Cancel();
+            app.PumpUntil(() => check.IsCompleted);
+        }
+    }
+
+    /// <summary>
+    /// One version's section of CHANGELOG.md, as release.yml puts it on the release page (without its heading).
+    /// </summary>
+    private static string ReadChangelogSection(string version)
+    {
+        var folder = new DirectoryInfo(AppContext.BaseDirectory);
+        while(folder != null && !File.Exists(Path.Combine(folder.FullName, "CHANGELOG.md")))
+            folder = folder.Parent;
+
+        Assert.NotNull(folder);
+        var text = File.ReadAllText(Path.Combine(folder.FullName, "CHANGELOG.md"));
+        var start = text.IndexOf("## " + version, StringComparison.Ordinal);
+        Assert.True(start >= 0, "CHANGELOG.md has no section " + version);
+        start = text.IndexOf('\n', start) + 1;
+        var end = text.IndexOf("\n## ", start, StringComparison.Ordinal);
+        return end < 0 ? text.Substring(start) : text.Substring(start, end - start);
     }
 
     [AvaloniaFact]

@@ -4,6 +4,7 @@ using SF.Utils;
 using System;
 using System.Collections.Generic;
 using System.IO;
+using System.Text;
 #endregion
 
 namespace SF.Engine.Sync;
@@ -11,7 +12,8 @@ namespace SF.Engine.Sync;
 /// <summary>
 /// Puts generated projects and files into a .sln or .slnx: creates missing projects (in the dependencies
 /// solution folder), moves projects when that folder changed, adds project references, writes changed files.
-/// In preview mode it only records what it would do.
+/// A project of the solution that is outside the solution's folder (another solution's) is used where it is:
+/// never moved, its project file never changed. In preview mode it only records what it would do.
 /// </summary>
 internal sealed class SolutionProjectHost : IProjectHost
 {
@@ -28,6 +30,8 @@ internal sealed class SolutionProjectHost : IProjectHost
     //project files read or created during this run, by full path; written at the end
     private readonly Dictionary<string, string> _projectFiles = new Dictionary<string, string>(PathComparer);
     private readonly HashSet<string> _changedProjectFiles = new HashSet<string>(PathComparer);
+    //project files that start with a UTF-8 BOM: written back with it
+    private readonly HashSet<string> _projectFilesWithBom = new HashSet<string>(PathComparer);
     //the folder returned for each project already prepared in this run
     private readonly Dictionary<string, string> _preparedProjects = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
     //projects moved in this run: name -> new project file
@@ -79,6 +83,8 @@ internal sealed class SolutionProjectHost : IProjectHost
         var folder = (string)null;
         if(existing == null)
             folder = CreateProject(projectName, expectedFolder);
+        else if(!IsInFolder(existing.ProjectFolder, _solution.Folder))
+            folder = UseProjectOutsideSolution(existing);
         else if(IsInDependenciesFolder(existing.SolutionFolderPath))
             folder = existing.ProjectFolder;
         else
@@ -151,12 +157,19 @@ internal sealed class SolutionProjectHost : IProjectHost
 
         foreach(var projectFile in _changedProjectFiles)
         {
+            //another solution's project: left as it is
+            if(!IsInFolder(projectFile, _solution.Folder))
+            {
+                _log.Info($"Not changed (outside the solution's folder): {projectFile}");
+                continue;
+            }
+
             _report.ProjectFilesChanged.Add(Path.GetRelativePath(_solution.Folder, projectFile));
             if(_preview)
                 continue;
 
             Directory.CreateDirectory(Path.GetDirectoryName(projectFile));
-            File.WriteAllText(projectFile, _projectFiles[projectFile]);
+            File.WriteAllText(projectFile, _projectFiles[projectFile], new UTF8Encoding(_projectFilesWithBom.Contains(projectFile)));
         }
     }
 
@@ -168,7 +181,7 @@ internal sealed class SolutionProjectHost : IProjectHost
         //is, packages included: it is only added to this solution
         if(File.Exists(projectFile))
         {
-            _projectFiles[projectFile] = File.ReadAllText(projectFile);
+            _projectFiles[projectFile] = ReadProjectFile(projectFile);
             _solution.AddProject(projectFile, _dependenciesFolder);
             _report.ExistingProjectsAdded.Add(projectName);
             _log.Info($"Added existing project {projectName}");
@@ -189,6 +202,29 @@ internal sealed class SolutionProjectHost : IProjectHost
         _report.ProjectsCreated.Add(projectName);
         _log.Info($"Created project {projectName}");
         return projectFolder;
+    }
+
+    /// <summary>
+    /// A generated project the solution has outside its folder, such as another solution's (a solution that
+    /// references the data access of another): its files are written where it is. It is never moved: that would
+    /// take it away from the other solution.
+    /// </summary>
+    private string UseProjectOutsideSolution(SolutionProjectInfo existing)
+    {
+        _report.ProjectsOutsideSolution.Add($"{existing.Name}: {existing.ProjectFolder}");
+        _log.Info($"Project {existing.Name} is outside the solution's folder ({existing.ProjectFolder}): its files are written there, the project is not moved");
+        return existing.ProjectFolder;
+    }
+
+    /// <summary>
+    /// True when <paramref name="path"/> is <paramref name="folder"/> or inside it.
+    /// </summary>
+    public static bool IsInFolder(string path, string folder)
+    {
+        var relative = Path.GetRelativePath(Path.GetFullPath(folder), Path.GetFullPath(path));
+        return !Path.IsPathRooted(relative) && !string.Equals(relative, "..", StringComparison.Ordinal)
+            && !relative.StartsWith(".." + Path.DirectorySeparatorChar, StringComparison.Ordinal)
+            && !relative.StartsWith("../", StringComparison.Ordinal);
     }
 
     private string MoveProject(SolutionProjectInfo existing, string newProjectFolder)
@@ -227,6 +263,10 @@ internal sealed class SolutionProjectHost : IProjectHost
         if(project == null || referenced == null)
             return;//like the Visual Studio Sync: only between projects that exist
 
+        //another solution's project file is left as it is
+        if(!IsInFolder(project.ProjectFile, _solution.Folder))
+            return;
+
         var content = GetProjectFileContent(project.ProjectFile);
         if(content == null)
             return;
@@ -251,6 +291,10 @@ internal sealed class SolutionProjectHost : IProjectHost
 
         foreach(var project in _solution.GetProjects())
         {
+            //another solution's project file is left as it is
+            if(!IsInFolder(project.ProjectFile, _solution.Folder))
+                continue;
+
             var content = GetProjectFileContent(project.ProjectFile);
             if(content == null)
                 continue;
@@ -281,9 +325,22 @@ internal sealed class SolutionProjectHost : IProjectHost
         if(!File.Exists(projectFile))
             return null;
 
-        content = File.ReadAllText(projectFile);
+        content = ReadProjectFile(projectFile);
         _projectFiles[projectFile] = content;
         return content;
+    }
+
+    /// <summary>
+    /// The project file's text; remembers whether it starts with a BOM, so it is written back the same way.
+    /// </summary>
+    private string ReadProjectFile(string projectFile)
+    {
+        var bytes = File.ReadAllBytes(projectFile);
+        var hasBom = bytes.Length >= 3 && bytes[0] == 0xEF && bytes[1] == 0xBB && bytes[2] == 0xBF;
+        if(hasBom)
+            _projectFilesWithBom.Add(projectFile);
+
+        return hasBom ? Encoding.UTF8.GetString(bytes, 3, bytes.Length - 3) : Encoding.UTF8.GetString(bytes);
     }
 
     private string GetProjectFolder(string projectName)

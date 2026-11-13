@@ -82,6 +82,26 @@ public static partial class QueryGenerator
             CSharpFile.Return("this");
             CSharpFile.CloseBlock();
 
+            CSharpFile.DeclareMethod(new MethodDeclaration
+            {
+                Name = "Set",
+                ReturnType = type.ReturnType,
+                Parameters = new List<MethodParameter>
+                {
+                  new MethodParameter { Name = "change", ParamType = Common.Names.IQueryFilter, Description = "A change of a property of TProps: from GetChanges of the entity's utils, or CreateChange of its property container." },
+                },
+                Summary = new List<string> { "Adds a Set clause for a change made by GetChanges or CreateChange: the same clause Set(prop, value) adds. Used only for UPDATE operations." }
+            });
+            CSharpFile.OpenBlock();
+            CSharpFile.If($"!(change is {Common.Names.PropertyFilter} filter) || filter.Owner != typeof({_genericProp}) || change.Condition != {Common.Names.FilterConditionsEnum}.Equals");
+            CSharpFile.LineIndented($"throw new ArgumentException($\"The change is not a change of a property of {{typeof({_genericProp}).Name}}.\", nameof(change))");
+            CSharpFile.EmptyLine();
+            CSharpFile.If("SetValues == null");
+            CSharpFile.LineIndented($"SetValues = new List<{Common.Names.IQueryFilter}>()");
+            CSharpFile.Line("SetValues.Add(change)");
+            CSharpFile.Return("this");
+            CSharpFile.CloseBlock();
+
             method.Name = "EndUpdateValues";
             method.ReturnType = new TypeInfo(_genericQuery);
             method.Parameters.Clear();

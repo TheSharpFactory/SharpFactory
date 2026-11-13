@@ -18,16 +18,6 @@ namespace SF.App.Tests;
 public sealed class ReviewFixTests
 {
     [Fact]
-    public void TheAppCanUseComToFindOpenSolutions()
-    {
-        //SF-142: with COM interop off, WMI (System.Management) throws and Sync never sees a solution open in an IDE
-        var config = JObject.Parse(File.ReadAllText(Path.Combine(AppContext.BaseDirectory, "TheSharpFactory.runtimeconfig.json")));
-        var setting = config.SelectToken("runtimeOptions.configProperties['System.Runtime.InteropServices.BuiltInComInterop.IsSupported']");
-
-        Assert.True(setting == null || setting.Value<bool>());
-    }
-
-    [Fact]
     public void TheAppHasTheVersionInTheVersionFile()
     {
         //the build stamps VERSION into the assemblies (Directory.Build.props); the About page shows the app's

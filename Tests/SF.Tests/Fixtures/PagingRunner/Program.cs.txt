@@ -1,6 +1,7 @@
 #region Usings
 using Microsoft.Data.SqlClient;
 using SFTest.Entity.TestDb.Coverage;
+using SFTest.Entity.Utils.TestDb.Coverage;
 using SFTest.Query;
 using SFTest.Repository.Common;
 using SFTest.Repository.Container;
@@ -95,6 +96,42 @@ internal static class Program
 
         var storePageAsync = StorePage();
         CheckStores("page with a to-one navigation property, async", await stores.ToListAsync(storePageAsync));
+
+        //an update from changes: GetChanges and CreateChange through Set(change), the same Set clause as Set(prop, value)
+        var code = RegionCode(1);
+        var original = await regions.ByPKAsync(_country, code);
+        var changed = new Region { CountryCode = original.CountryCode, RegionCode = original.RegionCode, Name = "Changed " + code };
+        var changes = RegionUtils.GetChanges(original, changed);
+        await regions.UpdateAsync(RegionUpdate(code).BeginUpdateValues().Set(changes[0]).EndUpdateValues());
+        CheckName("update from GetChanges", (await regions.ByPKAsync(_country, code)).Name, "Changed " + code);
+
+        await regions.UpdateAsync(RegionUpdate(code).BeginUpdateValues().Set(RegionProperty.CreateChange("Name", "Named " + code)).EndUpdateValues());
+        CheckName("update from CreateChange", (await regions.ByPKAsync(_country, code)).Name, "Named " + code);
+
+        //a change of another entity is refused
+        try
+        {
+            RegionUpdate(code).BeginUpdateValues().Set(StoreProperty.CreateChange("Name", "x"));
+            throw new InvalidOperationException("a change of another entity was taken");
+        }
+        catch(ArgumentException)
+        {
+            Console.WriteLine("PASS a change of another entity is refused");
+        }
+    }
+
+    private static Query<RegionProperty> RegionUpdate(string code)
+    {
+        return new Query<RegionProperty>()
+            .BeginPredicate().Where(RegionProperty.CountryCode).Equals(_country).Where(RegionProperty.RegionCode).Equals(code).EndPredicate();
+    }
+
+    private static void CheckName(string name, string actual, string expected)
+    {
+        if(!string.Equals(actual, expected, StringComparison.Ordinal))
+            throw new InvalidOperationException($"{name}: the name is {actual}, expected {expected}");
+
+        Console.WriteLine("PASS " + name);
     }
 
     private static Query<RegionProperty> RegionPage(int pageNumber, bool returnTotal)

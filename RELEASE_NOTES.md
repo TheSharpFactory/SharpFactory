@@ -4,6 +4,66 @@ Newest first. One entry per change set. Version rules: see [BACKLOG.md](BACKLOG.
 
 ---
 
+## 1.2.1.1 — 2026-11-13
+
+Changes
+- SF-182: `UpdateValuesBuilderGenerator` writes `Set(IQueryFilter change)`: it adds the change to the Set values as it is (the filter `Set(prop, value)` would have made), after checking it is a `PropertyFilter` of an Equals condition whose `Owner` is `TProps` (`ArgumentException` otherwise). `PropertyFilterGenerator` gives `PropertyFilter` an internal `Owner` (the property container's type, first constructor parameter) and `PropGenerator` passes `typeof(TProps)` from `Prop.CreateFilter`. `PropGenerator` writes `public static IQueryFilter CreateChange(string propertyName, object value)` on every entity container: a switch with one case per property returning `QueryFilter.New(prop, FilterConditions.Equals, (T)value)`, `ArgumentException` for any other name.
+- Nothing that writes SQL changed: the reference model generated before and after differs in the 246 property containers (`CreateChange` added), `UpdateValuesBuilder.cs` (`Set(change)` added), `PropertyFilter.cs` (`Owner` added, one constructor parameter) and `Prop.cs` (that parameter passed).
+
+Verification
+- `GeneratedPagingTests` (SQL Server): an update from `RegionUtils.GetChanges` through `Set(change)` and one from `RegionProperty.CreateChange("Name", …)` both write the new name; `Set(StoreProperty.CreateChange(…))` on a Region update throws. New `GeneratedChangesTests.AnUpdateTakesAChangeOfItsOwnEntity` checks the generated code.
+- `SF.Tests` 65 passed with the database tests on (one needs its own database); `SF.App.Tests` 106 passed.
+
+Commit details
+
+```
+Generate Set(change) and CreateChange for updates from changes
+
+UpdateValuesBuilder.Set(IQueryFilter) takes a change made by GetChanges
+or by the new XProperty.CreateChange(name, value), refusing a change of
+another entity (PropertyFilter knows its container). Code that set changed
+columns in a loop with the old untyped Set now has a typed equivalent.
+Same Set clause and SQL.
+
+Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>
+```
+
+---
+
+## 1.2.1.0 — 2026-11-13
+
+Changes
+- SF-180 (what happened): the reference model's Sync went into a solution that used its generated projects from another folder, in a solution folder of its own. The Sync page had picked that solution as "open in an IDE": `RunningIdeScanner` read Visual Studio's command line (WMI), which keeps the solution Visual Studio was started with. Sync then moved the five generated projects out of their own solution's folder into the target's (`MoveProject` moved any project whose solution folder was not the dependencies folder), rewired the references of 22 project files to them and dropped their BOM. Everything was restorable from git.
+- SF-180 (target): `RunningIdeScanner`, `RecentSolutionsReader` and the `System.Management` package are removed, with COM interop in the app. `TargetSolutionFinder` orders the solutions synced before (most recent first), then the ones near the model file (the nearest first); `FindSuggested` picks the first of those, otherwise none. The Sync page suggests it and says "Synced …" or "Near the model file".
+- SF-180 (confirmation): a Sync (not a preview) into another solution than the model was last synced into, or, for a model never synced, into a solution whose folder does not have the model file, asks "Sync into another solution?" with both paths.
+- SF-180 (safety, also on the command line): a generated project of the solution outside the solution's folder is used where it is (`ProjectsOutsideSolution` in the report and the CLI summary): never moved, no project file outside the solution's folder is written (no references added or rewired there), and `RemoveStaleFiles` deletes nothing in it. Moving projects inside the solution's folder when the dependencies folder changes works as before. Project files Sync edits keep their BOM.
+- SF-181: the update question shows a short message and the release notes in a details box (`DialogViewModel.Details`/`DetailsTitle`, scrolling, 260 px at most); `ReleaseNotes.Summarize` joins the lines a paragraph or list item was wrapped over, starts list items with "•", keeps headings on their own line and shows a link as its text.
+
+Verification
+- `SolutionSyncTests.AnotherSolutionsGeneratedProjectsAreUsedWhereTheyAre` rebuilds the production case: a shared solution synced, a second solution with those projects in a folder named after the shared one and its own BOM project file referencing them; the Sync into the second moves nothing, creates nothing, changes no project file (bytes and BOM equal), deletes nothing in the shared projects; the shared solution still syncs normally. `AProjectFileWithABomKeepsIt`.
+- `EngineUnitTests`: the list order (synced, then nearest), nothing suggested five folders up, `IsModelInSolutionFolder`. App: the suggestion (near, then last synced), the confirmation (Cancel writes nothing, Sync goes ahead, a preview never asks), the question for a solution away from the model; the update question's notes box with the 1.2.0.8 release text, screenshotted.
+- `SF.Tests` 64 passed with the database tests on; `SF.App.Tests` 106 passed.
+
+Commit details
+
+```
+Never move another solution's projects; pick the right Sync target
+
+Sync used a generated project outside the solution's folder by moving it
+into the solution and rewiring every reference to it. Such projects are
+now used where they are: never moved, their project files never changed,
+nothing deleted in them; project files keep their BOM. The Sync page no
+longer guesses a solution open in an IDE (Visual Studio's command line
+keeps the solution it was started with): it suggests the solution last
+synced, then the one nearest the model file, and asks before a Sync into
+another solution. The update question shows the release notes in their
+own box.
+
+Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>
+```
+
+---
+
 ## 1.2.0.9 — 2026-11-13
 
 Changes

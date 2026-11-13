@@ -384,6 +384,9 @@ internal static class Program
         Console.WriteLine($"   projects created: {report.ProjectsCreated.Count}, existing added: {report.ExistingProjectsAdded.Count}, moved: {report.ProjectsMoved.Count}, references added: {report.ReferencesAdded.Count}, updated: {report.ReferencesUpdated.Count}");
         Console.WriteLine($"   files added: {report.CountFiles(SyncFileChangeKind.Added)}, changed: {report.CountFiles(SyncFileChangeKind.Changed)}, deleted: {report.CountFiles(SyncFileChangeKind.Deleted)}, unchanged: {report.UnchangedFileCount}");
 
+        foreach(var outside in report.ProjectsOutsideSolution)
+            Console.WriteLine($"   outside the solution's folder, used where it is: {outside}");
+
         foreach(var moved in report.ProjectsMoved)
             Console.WriteLine($"   moved: {moved}");
 

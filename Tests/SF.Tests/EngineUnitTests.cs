@@ -62,37 +62,80 @@ public sealed class EngineUnitTests
     }
 
     [Fact]
-    public void RecentSolutionListsAreRead()
-    {
-        var vs = "<content><collection name=\"CodeContainers.Offline\"><value name=\"value\">[{&quot;Key&quot;:&quot;D:\\\\Code\\\\App.sln&quot;,&quot;Value&quot;:{&quot;LocalProperties&quot;:{&quot;FullPath&quot;:&quot;D:\\\\Code\\\\App.sln&quot;}}},{&quot;Key&quot;:&quot;D:\\\\Code\\\\Folder&quot;,&quot;Value&quot;:{&quot;LocalProperties&quot;:{&quot;FullPath&quot;:&quot;D:\\\\Code\\\\Folder&quot;}}}]</value></collection></content>";
-        Assert.Equal(new List<string> { "D:\\Code\\App.sln" }, RecentSolutionsReader.ParseVisualStudioSettings(vs));
-
-        var rider = "<application><component name=\"RiderRecentProjectsManager\"><option name=\"additionalInfo\"><map><entry key=\"$USER_HOME$/src/Shop/Shop.slnx\"><value /></entry></map></option></component></application>";
-        var fromRider = RecentSolutionsReader.ParseRiderSettings(rider, "home");
-        Assert.Single(fromRider);
-        Assert.Equal(Path.Combine("home", "src", "Shop", "Shop.slnx"), fromRider[0]);
-    }
-
-    [Fact]
-    public void AnIdeShowingOnlyANameIsFoundThroughItsRecentSolutions()
+    public void TargetListPutsSyncedThenTheNearestSolution()
     {
         using(var folder = new TestFolder())
         {
-            var modelFile = folder.Combine("Models", "Model.edmj");
+            var modelFile = folder.Combine("Repo", "Models", "Model.edmj");
             Directory.CreateDirectory(Path.GetDirectoryName(modelFile));
             File.WriteAllText(modelFile, "{}");
-            var elsewhere = folder.Combine("Elsewhere", "Shop.sln");
-            Directory.CreateDirectory(Path.GetDirectoryName(elsewhere));
-            File.WriteAllText(elsewhere, "");
+            var nearest = folder.Combine("Repo", "Repo.slnx");
+            var further = folder.Combine("Further.slnx");
+            var synced = folder.Combine("Elsewhere", "Synced.sln");
+            File.WriteAllText(nearest, "<Solution />");
+            File.WriteAllText(further, "<Solution />");
+            Directory.CreateDirectory(Path.GetDirectoryName(synced));
+            File.WriteAllText(synced, "");
 
-            //Visual Studio opened from its start window: only the title names the solution
-            var hints = new List<OpenSolutionHint> { new OpenSolutionHint { IdeName = "Visual Studio", SolutionName = "Shop" } };
-            var candidates = TargetSolutionFinder.Find(modelFile, new AppSettings(), hints, new List<string> { elsewhere });
+            //never synced: the solution nearest the model file is suggested
+            var fresh = TargetSolutionFinder.Find(modelFile, new AppSettings());
+            Assert.Equal(new List<string> { "Repo", "Further" }, ConvertToNames(fresh));
+            Assert.Equal(1, fresh[0].NearModelLevel);
+            Assert.Equal("Repo", TargetSolutionFinder.FindSuggested(fresh).Name);
+            Assert.Equal("Near the model file", fresh[0].Description);
 
-            Assert.Single(candidates);
-            Assert.Equal(elsewhere, candidates[0].SolutionPath);
-            Assert.Equal("Visual Studio", candidates[0].OpenIn);
+            //synced before: that solution comes first, wherever it is
+            var settings = new AppSettings();
+            AppSettingsStore.RecordSyncTarget(settings, modelFile, synced);
+            var candidates = TargetSolutionFinder.Find(modelFile, settings);
+            Assert.Equal(new List<string> { "Synced", "Repo", "Further" }, ConvertToNames(candidates));
+            Assert.Equal("Synced", TargetSolutionFinder.FindSuggested(candidates).Name);
+            Assert.Equal(Path.GetFullPath(synced), TargetSolutionFinder.FindLastSynced(modelFile, settings));
+            Assert.StartsWith("Synced ", candidates[0].Description, StringComparison.Ordinal);
         }
+    }
+
+    [Fact]
+    public void NothingIsSuggestedWithoutAnEarlierSyncOrASolutionNearTheModel()
+    {
+        using(var folder = new TestFolder())
+        {
+            var modelFile = folder.Combine("a", "b", "c", "d", "e", "Model.edmj");
+            Directory.CreateDirectory(Path.GetDirectoryName(modelFile));
+            File.WriteAllText(modelFile, "{}");
+            //five folders up: too far to count as near
+            File.WriteAllText(folder.Combine("a", "Far.slnx"), "<Solution />");
+
+            var candidates = TargetSolutionFinder.Find(modelFile, new AppSettings());
+
+            Assert.Empty(candidates);
+            Assert.Null(TargetSolutionFinder.FindSuggested(candidates));
+            Assert.Null(TargetSolutionFinder.FindLastSynced(modelFile, new AppSettings()));
+        }
+    }
+
+    [Fact]
+    public void AModelBelongsToTheSolutionWhoseFolderHasIt()
+    {
+        var root = Path.GetFullPath(Path.Combine(Path.GetTempPath(), "sf-owner"));
+        var model = Path.Combine(root, "Cortex", "DataModels", "ModelContainer.edmj");
+
+        Assert.True(TargetSolutionFinder.IsModelInSolutionFolder(model, Path.Combine(root, "Cortex", "Cortex.sln")));
+        Assert.False(TargetSolutionFinder.IsModelInSolutionFolder(model, Path.Combine(root, "Cheetah", "Cheetah.sln")));
+        //a folder whose name only starts the same is another folder
+        Assert.False(TargetSolutionFinder.IsModelInSolutionFolder(model, Path.Combine(root, "Cort", "Cort.sln")));
+        Assert.True(TargetSolutionFinder.IsSolutionFile("App.sln"));
+        Assert.True(TargetSolutionFinder.IsSolutionFile("App.slnx"));
+        Assert.False(TargetSolutionFinder.IsSolutionFile("App.csproj"));
+    }
+
+    private static List<string> ConvertToNames(List<SolutionCandidate> candidates)
+    {
+        var names = new List<string>();
+        foreach(var candidate in candidates)
+            names.Add(candidate.Name);
+
+        return names;
     }
 
     [Fact]
@@ -317,63 +360,6 @@ public sealed class EngineUnitTests
 
             Assert.Equal("new", File.ReadAllText(file));
             Assert.Single(Directory.GetFiles(folder.Path));
-        }
-    }
-
-    [Fact]
-    public void CommandLinesSplitOnQuotes()
-    {
-        var parts = RunningIdeScanner.SplitCommandLine("\"C:\\Program Files\\VS\\devenv.exe\" \"D:\\My Code\\App.sln\" /nosplash");
-
-        Assert.Equal(3, parts.Count);
-        Assert.Equal("D:\\My Code\\App.sln", parts[1]);
-        Assert.True(RunningIdeScanner.IsSolutionFile(parts[1]));
-        Assert.False(RunningIdeScanner.IsSolutionFile("App.csproj"));
-    }
-
-    [Fact]
-    public void WindowTitlesGiveTheSolutionName()
-    {
-        Assert.Equal("Shop", RunningIdeScanner.GetSolutionNameFromWindowTitle("Visual Studio", "Shop - Microsoft Visual Studio"));
-        Assert.Equal("Shop", RunningIdeScanner.GetSolutionNameFromWindowTitle("Rider", "Shop – Program.cs"));
-        Assert.Equal("Shop", RunningIdeScanner.GetSolutionNameFromWindowTitle("VS Code", "Program.cs - Shop - Visual Studio Code"));
-
-        //an IDE with nothing open names no solution
-        Assert.Null(RunningIdeScanner.GetSolutionNameFromWindowTitle("Visual Studio", "Microsoft Visual Studio"));
-        Assert.Null(RunningIdeScanner.GetSolutionNameFromWindowTitle("VS Code", "Visual Studio Code"));
-        Assert.Null(RunningIdeScanner.GetSolutionNameFromWindowTitle("Visual Studio", ""));
-    }
-
-    [Fact]
-    public void TargetListPutsOpenThenSyncedThenNearby()
-    {
-        using(var folder = new TestFolder())
-        {
-            var modelFile = folder.Combine("Models", "Model.edmj");
-            Directory.CreateDirectory(Path.GetDirectoryName(modelFile));
-            File.WriteAllText(modelFile, "{}");
-            var nearby = folder.Combine("Nearby.slnx");
-            var synced = folder.Combine("Elsewhere", "Synced.sln");
-            var open = folder.Combine("Elsewhere", "Open.slnx");
-            File.WriteAllText(nearby, "<Solution />");
-            Directory.CreateDirectory(Path.GetDirectoryName(synced));
-            File.WriteAllText(synced, "");
-            File.WriteAllText(open, "<Solution />");
-
-            var settings = new AppSettings();
-            AppSettingsStore.RecordSyncTarget(settings, modelFile, synced);
-            AppSettingsStore.RecordSyncTarget(settings, modelFile, open);
-            var hints = new List<OpenSolutionHint> { new OpenSolutionHint { IdeName = "Visual Studio", SolutionName = "Open" } };
-
-            var candidates = TargetSolutionFinder.Find(modelFile, settings, hints, new List<string>());
-
-            Assert.Equal(3, candidates.Count);
-            Assert.Equal("Open", candidates[0].Name);
-            Assert.Equal("Visual Studio", candidates[0].OpenIn);
-            Assert.Equal("Synced", candidates[1].Name);
-            Assert.Equal("Nearby", candidates[2].Name);
-            Assert.True(candidates[2].NearModel);
-            Assert.Contains("Open in Visual Studio", candidates[0].Description);
         }
     }
 

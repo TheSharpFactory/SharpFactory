@@ -13,6 +13,14 @@
         <TextBlock Classes="sectionTitle" FontSize="18" Margin="0" Text="{Binding Title}" VerticalAlignment="Center" />
       </StackPanel>
       <SelectableTextBlock Text="{Binding Message}" TextWrapping="Wrap" />
+      <StackPanel Name="DialogDetails" Spacing="6" IsVisible="{Binding HasDetails}">
+        <TextBlock Text="{Binding DetailsTitle}" FontWeight="SemiBold" Foreground="{DynamicResource SubtleText}" IsVisible="{Binding DetailsTitle, Converter={x:Static StringConverters.IsNotNullOrEmpty}}" />
+        <Border Background="{DynamicResource RailBackground}" BorderBrush="{DynamicResource CardBorder}" BorderThickness="1" CornerRadius="6">
+          <ScrollViewer MaxHeight="260" HorizontalScrollBarVisibility="Disabled">
+            <SelectableTextBlock Text="{Binding Details}" TextWrapping="Wrap" LineHeight="21" Margin="14,10" />
+          </ScrollViewer>
+        </Border>
+      </StackPanel>
       <ItemsControl ItemsSource="{Binding Buttons}" HorizontalAlignment="Right">
         <ItemsControl.ItemsPanel>
           <ItemsPanelTemplate>

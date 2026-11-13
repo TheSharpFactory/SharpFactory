@@ -17,39 +17,32 @@ public sealed class SolutionCandidate
     public string Name { get; set; }
 
     /// <summary>
-    /// The IDE that has it open; null when none does (as far as the scan can tell).
-    /// </summary>
-    public string OpenIn { get; set; }
-
-    /// <summary>
     /// When this model was last synced to it; null when never.
     /// </summary>
     public DateTime? LastSynced { get; set; }
 
     /// <summary>
-    /// True when it is in the model file's folder or one above it.
+    /// How many folders up from the model file it is: 0 in the model file's folder, 1 in the folder above, and so
+    /// on; null when it is not near the model.
     /// </summary>
-    public bool NearModel { get; set; }
+    public int? NearModelLevel { get; set; }
 
-    public bool IsOpen
+    public bool NearModel
     {
         get
         {
-            return OpenIn != null;
+            return NearModelLevel.HasValue;
         }
     }
 
     /// <summary>
-    /// One line for the list: "Open in Visual Studio · synced 2026-11-05 14:10 · next to the model".
+    /// One line for the list: "Synced 2026-11-05 14:10 · Near the model file".
     /// </summary>
     public string Description
     {
         get
         {
-            var parts = new List<string>(3);
-            if(OpenIn != null)
-                parts.Add($"Open in {OpenIn}");
-
+            var parts = new List<string>(2);
             if(LastSynced.HasValue)
                 parts.Add($"Synced {LastSynced.Value:yyyy-MM-dd HH:mm}");
 
@@ -62,24 +55,24 @@ public sealed class SolutionCandidate
 }
 
 /// <summary>
-/// Builds Sync's target list: solutions open in an IDE first, then the ones this model was synced to (most
-/// recent first), then the ones near the .edmj. An IDE that shows only a solution's name (in its window title) is
-/// matched against the known solutions, then against the IDEs' recent-solution lists.
+/// Builds Sync's target list: the solutions this model was synced to (most recent first), then the ones near the
+/// .edmj (the nearest first). Nothing is guessed from running programs: an IDE's command line still names the
+/// solution it was started with after another one is opened in it.
 /// </summary>
 public static class TargetSolutionFinder
 {
     private const int _parentLevels = 3;
 
-    public static List<SolutionCandidate> Find(string modelFile, AppSettings settings, List<OpenSolutionHint> openSolutions, List<string> recentSolutions)
+    public static List<SolutionCandidate> Find(string modelFile, AppSettings settings)
     {
-        return Find(modelFile, settings, openSolutions, recentSolutions, FindNearModel(modelFile));
+        return Find(modelFile, settings, FindNearModel(modelFile));
     }
 
     /// <summary>
-    /// The same, with the solutions near the model already found (<see cref="FindNearModel"/>): the slow searches (open
-    /// IDEs, recent lists, folders) can run on another thread, and the list is built where the settings live.
+    /// The same, with the solutions near the model already found (<see cref="FindNearModel"/>): the folder search can
+    /// run on another thread, and the list is built where the settings live.
     /// </summary>
-    public static List<SolutionCandidate> Find(string modelFile, AppSettings settings, List<OpenSolutionHint> openSolutions, List<string> recentSolutions, List<string> nearModel)
+    public static List<SolutionCandidate> Find(string modelFile, AppSettings settings, List<string> nearModel)
     {
         var byPath = new Dictionary<string, SolutionCandidate>(SolutionProjectHost.PathComparer);
         var ordered = new List<SolutionCandidate>();
@@ -94,34 +87,11 @@ public static class TargetSolutionFinder
                 candidate.LastSynced = target.LastSynced;
         }
 
+        var modelFolder = string.IsNullOrWhiteSpace(modelFile) ? null : Path.GetDirectoryName(Path.GetFullPath(modelFile));
         foreach(var solution in nearModel)
-            GetOrAdd(byPath, ordered, solution).NearModel = true;
-
-        //open solutions: by path when the command line named it, by name otherwise
-        foreach(var hint in openSolutions)
         {
-            if(hint.SolutionPath != null)
-            {
-                GetOrAdd(byPath, ordered, hint.SolutionPath).OpenIn = hint.IdeName;
-                continue;
-            }
-
-            var matched = false;
-            foreach(var candidate in ordered)
-            {
-                if(string.Equals(candidate.Name, hint.SolutionName, StringComparison.OrdinalIgnoreCase))
-                {
-                    candidate.OpenIn = hint.IdeName;
-                    matched = true;
-                }
-            }
-
-            if(!matched)
-            {
-                var recent = FindRecent(recentSolutions, hint.SolutionName);
-                if(recent != null)
-                    GetOrAdd(byPath, ordered, recent).OpenIn = hint.IdeName;
-            }
+            var candidate = GetOrAdd(byPath, ordered, solution);
+            candidate.NearModelLevel = CountLevelsUp(modelFolder, Path.GetDirectoryName(candidate.SolutionPath));
         }
 
         ordered.Sort(CompareCandidates);
@@ -129,20 +99,55 @@ public static class TargetSolutionFinder
     }
 
     /// <summary>
-    /// The most recent solution with this name (file name without extension); null when there is none.
+    /// The solution Sync suggests: the one this model was last synced to; when it was never synced, the solution
+    /// nearest the model file; otherwise none (null), and the user chooses.
     /// </summary>
-    private static string FindRecent(List<string> recentSolutions, string solutionName)
+    public static SolutionCandidate FindSuggested(List<SolutionCandidate> candidates)
     {
-        if(recentSolutions == null || string.IsNullOrWhiteSpace(solutionName))
+        if(candidates == null || candidates.Count == 0)
             return null;
 
-        foreach(var path in recentSolutions)
+        var first = candidates[0];
+        return first.LastSynced.HasValue || first.NearModel ? first : null;
+    }
+
+    /// <summary>
+    /// The solution this model was last synced to (when it is still there), or null.
+    /// </summary>
+    public static string FindLastSynced(string modelFile, AppSettings settings)
+    {
+        var last = (SyncTarget)null;
+        foreach(var target in AppSettingsStore.GetSyncTargets(settings, modelFile))
         {
-            if(string.Equals(Path.GetFileNameWithoutExtension(path), solutionName, StringComparison.OrdinalIgnoreCase))
-                return path;
+            if(File.Exists(target.SolutionPath) && (last == null || target.LastSynced > last.LastSynced))
+                last = target;
         }
 
-        return null;
+        return last == null ? null : Path.GetFullPath(last.SolutionPath);
+    }
+
+    /// <summary>
+    /// True when both name the same file, compared like the file system (case-insensitive on Windows and macOS).
+    /// </summary>
+    public static bool IsSamePath(string one, string two)
+    {
+        if(string.IsNullOrWhiteSpace(one) || string.IsNullOrWhiteSpace(two))
+            return false;
+
+        return SolutionProjectHost.PathComparer.Equals(Path.GetFullPath(one), Path.GetFullPath(two));
+    }
+
+    /// <summary>
+    /// True when the model file is in the solution's folder or below it: a model and its solution live together.
+    /// </summary>
+    public static bool IsModelInSolutionFolder(string modelFile, string solutionPath)
+    {
+        if(string.IsNullOrWhiteSpace(modelFile) || string.IsNullOrWhiteSpace(solutionPath))
+            return false;
+
+        var solutionFolder = Path.GetDirectoryName(Path.GetFullPath(solutionPath));
+        var relative = Path.GetRelativePath(solutionFolder, Path.GetFullPath(modelFile));
+        return !relative.StartsWith("..", StringComparison.Ordinal) && !Path.IsPathRooted(relative);
     }
 
     /// <summary>
@@ -157,11 +162,51 @@ public static class TargetSolutionFinder
         var folder = Path.GetDirectoryName(Path.GetFullPath(modelFile));
         for(var level = 0; level <= _parentLevels && !string.IsNullOrEmpty(folder); level++)
         {
-            result.AddRange(RunningIdeScanner.FindSolutionsInFolder(folder));
+            result.AddRange(FindSolutionsInFolder(folder));
             folder = Path.GetDirectoryName(folder);
         }
 
         return result;
+    }
+
+    public static bool IsSolutionFile(string path)
+    {
+        return path.EndsWith(".sln", StringComparison.OrdinalIgnoreCase) || path.EndsWith(".slnx", StringComparison.OrdinalIgnoreCase);
+    }
+
+    private static List<string> FindSolutionsInFolder(string folder)
+    {
+        var result = new List<string>();
+        try
+        {
+            foreach(var file in Directory.EnumerateFiles(folder, "*.sln", SearchOption.TopDirectoryOnly))
+                result.Add(Path.GetFullPath(file));
+
+            foreach(var file in Directory.EnumerateFiles(folder, "*.slnx", SearchOption.TopDirectoryOnly))
+                result.Add(Path.GetFullPath(file));
+        }
+        catch(Exception ex) when(ex is IOException || ex is UnauthorizedAccessException)
+        {
+            //no access to the folder
+        }
+
+        return result;
+    }
+
+    /// <summary>
+    /// How many folders <paramref name="ancestor"/> is above <paramref name="folder"/> (0 for the same folder).
+    /// </summary>
+    private static int CountLevelsUp(string folder, string ancestor)
+    {
+        var level = 0;
+        var current = folder;
+        while(!string.IsNullOrEmpty(current) && !SolutionProjectHost.PathComparer.Equals(current, ancestor))
+        {
+            current = Path.GetDirectoryName(current);
+            level++;
+        }
+
+        return level;
     }
 
     private static SolutionCandidate GetOrAdd(Dictionary<string, SolutionCandidate> byPath, List<SolutionCandidate> ordered, string path)
@@ -181,16 +226,22 @@ public static class TargetSolutionFinder
         return candidate;
     }
 
+    /// <summary>
+    /// Synced before first (the most recent first), then near the model (the nearest first), then by path.
+    /// </summary>
     private static int CompareCandidates(SolutionCandidate one, SolutionCandidate two)
     {
-        if(one.IsOpen != two.IsOpen)
-            return one.IsOpen ? -1 : 1;
-
         if(one.LastSynced.HasValue != two.LastSynced.HasValue)
             return one.LastSynced.HasValue ? -1 : 1;
 
         if(one.LastSynced.HasValue && two.LastSynced.HasValue && one.LastSynced.Value != two.LastSynced.Value)
             return two.LastSynced.Value.CompareTo(one.LastSynced.Value);
+
+        if(one.NearModel != two.NearModel)
+            return one.NearModel ? -1 : 1;
+
+        if(one.NearModel && two.NearModel && one.NearModelLevel.Value != two.NearModelLevel.Value)
+            return one.NearModelLevel.Value.CompareTo(two.NearModelLevel.Value);
 
         return string.Compare(one.SolutionPath, two.SolutionPath, StringComparison.OrdinalIgnoreCase);
     }

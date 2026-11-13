@@ -77,6 +77,12 @@ public sealed class SyncReport
     /// </summary>
     public List<string> ExistingProjectsAdded { get; set; } = new List<string>();
     public List<string> ProjectsMoved { get; set; } = new List<string>();
+
+    /// <summary>
+    /// Projects of the solution outside its folder (another solution's, shared): used where they are, never moved,
+    /// their project files not changed and no file deleted in them.
+    /// </summary>
+    public List<string> ProjectsOutsideSolution { get; set; } = new List<string>();
     public List<string> ProjectFilesChanged { get; set; } = new List<string>();
     public List<string> ReferencesAdded { get; set; } = new List<string>();
 

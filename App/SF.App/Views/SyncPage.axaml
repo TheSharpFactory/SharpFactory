@@ -55,7 +55,7 @@
               <Grid ColumnDefinitions="*,Auto">
                 <StackPanel VerticalAlignment="Center">
                   <TextBlock Name="CandidatesTitle" FontWeight="SemiBold" Text="{Binding CandidatesTitle}" />
-                  <TextBlock Classes="subtle" FontSize="12" Text="Open in an IDE first, then synced before, then near the model file." TextTrimming="CharacterEllipsis" />
+                  <TextBlock Classes="subtle" FontSize="12" Text="Synced before first, then near the model file." TextTrimming="CharacterEllipsis" />
                 </StackPanel>
                 <StackPanel Grid.Column="1" Orientation="Horizontal" Spacing="6">
                   <Button Name="RefreshTargetsButton" Command="{Binding RefreshTargetsCommand}" ToolTip.Tip="Look for open solutions again" IsEnabled="{Binding !IsScanning}">

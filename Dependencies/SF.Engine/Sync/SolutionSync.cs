@@ -213,7 +213,7 @@ public static class SolutionSync
     /// <summary>
     /// Deletes (or, in a preview, lists) the generated files in the model's projects that the model no longer
     /// produces. Only files that start with the Sharp Factory marker are touched; the project root, bin, obj,
-    /// Properties and node_modules are skipped.
+    /// Properties and node_modules are skipped, and so are projects outside the solution's folder.
     /// </summary>
     private static int RemoveStaleFiles(GenerationResult generation, string solutionFolder, SyncReport report, bool preview)
     {
@@ -224,7 +224,8 @@ public static class SolutionSync
         var count = 0;
         foreach(var projectFolder in generation.ProjectFolders.Values)
         {
-            if(!Directory.Exists(projectFolder))
+            //another solution's project (outside this solution's folder): nothing is deleted in it
+            if(!Directory.Exists(projectFolder) || !SolutionProjectHost.IsInFolder(projectFolder, solutionFolder))
                 continue;
 
             foreach(var subFolder in Directory.EnumerateDirectories(projectFolder))//generated files are never in a project's root

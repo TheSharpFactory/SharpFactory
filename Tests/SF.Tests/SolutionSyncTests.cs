@@ -5,6 +5,7 @@ using SF.Models;
 using SF.Utils;
 using System.Collections.Generic;
 using System.IO;
+using System.Text;
 using Xunit;
 #endregion
 
@@ -368,6 +369,100 @@ public sealed class SolutionSyncTests
 
             var third = Sync(container, solution, false);
             Assert.True(third.IsUpToDate);
+        }
+    }
+
+    /// <summary>
+    /// What happened in production (1.2.0.9): a solution that uses another solution's generated projects (the data
+    /// access of a shared repository, in a solution folder of its own) was synced. Sync moved those projects into
+    /// its own folder, rewired every reference to them and so deleted them from the other solution. Now they are
+    /// used where they are: written there, never moved, their project files and the solution's own ones untouched.
+    /// </summary>
+    [Fact]
+    public void AnotherSolutionsGeneratedProjectsAreUsedWhereTheyAre()
+    {
+        using(var folder = new TestFolder())
+        {
+            //the shared repository: its own solution, synced
+            var owner = folder.Combine("Shared", "Shared.slnx");
+            Assert.True(Sync(Fixtures.LoadCoverage(), owner, false).Success);
+            var sharedEntity = folder.Combine("Shared", "DataAccess", "SFTest.Entity");
+            var sharedProjectFile = Path.Combine(sharedEntity, "SFTest.Entity.csproj");
+            var sharedProjectBytes = File.ReadAllBytes(sharedProjectFile);
+            //a generated file the model no longer has: in another solution's project it is not deleted
+            var oldFile = Path.Combine(sharedEntity, "TestDb", "Old.cs");
+            File.WriteAllText(oldFile, _marker + "\r\nclass Old {}\r\n");
+
+            //the other solution: its own project (with a BOM) references the shared repository project; the shared
+            //projects are in a solution folder named after the repository, not the model's "DataAccess"
+            var app = folder.Combine("App", "App.slnx");
+            var appProject = folder.Combine("App", "Web", "Web.csproj");
+            Directory.CreateDirectory(Path.GetDirectoryName(appProject));
+            var appProjectText = "<Project Sdk=\"Microsoft.NET.Sdk\">\r\n  <ItemGroup>\r\n    <ProjectReference Include=\"..\\..\\Shared\\DataAccess\\SFTest.Repository\\SFTest.Repository.csproj\" />\r\n  </ItemGroup>\r\n</Project>\r\n";
+            File.WriteAllText(appProject, appProjectText, new UTF8Encoding(true));
+            var appProjectBytes = File.ReadAllBytes(appProject);
+            var solution = SolutionFile.OpenOrCreate(app);
+            solution.AddProject(appProject, null);
+            foreach(var project in SolutionFile.OpenOrCreate(owner).GetProjects())
+                solution.AddProject(project.ProjectFile, "Shared");
+
+            solution.Save();
+
+            var preview = Sync(Fixtures.LoadCoverage(), app, true);
+            Assert.True(preview.Success, preview.ErrorMessage);
+            Assert.Empty(preview.ProjectsMoved);
+            Assert.Equal(5, preview.ProjectsOutsideSolution.Count);
+
+            var report = Sync(Fixtures.LoadCoverage(), app, false);
+
+            Assert.True(report.Success, report.ErrorMessage);
+            Assert.Empty(report.ProjectsMoved);
+            Assert.Empty(report.ProjectsCreated);
+            Assert.Empty(report.ReferencesUpdated);
+            Assert.Empty(report.ProjectFilesChanged);
+            Assert.Equal(0, report.CountFiles(SyncFileChangeKind.Deleted));
+            Assert.Equal(5, report.ProjectsOutsideSolution.Count);
+
+            //nothing moved into the app's folder; the shared projects are where they were, unchanged
+            Assert.False(Directory.Exists(folder.Combine("App", "DataAccess")));
+            Assert.Equal(sharedProjectBytes, File.ReadAllBytes(sharedProjectFile));
+            Assert.True(File.Exists(oldFile));
+            Assert.Equal("Shared", SolutionFile.OpenOrCreate(app).FindProject("SFTest.Entity").TopSolutionFolder);
+            //the app's own project file: byte for byte, BOM included
+            Assert.Equal(appProjectBytes, File.ReadAllBytes(appProject));
+
+            //the shared solution syncs as before: in its own projects the stale file is deleted, nothing else changes
+            var ownerReport = Sync(Fixtures.LoadCoverage(), owner, false);
+            Assert.True(ownerReport.Success, ownerReport.ErrorMessage);
+            Assert.Equal(oldFile, Assert.Single(ownerReport.FileChanges).FullPath);
+            Assert.False(File.Exists(oldFile));
+            Assert.Empty(ownerReport.ProjectsOutsideSolution);
+        }
+    }
+
+    [Fact]
+    public void AProjectFileWithABomKeepsIt()
+    {
+        using(var folder = new TestFolder())
+        {
+            var solution = folder.Combine("App.slnx");
+            Sync(Fixtures.LoadCoverage(), solution, false);
+
+            //a reference removed by hand, in a project file saved with a BOM (Visual Studio does that)
+            var projectFile = folder.Combine("DataAccess", "SFTest.Repository", "SFTest.Repository.csproj");
+            var text = File.ReadAllText(projectFile);
+            var start = text.IndexOf("    <ProjectReference Include=\"..\\SFTest.Entity\\SFTest.Entity.csproj\" />\r\n", System.StringComparison.Ordinal);
+            Assert.True(start >= 0, text);
+            text = text.Remove(start, "    <ProjectReference Include=\"..\\SFTest.Entity\\SFTest.Entity.csproj\" />\r\n".Length);
+            File.WriteAllText(projectFile, text, new UTF8Encoding(true));
+
+            var report = Sync(Fixtures.LoadCoverage(), solution, false);
+
+            Assert.True(report.Success, report.ErrorMessage);
+            Assert.Contains("SFTest.Repository -> SFTest.Entity", report.ReferencesAdded);
+            var bytes = File.ReadAllBytes(projectFile);
+            Assert.True(bytes.Length > 3 && bytes[0] == 0xEF && bytes[1] == 0xBB && bytes[2] == 0xBF, "the BOM was dropped");
+            Assert.Contains("..\\SFTest.Entity\\SFTest.Entity.csproj", File.ReadAllText(projectFile));
         }
     }
 

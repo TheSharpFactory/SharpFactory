@@ -21,7 +21,7 @@ namespace SF.App.ViewModels;
 /// </summary>
 internal sealed partial class UpdatesViewModel : ViewModelBase
 {
-    private const int _notesLength = 700;
+    private const int _notesLength = 1500;
     private static readonly TimeSpan _timerInterval = TimeSpan.FromHours(1);
     private static readonly HttpClient _sharedHttp = new HttpClient { Timeout = Timeout.InfiniteTimeSpan };
 
@@ -310,15 +310,13 @@ internal sealed partial class UpdatesViewModel : ViewModelBase
 
         _promptPending = false;
         var release = AvailableRelease;
-        var message = $"Version {release.Version} of The Sharp Factory is available (you have {CurrentVersion}). Update now downloads it, replaces this copy and restarts the app.";
-        var notes = ReleaseNotes.Summarize(release.Notes, _notesLength);
-        if(notes != null)
-            message += $"{Environment.NewLine}{Environment.NewLine}What's new:{Environment.NewLine}{notes}";
-
         var dialog = new DialogViewModel
         {
             Title = "An update is available",
-            Message = message,
+            Message = $"Version {release.Version} is ready (you have {CurrentVersion}). Update now downloads it, replaces this copy and restarts the app.",
+            //the release text in its own box under the question, scrolled when it is long
+            DetailsTitle = "What's new",
+            Details = ReleaseNotes.Summarize(release.Notes, _notesLength),
             Buttons = new List<DialogButton>
             {
                 new DialogButton { Text = "Later", Result = DialogResults.No },

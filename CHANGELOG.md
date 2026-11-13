@@ -3,6 +3,38 @@
 What changed in each published release of The Sharp Factory, newest first. Each section is also the text of that
 release on GitHub, with its downloads.
 
+## 1.2.1.1 — 2026-11-13
+
+**Important if one solution uses another solution's generated projects:** in earlier versions, a Sync into a
+solution that had the generated projects in another folder (another solution's data access, added to it) moved
+those projects into its own folder, pointed every reference at the new place and so took them away from the other
+solution. Sync no longer moves or changes anything outside the solution's own folder: such projects are written
+where they are, their project files are left as they are, and no file is deleted in them.
+
+### What's new
+
+- **Updates from changes.** `Set(change)` on an update takes a change made by `XUtils.GetChanges(original, changed)`,
+  and `XProperty.CreateChange(name, value)` makes one for a property picked by name at run time. Code written for the
+  earlier query API that set changed columns in a loop (`uv.Set(change.Property, change.Value)`) becomes
+  `uv.Set(change)`. Same Set clause and SQL as `Set(prop, value)`; a change of another entity is refused.
+
+### Fixes
+
+- **Sync suggests the right solution.** The solution the model was last synced into comes first; when the model was
+  never synced, the solution nearest the model file. The app no longer guesses a solution "open in an IDE": that
+  guess named the solution an IDE was started with, even after another one was opened in it.
+- **A Sync into another solution asks first:** another one than the model was last synced into or, for a model
+  never synced, one whose folder does not have the model file. The question names both.
+- Project files Sync edits keep their byte order mark.
+- The update question shows the release notes in their own box, as paragraphs and list items.
+
+### Downloads
+
+| Download | What |
+|
+
+---
+
 ## 1.2.0.9 — 2026-11-13
 
 **Code written for the earlier query API:** navigation properties can again be given with a collection initializer,

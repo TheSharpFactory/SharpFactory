@@ -482,8 +482,9 @@ public sealed class ParityTests
             Assert.Equal("Synced", page.SummaryTitle);
             Assert.Single(app.ViewModel.Settings.SyncTargets);
 
-            //the solution synced to is in the list (solutions open in this machine's IDEs can come before it)
+            //the solution synced to is in the list, first
             await page.RefreshTargetsCommand.ExecuteAsync(null);
+            Assert.Equal(solution, page.Candidates[0].SolutionPath, StringComparer.OrdinalIgnoreCase);
             var listed = false;
             foreach(var candidate in page.Candidates)
             {
