@@ -4,6 +4,32 @@ Newest first. One entry per change set. Version rules: see [BACKLOG.md](BACKLOG.
 
 ---
 
+## 1.2.0.3 — 2026-11-12
+
+Changes
+- SF-173: every app download includes the command line (user, 2026-11-12: "CLI should be deployed with the desktop app. always"). `release.yml` copies `sharpfactory.exe` (Windows) or `sharpfactory` (Linux, macOS), from the same build and the same version, next to `TheSharpFactory` in each app download. On macOS it is `TheSharpFactory.app/Contents/MacOS/sharpfactory`, marked executable like the app. The app's `licenses` folder now covers the packages of both programs. The separate `sharpfactory-cli-*` downloads stay, for build servers that don't want the app.
+- This comes before automatic updates: the updater will replace both programs together.
+
+Verification
+- The workflow's publish step, run locally into a scratch folder for all five systems: each app download holds `TheSharpFactory`, `sharpfactory`, `LICENSE`, `THIRD-PARTY-NOTICES.md` and `licenses`; the macOS bundle has both programs in `Contents/MacOS`; the bundled `sharpfactory.exe` is byte-identical to the one in `sharpfactory-cli-win-x64.zip` and runs from the app folder (`--version`, usage); every package in the command line's `licenses/INDEX.txt` is also in the app's. Each app download grows by the size of the command line, about 33–35 MB (now 80–84 MB).
+- No code changed.
+
+Commit details
+
+```
+Ship the command line in every app download
+
+The release workflow copies sharpfactory next to the app in each
+app download (inside the .app bundle on macOS) and collects the
+licenses of both programs. The separate command-line downloads stay.
+
+Bump version to 1.2.0.3.
+
+Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>
+```
+
+---
+
 ## 1.2.0.2 — 2026-11-12
 
 Changes

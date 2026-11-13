@@ -42,12 +42,19 @@ jobs:
             dotnet publish App/SF.App/SF.App.csproj -c Release -r $rid --self-contained \
               -p:PublishSingleFile=true -p:IncludeNativeLibrariesForSelfExtract=true -p:EnableCompressionInSingleFile=true \
               -o out/app-$rid
-            python3 .github/scripts/collect_licenses.py out/app-$rid/licenses App/SF.App/obj/project.assets.json
             dotnet publish App/SF.Cli/SF.Cli.csproj -c Release -r $rid --self-contained \
               -p:PublishSingleFile=true -p:EnableCompressionInSingleFile=true \
               -o out/cli-$rid
             python3 .github/scripts/collect_licenses.py out/cli-$rid/licenses App/SF.Cli/obj/project.assets.json
             rm -f out/app-$rid/*.pdb out/cli-$rid/*.pdb
+
+            # the app download always includes the command line, from the same build, next to the app
+            cli=sharpfactory
+            case $rid in win-*) cli=sharpfactory.exe ;; esac
+            cp out/cli-$rid/$cli out/app-$rid/
+            python3 .github/scripts/collect_licenses.py out/app-$rid/licenses \
+              App/SF.App/obj/project.assets.json App/SF.Cli/obj/project.assets.json
+
             cp LICENSE THIRD-PARTY-NOTICES.md out/app-$rid/
             cp LICENSE THIRD-PARTY-NOTICES.md out/cli-$rid/
           done
@@ -71,7 +78,7 @@ jobs:
             cp -R out/app-$rid/. $bundle/Contents/MacOS/
             mv $bundle/Contents/MacOS/LICENSE $bundle/Contents/MacOS/THIRD-PARTY-NOTICES.md $bundle/Contents/MacOS/licenses \
               $bundle/Contents/Resources/
-            chmod +x $bundle/Contents/MacOS/TheSharpFactory
+            chmod +x $bundle/Contents/MacOS/TheSharpFactory $bundle/Contents/MacOS/sharpfactory
             sed "s/{VERSION}/$version/g" App/SF.App/Packaging/macOS/Info.plist > $bundle/Contents/Info.plist
             (cd out/bundle-$rid && zip -r -y ../../dist/TheSharpFactory-$rid.zip TheSharpFactory.app)
             tar -czf dist/sharpfactory-cli-$rid.tar.gz -C out/cli-$rid .
