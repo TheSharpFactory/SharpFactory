@@ -12,6 +12,9 @@ release on GitHub, with its downloads.
   entity's change no longer compiles. Code that uses `var` for the changes needs no change. Sync your solutions to
   get it; the SQL does not change.
 
+> The macOS tests did not run for this release: GitHub had no macOS machine free for CI. The Windows and Linux
+> tests passed; the macOS downloads are built the same way as always. The macOS tests run again with the next release.
+
 ### Downloads
 
 | Download | What |

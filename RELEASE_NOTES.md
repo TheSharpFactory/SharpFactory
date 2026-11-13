@@ -14,6 +14,7 @@ Verification
 - The reference model regenerated: 1,790 files, of which the utils (246), the containers (246), the repositories and five query files change, in the lines above.
 - A copy of the reference solution's sources with the regenerated code: the two business-logic projects that use `GetChanges`, `Set(change)` and `CreateChange` build with 0 errors and 0 warnings, unchanged.
 - `SF.Tests` 66 passed with the database tests on (the SQL Server run compiles the generated code and updates through `GetChanges` and `CreateChange`); `GeneratedChangesTests` checks the typed signatures. `SF.App.Tests` 106 passed.
+- CI: Windows and Linux passed; the macOS job never got a GitHub runner (two runs, cancelled after 15 minutes each), so the release went out without the macOS tests, at the user's call, with a note in the changelog.
 
 Commit details
 
