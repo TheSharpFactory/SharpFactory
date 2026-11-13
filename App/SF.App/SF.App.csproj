@@ -14,6 +14,8 @@
 
   <ItemGroup>
     <AvaloniaResource Include="Assets\**" />
+    <!-- the public key updates are signed for (release.yml checks its signature against this same file) -->
+    <EmbeddedResource Include="Packaging\update-signing-key.pem" LogicalName="update-signing-key.pem" />
   </ItemGroup>
 
   <ItemGroup>

@@ -16,7 +16,8 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      # before the long build: the tag must match VERSION and CHANGELOG.md must have that version's section
+      # before the long build: the tag must match VERSION and CHANGELOG.md must have that version's section (CI and
+      # the tests check the section on every push, so this only fails for a tag that does not match VERSION)
       - name: Check the tag and read the release notes
         id: notes
         run: |
@@ -88,6 +89,26 @@ jobs:
           (cd dist && sha256sum * > SHA256SUMS.txt)
 
           ls -la dist
+
+      # the app installs an update only when SHA256SUMS.txt is signed with this key (the UPDATE_SIGNING_KEY secret, a
+      # PEM private key); checked against the public key built into the app, so a wrong or missing key stops the
+      # release here instead of publishing updates no copy of the app would install
+      - name: Sign the checksums
+        env:
+          UPDATE_SIGNING_KEY: ${{ secrets.UPDATE_SIGNING_KEY }}
+        run: |
+          set -e
+          if [ -z "$UPDATE_SIGNING_KEY" ]; then
+            echo "::error::The UPDATE_SIGNING_KEY secret is not set; the app would refuse this release's update"
+            exit 1
+          fi
+          key="$RUNNER_TEMP/update-signing-key.pem"
+          umask 077
+          printf '%s\n' "$UPDATE_SIGNING_KEY" > "$key"
+          openssl dgst -sha256 -sign "$key" -out dist/SHA256SUMS.txt.sig dist/SHA256SUMS.txt
+          rm -f "$key"
+          openssl dgst -sha256 -verify App/SF.App/Packaging/update-signing-key.pem \
+            -signature dist/SHA256SUMS.txt.sig dist/SHA256SUMS.txt
 
       - uses: softprops/action-gh-release@v2
         with:

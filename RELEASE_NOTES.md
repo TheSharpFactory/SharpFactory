@@ -4,6 +4,33 @@ Newest first. One entry per change set. Version rules: see [BACKLOG.md](BACKLOG.
 
 ---
 
+## 1.2.0.8 — 2026-11-13
+
+Changes
+- SF-178 (1): the CHANGELOG heading said 1.2.0.6 while VERSION was 1.2.0.7, which would have stopped the release tag. The cause: every change set bumps VERSION, but the CHANGELOG section kept the number it was written with, and only release.yml (at tag time) compared them. The heading is now `## 1.2.0.8`, and `ReleaseFilesTests.TheChangelogHasASectionForTheCurrentVersion` fails on every test run (locally and in CI) when the newest CHANGELOG section is not VERSION's, naming the heading to rename.
+- SF-178 (2): updates are signed. release.yml signs `SHA256SUMS.txt` with the private key in the `UPDATE_SIGNING_KEY` secret (`openssl dgst -sha256 -sign`, ECDSA P-256) and publishes `SHA256SUMS.txt.sig`; before publishing it verifies that signature against `App/SF.App/Packaging/update-signing-key.pem`, so a missing or wrong key stops the release. The app embeds that public key (`UpdateSignature`) and installs a download only when the checksums' signature matches it; a release without the signature is offered as a page only. Nothing beyond the checksums is downloaded when the signature fails.
+
+Verification
+- `dotnet build SF.slnx -c Release`: no warnings. `SF.App.Tests` 102 passed and `SF.Tests` 60 passed (the database tests skip locally, as before; CI runs them on Linux).
+- New tests: an update signed with another key, checksums changed after signing and a missing signature all fail with nothing changed; a signature made by openssl is read; the release key is built in and is what the installer trusts; a release without `SHA256SUMS.txt.sig` cannot be installed in place. The changelog test was seen failing with the old heading.
+- The release key pair signed and verified with openssl, including with the public key file in CRLF.
+
+Commit details
+
+```
+Sign updates and keep the changelog heading on VERSION
+
+The release workflow signs SHA256SUMS.txt (ECDSA P-256, key in the
+UPDATE_SIGNING_KEY secret) and checks the signature against the public
+key built into the app; the app installs an update only when the
+signature matches. A test fails whenever the newest CHANGELOG section is
+not the version in VERSION.
+
+Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>
+```
+
+---
+
 ## 1.2.0.7 — 2026-11-13
 
 Changes

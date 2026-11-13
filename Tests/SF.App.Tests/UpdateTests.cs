@@ -38,7 +38,10 @@ public sealed class UpdateTests
         assets.Append($"{{\"name\":\"{packageName}\",\"browser_download_url\":\"{_downloads}{packageName}\"}}");
         assets.Append($",{{\"name\":\"sharpfactory-cli-win-x64.zip\",\"browser_download_url\":\"{_downloads}sharpfactory-cli-win-x64.zip\"}}");
         if(withChecksums)
+        {
             assets.Append($",{{\"name\":\"SHA256SUMS.txt\",\"browser_download_url\":\"{_downloads}SHA256SUMS.txt\"}}");
+            assets.Append($",{{\"name\":\"SHA256SUMS.txt.sig\",\"browser_download_url\":\"{_downloads}SHA256SUMS.txt.sig\"}}");
+        }
 
         var bodyJson = System.Text.Json.JsonSerializer.Serialize(body);
         return $"{{\"tag_name\":\"{tag}\",\"html_url\":\"https://github.com/TheSharpFactory/SharpFactory/releases/tag/{tag}\",\"body\":{bodyJson},\"assets\":[{assets}]}}";
@@ -76,6 +79,7 @@ public sealed class UpdateTests
         Assert.Equal(new Version(9, 0, 0, 0), result.Release.Version);
         Assert.Equal(new Uri(_downloads + "TheSharpFactory-win-x64.zip"), result.Release.PackageUri);
         Assert.Equal(new Uri(_downloads + "SHA256SUMS.txt"), result.Release.ChecksumsUri);
+        Assert.Equal(new Uri(_downloads + "SHA256SUMS.txt.sig"), result.Release.SignatureUri);
         Assert.Equal("https://github.com/TheSharpFactory/SharpFactory/releases/tag/v9.0.0.0", result.Release.PageUri.ToString());
         Assert.True(result.Release.CanInstall);
     }
@@ -88,11 +92,18 @@ public sealed class UpdateTests
     }
 
     [Fact]
-    public void AReleaseWithoutChecksumsOrThisSystemsDownloadCannotBeInstalledByTheApp()
+    public void AReleaseWithoutChecksumsTheirSignatureOrThisSystemsDownloadCannotBeInstalledByTheApp()
     {
         var noChecksums = UpdateChecker.ReadRelease(ComposeReleaseJson("v9.0.0.0", "TheSharpFactory-win-x64.zip", false), new Version(1, 0), "TheSharpFactory-win-x64.zip");
         Assert.Equal(UpdateCheckStatus.Available, noChecksums.Status);
         Assert.False(noChecksums.Release.CanInstall);
+
+        //an unsigned release (one made before signing, or by someone without the key) is offered as a page only
+        var unsignedJson = ComposeReleaseJson("v9.0.0.0", "TheSharpFactory-win-x64.zip", true).Replace("SHA256SUMS.txt.sig", "notes.txt", StringComparison.Ordinal);
+        var unsigned = UpdateChecker.ReadRelease(unsignedJson, new Version(1, 0), "TheSharpFactory-win-x64.zip");
+        Assert.NotNull(unsigned.Release.ChecksumsUri);
+        Assert.Null(unsigned.Release.SignatureUri);
+        Assert.False(unsigned.Release.CanInstall);
 
         var noPackage = UpdateChecker.ReadRelease(ComposeReleaseJson("v9.0.0.0", "TheSharpFactory-win-x64.zip", true), new Version(1, 0), null);
         Assert.Null(noPackage.Release.PackageUri);
@@ -107,6 +118,7 @@ public sealed class UpdateTests
 
         Assert.Null(result.Release.PackageUri);
         Assert.Null(result.Release.ChecksumsUri);
+        Assert.Null(result.Release.SignatureUri);
     }
 
     [Fact]
@@ -294,7 +306,7 @@ public sealed class UpdateTests
             var handler = new FakeHttpHandler();
             var release = PublishPackage(handler, folder.Path, "TheSharpFactory-test.zip", null);
 
-            await new UpdateInstaller(new HttpClient(handler), release, install, new Version(1, 0), null, null).RunAsync();
+            await CreateInstaller(handler, release, install, null, null).RunAsync();
 
             Assert.Equal("new app", File.ReadAllText(Path.Combine(install.Folder, "TheSharpFactory.exe")));
             Assert.Equal("new cli", File.ReadAllText(Path.Combine(install.Folder, "sharpfactory.exe")));
@@ -319,7 +331,7 @@ public sealed class UpdateTests
             var handler = new FakeHttpHandler();
             var release = PublishPackage(handler, folder.Path, "TheSharpFactory-test.tar.gz", null);
 
-            await new UpdateInstaller(new HttpClient(handler), release, install, new Version(1, 0), null, null).RunAsync();
+            await CreateInstaller(handler, release, install, null, null).RunAsync();
 
             Assert.Equal("new app", File.ReadAllText(Path.Combine(install.Folder, "TheSharpFactory.exe")));
             Assert.Equal("new cli", File.ReadAllText(Path.Combine(install.Folder, "sharpfactory.exe")));
@@ -336,12 +348,86 @@ public sealed class UpdateTests
             var release = PublishPackage(handler, folder.Path, "TheSharpFactory-test.zip", new string('0', 64));
             var before = ListFolder(install.Folder);
 
-            var error = await Assert.ThrowsAsync<UpdateException>(new UpdateInstaller(new HttpClient(handler), release, install, new Version(1, 0), null, null).RunAsync);
+            var error = await Assert.ThrowsAsync<UpdateException>(CreateInstaller(handler, release, install, null, null).RunAsync);
 
             Assert.Contains("damaged", error.Message, StringComparison.Ordinal);
             Assert.Equal(before, ListFolder(install.Folder));
             Assert.Equal("old app", File.ReadAllText(Path.Combine(install.Folder, "TheSharpFactory.exe")));
         }
+    }
+
+    [Fact]
+    public async Task AReleaseNotSignedWithTheTrustedKeyChangesNothing()
+    {
+        using(var folder = new TestFolder())
+        {
+            var install = CreateInstall(Path.Combine(folder.Path, "app"));
+            var handler = new FakeHttpHandler();
+            var release = PublishPackage(handler, folder.Path, "TheSharpFactory-test.zip", null);
+            var before = ListFolder(install.Folder);
+
+            //signed, but with another key: what a release made by someone else looks like
+            using(var otherKey = ECDsa.Create(ECCurve.NamedCurves.nistP256))
+            {
+                var installer = CreateInstaller(handler, release, install, null, null);
+                installer.TrustedKey = otherKey.ExportSubjectPublicKeyInfoPem();
+                var error = await Assert.ThrowsAsync<UpdateException>(installer.RunAsync);
+                Assert.Contains("not signed by The Sharp Factory", error.Message, StringComparison.Ordinal);
+            }
+
+            //the checksums changed after they were signed (a package swapped for another, with its hash)
+            var signedChecksums = handler.Get(_downloads + "SHA256SUMS.txt");
+            handler.Add(_downloads + "SHA256SUMS.txt", Encoding.UTF8.GetString(signedChecksums).Replace("cccc", "dddd", StringComparison.Ordinal));
+            var tampered = await Assert.ThrowsAsync<UpdateException>(CreateInstaller(handler, release, install, null, null).RunAsync);
+            Assert.Contains("not signed by The Sharp Factory", tampered.Message, StringComparison.Ordinal);
+
+            //no signature at all
+            handler.Add(_downloads + "SHA256SUMS.txt", signedChecksums);
+            handler.Add(_downloads + "SHA256SUMS.txt.sig", Array.Empty<byte>());
+            var unsigned = await Assert.ThrowsAsync<UpdateException>(CreateInstaller(handler, release, install, null, null).RunAsync);
+            Assert.Contains("not signed by The Sharp Factory", unsigned.Message, StringComparison.Ordinal);
+
+            Assert.Equal(before, ListFolder(install.Folder));
+            Assert.Equal("old app", File.ReadAllText(Path.Combine(install.Folder, "TheSharpFactory.exe")));
+            //nothing past the checksums was downloaded
+            Assert.DoesNotContain(release.PackageUri.ToString(), handler.Requests);
+        }
+    }
+
+    [Fact]
+    public void SignaturesMadeByOpensslAreRead()
+    {
+        //release.yml signs with "openssl dgst -sha256 -sign"; this one was made that way, with a throwaway key
+        const string publicKey = "-----BEGIN PUBLIC KEY-----\n" +
+            "MFkwEwYHKoZIzj0CAQYIKoZIzj0DAQcDQgAEYPpJaI3sxg4iuDWfwpTQRGsoCDMT\n" +
+            "fHFQsLNeKArpRvvY/cFcE03Cu7lOl5ivHK8rtbZpYFFrKZ7ajYMHVp6saA==\n" +
+            "-----END PUBLIC KEY-----\n";
+        var signature = Convert.FromBase64String("MEQCIFW82IndbKZy1y4qFZgHww+eX5vs7xL0KFl4wlZsMKOWAiA55LERA7fAx5VvjLJK/IfkoTq/DZqWRL3CiiadkQ8aKA==");
+        var checksums = Encoding.UTF8.GetBytes("0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef  TheSharpFactory-win-x64.zip\n");
+
+        Assert.True(UpdateSignature.IsValid(checksums, signature, publicKey));
+
+        var changed = (byte[])checksums.Clone();
+        changed[0] = (byte)'1';
+        Assert.False(UpdateSignature.IsValid(changed, signature, publicKey));
+        Assert.False(UpdateSignature.IsValid(checksums, Encoding.UTF8.GetBytes("not a signature"), publicKey));
+        Assert.False(UpdateSignature.IsValid(checksums, null, publicKey));
+    }
+
+    [Fact]
+    public void TheReleaseKeyIsBuiltIntoTheApp()
+    {
+        var releaseKey = UpdateSignature.ReleaseKey;
+        using(var key = ECDsa.Create())
+        {
+            key.ImportFromPem(releaseKey);
+            Assert.Equal(256, key.KeySize);
+        }
+
+        //the app trusts the release key unless a test says otherwise
+        Assert.Equal(releaseKey, new UpdateInstaller(new HttpClient(new FakeHttpHandler()), new ReleaseInfo(), new InstallLocation(), new Version(1, 0), null, null).TrustedKey);
+        //and a release signed with the test key is not one of ours
+        Assert.False(UpdateSignature.IsValid(Encoding.UTF8.GetBytes("x"), TestSigning.Sign(Encoding.UTF8.GetBytes("x")), releaseKey));
     }
 
     [Fact]
@@ -355,7 +441,7 @@ public sealed class UpdateTests
             handler.DropWhileReading = release.PackageUri.ToString();
             var before = ListFolder(install.Folder);
 
-            var error = await Assert.ThrowsAsync<UpdateException>(new UpdateInstaller(new HttpClient(handler), release, install, new Version(1, 0), null, null).RunAsync);
+            var error = await Assert.ThrowsAsync<UpdateException>(CreateInstaller(handler, release, install, null, null).RunAsync);
 
             Assert.StartsWith("The download failed", error.Message, StringComparison.Ordinal);
             Assert.EndsWith("Nothing was changed.", error.Message, StringComparison.Ordinal);
@@ -374,7 +460,7 @@ public sealed class UpdateTests
             var release = PublishPackage(handler, folder.Path, "TheSharpFactory-test.zip", null);
             var before = ListFolder(install.Folder);
 
-            var error = await Assert.ThrowsAsync<UpdateException>(new UpdateInstaller(new HttpClient(handler), release, install, new Version(1, 0), null, null).RunAsync);
+            var error = await Assert.ThrowsAsync<UpdateException>(CreateInstaller(handler, release, install, null, null).RunAsync);
 
             Assert.Contains("Renamed.exe", error.Message, StringComparison.Ordinal);
             Assert.Equal(before, ListFolder(install.Folder));
@@ -405,7 +491,7 @@ public sealed class UpdateTests
                 Assert.False(File.Exists(Path.Combine(install.Folder, "TheSharpFactory.exe" + UpdateInstaller.OldSuffix)));
 
                 //and its own update stops without touching it
-                var error = await Assert.ThrowsAsync<UpdateException>(new UpdateInstaller(new HttpClient(handler), release, install, new Version(1, 0), null, null).RunAsync);
+                var error = await Assert.ThrowsAsync<UpdateException>(CreateInstaller(handler, release, install, null, null).RunAsync);
                 Assert.StartsWith("Another copy of the app is updating", error.Message, StringComparison.Ordinal);
                 Assert.True(File.Exists(Path.Combine(staging, "TheSharpFactory-test.zip")));
                 Assert.Empty(handler.Requests);
@@ -452,7 +538,7 @@ public sealed class UpdateTests
             using(var cancellation = new UpdateCancellation())
             {
                 Assert.True(cancellation.TryCancel());
-                await Assert.ThrowsAnyAsync<OperationCanceledException>(new UpdateInstaller(new HttpClient(handler), release, install, new Version(1, 0), steps, cancellation).RunAsync);
+                await Assert.ThrowsAnyAsync<OperationCanceledException>(CreateInstaller(handler, release, install, steps, cancellation).RunAsync);
             }
 
             Assert.Equal(before, ListFolder(install.Folder));
@@ -472,7 +558,7 @@ public sealed class UpdateTests
 
             using(var cancellation = new UpdateCancellation())
             {
-                await new UpdateInstaller(new HttpClient(handler), release, install, new Version(1, 0), steps, cancellation).RunAsync();
+                await CreateInstaller(handler, release, install, steps, cancellation).RunAsync();
 
                 Assert.False(cancellation.TryCancel());
             }
@@ -495,7 +581,7 @@ public sealed class UpdateTests
             using(BlockReplacingTheLicense(install.Folder))
             {
                 var before = ListFolder(install.Folder);
-                var error = await Assert.ThrowsAsync<UpdateException>(new UpdateInstaller(new HttpClient(handler), release, install, new Version(1, 0), null, null).RunAsync);
+                var error = await Assert.ThrowsAsync<UpdateException>(CreateInstaller(handler, release, install, null, null).RunAsync);
                 Assert.Contains("left as it was", error.Message, StringComparison.Ordinal);
                 Assert.Equal(before, ListFolder(install.Folder));
             }
@@ -528,7 +614,7 @@ public sealed class UpdateTests
                     Assert.True(deleteError is IOException || deleteError is UnauthorizedAccessException);
                 }
 
-                await new UpdateInstaller(new HttpClient(handler), release, install, new Version(1, 0), null, null).RunAsync();
+                await CreateInstaller(handler, release, install, null, null).RunAsync();
 
                 Assert.Equal("new app", File.ReadAllText(program));
                 Assert.False(running.HasExited);
@@ -701,6 +787,7 @@ public sealed class UpdateTests
             var updates = app.ViewModel.Updates;
             updates.Http = new HttpClient(handler);
             updates.Location = install;
+            updates.TrustedKey = TestSigning.PublicKey;
 
             var check = updates.CheckAsync(true);
             app.PumpUntil(() => app.ViewModel.Dialog != null);
@@ -738,6 +825,7 @@ public sealed class UpdateTests
             var updates = app.ViewModel.Updates;
             updates.Http = new HttpClient(handler);
             updates.Location = install;
+            updates.TrustedKey = TestSigning.PublicKey;
 
             var check = updates.CheckAsync(true);
             app.PumpUntil(() => app.ViewModel.Dialog != null);
@@ -777,6 +865,7 @@ public sealed class UpdateTests
             var updates = app.ViewModel.Updates;
             updates.Http = new HttpClient(handler);
             updates.Location = install;
+            updates.TrustedKey = TestSigning.PublicKey;
 
             var check = updates.CheckAsync(true);
             app.PumpUntil(() => app.ViewModel.Dialog != null);
@@ -806,6 +895,7 @@ public sealed class UpdateTests
             var updates = app.ViewModel.Updates;
             updates.Http = new HttpClient(handler);
             updates.Location = install;
+            updates.TrustedKey = TestSigning.PublicKey;
 
             var check = updates.CheckAsync(true);
             app.PumpUntil(() => app.ViewModel.Dialog != null);
@@ -857,6 +947,14 @@ public sealed class UpdateTests
     }
 
     /// <summary>
+    /// An installer for a test release: it trusts the test key the test releases are signed with.
+    /// </summary>
+    private static UpdateInstaller CreateInstaller(FakeHttpHandler handler, ReleaseInfo release, InstallLocation install, IProgress<UpdateProgress> progress, UpdateCancellation cancellation)
+    {
+        return new UpdateInstaller(new HttpClient(handler), release, install, new Version(1, 0), progress, cancellation) { TrustedKey = TestSigning.PublicKey };
+    }
+
+    /// <summary>
     /// An unpacked "release" in a folder: the app, the command line, the licenses, and a file of the user's.
     /// </summary>
     private static InstallLocation CreateInstall(string folder)
@@ -871,8 +969,8 @@ public sealed class UpdateTests
     }
 
     /// <summary>
-    /// Builds a package (.zip or .tar.gz by its name) with the new files, and serves it and its SHA256SUMS.txt; a
-    /// wrong hash makes a damaged download.
+    /// Builds a package (.zip or .tar.gz by its name) with the new files, and serves it, its SHA256SUMS.txt and
+    /// that file's signature (by the test key); a wrong hash makes a damaged download.
     /// </summary>
     private static ReleaseInfo PublishPackage(FakeHttpHandler handler, string workFolder, string packageName, string wrongHash)
     {
@@ -902,7 +1000,9 @@ public sealed class UpdateTests
         var bytes = File.ReadAllBytes(package);
         var hash = wrongHash ?? Convert.ToHexString(SHA256.HashData(bytes)).ToLowerInvariant();
         handler.Add(_downloads + packageName, bytes);
-        handler.Add(_downloads + "SHA256SUMS.txt", $"{new string('c', 64)}  sharpfactory-cli-win-x64.zip\n{hash}  {packageName}\n");
+        var checksums = Encoding.UTF8.GetBytes($"{new string('c', 64)}  sharpfactory-cli-win-x64.zip\n{hash}  {packageName}\n");
+        handler.Add(_downloads + "SHA256SUMS.txt", checksums);
+        handler.Add(_downloads + "SHA256SUMS.txt.sig", TestSigning.Sign(checksums));
 
         return new ReleaseInfo
         {
@@ -910,6 +1010,7 @@ public sealed class UpdateTests
             PackageName = packageName,
             PackageUri = new Uri(_downloads + packageName),
             ChecksumsUri = new Uri(_downloads + "SHA256SUMS.txt"),
+            SignatureUri = new Uri(_downloads + "SHA256SUMS.txt.sig"),
         };
     }
 
@@ -975,6 +1076,11 @@ internal sealed class FakeHttpHandler : HttpMessageHandler
     public void Add(string uri, byte[] bytes)
     {
         _responses[uri] = bytes;
+    }
+
+    public byte[] Get(string uri)
+    {
+        return _responses[uri];
     }
 
     /// <summary>
@@ -1092,5 +1198,26 @@ internal sealed class ReadOnlyFolder : IDisposable
     public void Dispose()
     {
         File.SetUnixFileMode(_path, UnixFileMode.UserRead | UnixFileMode.UserWrite | UnixFileMode.UserExecute);
+    }
+}
+
+/// <summary>
+/// The key the test releases are signed with, as release.yml signs the real ones (ECDSA P-256, SHA-256, DER).
+/// </summary>
+internal static class TestSigning
+{
+    private static readonly ECDsa _key = ECDsa.Create(ECCurve.NamedCurves.nistP256);
+
+    public static string PublicKey
+    {
+        get
+        {
+            return _key.ExportSubjectPublicKeyInfoPem();
+        }
+    }
+
+    public static byte[] Sign(byte[] data)
+    {
+        return _key.SignData(data, HashAlgorithmName.SHA256, DSASignatureFormat.Rfc3279DerSequence);
     }
 }

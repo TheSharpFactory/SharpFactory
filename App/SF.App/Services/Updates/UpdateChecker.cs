@@ -158,6 +158,8 @@ internal sealed class UpdateChecker
                             release.PackageUri = GetUri(asset, "browser_download_url");
                         else if(string.Equals(name, ChecksumsFileName, StringComparison.Ordinal))
                             release.ChecksumsUri = GetUri(asset, "browser_download_url");
+                        else if(string.Equals(name, UpdateSignature.SignatureFileName, StringComparison.Ordinal))
+                            release.SignatureUri = GetUri(asset, "browser_download_url");
                     }
                 }
 

@@ -7,6 +7,7 @@ using System.IO;
 using System.IO.Compression;
 using System.Net.Http;
 using System.Security.Cryptography;
+using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
 #endregion
@@ -15,9 +16,9 @@ namespace SF.App.Services.Updates;
 
 /// <summary>
 /// Installs a release over the running app: downloads its package next to the app, checks it against the release's
-/// SHA256SUMS.txt, unpacks it, then swaps the files. The running program cannot be overwritten (Windows), but it can
-/// be renamed, so every file the package replaces is first renamed to "*.sf-old"; the new version deletes those when
-/// it starts. If a step fails, the files already swapped are put back and the app is unchanged.
+/// SHA256SUMS.txt (signed with The Sharp Factory's key), unpacks it, then swaps the files. The running program cannot
+/// be overwritten (Windows), but it can be renamed, so every file the package replaces is first renamed to "*.sf-old";
+/// the new version deletes those when it starts. If a step fails, the files already swapped are put back and the app is unchanged.
 /// </summary>
 internal sealed class UpdateInstaller
 {
@@ -56,6 +57,12 @@ internal sealed class UpdateInstaller
     }
 
     /// <summary>
+    /// The public key (PEM) SHA256SUMS.txt must be signed for: the release key built into the app (tests sign with
+    /// their own).
+    /// </summary>
+    public string TrustedKey { get; set; } = UpdateSignature.ReleaseKey;
+
+    /// <summary>
     /// Runs every step; throws UpdateException with a message for the user when one fails.
     /// </summary>
     public async Task RunAsync()
@@ -88,8 +95,9 @@ internal sealed class UpdateInstaller
     }
 
     /// <summary>
-    /// Downloads SHA256SUMS.txt and the package, and checks the package's SHA-256. A lost connection or the time limit,
-    /// while asking or while reading, is an UpdateException; Cancel is an OperationCanceledException.
+    /// Downloads SHA256SUMS.txt, its signature and the package, and checks the signature and the package's SHA-256.
+    /// A lost connection or the time limit, while asking or while reading, is an UpdateException; Cancel is an
+    /// OperationCanceledException.
     /// </summary>
     private async Task DownloadAsync(string package)
     {
@@ -159,24 +167,34 @@ internal sealed class UpdateInstaller
     }
 
     /// <summary>
-    /// The package's SHA-256 from SHA256SUMS.txt (lines of "hash  file name", as sha256sum writes them).
+    /// The package's SHA-256 from SHA256SUMS.txt (lines of "hash  file name", as sha256sum writes them), once its
+    /// signature (SHA256SUMS.txt.sig) shows The Sharp Factory's key signed it.
     /// </summary>
     private async Task<string> DownloadExpectedHashAsync()
     {
         using(var timeout = CancellationTokenSource.CreateLinkedTokenSource(_cancellationToken))
         {
             timeout.CancelAfter(_checksumsTimeout);
-            using(var request = UpdateChecker.CreateRequest(_release.ChecksumsUri, _currentVersion))
-            {
-                using(var response = await SendAsync(request, timeout.Token))
-                {
-                    var text = await response.Content.ReadAsStringAsync(timeout.Token);
-                    var hash = FindHash(text, _release.PackageName);
-                    if(hash == null)
-                        throw new UpdateException($"The release has no checksum for {_release.PackageName}. Nothing was changed.");
+            var checksums = await DownloadSmallFileAsync(_release.ChecksumsUri, timeout.Token);
+            var signature = await DownloadSmallFileAsync(_release.SignatureUri, timeout.Token);
+            if(!UpdateSignature.IsValid(checksums, signature, TrustedKey))
+                throw new UpdateException($"The download of version {_release.Version} is not signed by The Sharp Factory, so it was not installed. Nothing was changed.");
 
-                    return hash;
-                }
+            var hash = FindHash(Encoding.UTF8.GetString(checksums), _release.PackageName);
+            if(hash == null)
+                throw new UpdateException($"The release has no checksum for {_release.PackageName}. Nothing was changed.");
+
+            return hash;
+        }
+    }
+
+    private async Task<byte[]> DownloadSmallFileAsync(Uri uri, CancellationToken cancellationToken)
+    {
+        using(var request = UpdateChecker.CreateRequest(uri, _currentVersion))
+        {
+            using(var response = await SendAsync(request, cancellationToken))
+            {
+                return await response.Content.ReadAsByteArrayAsync(cancellationToken);
             }
         }
     }

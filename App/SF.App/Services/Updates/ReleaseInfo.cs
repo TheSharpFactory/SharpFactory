@@ -37,13 +37,18 @@ internal sealed class ReleaseInfo
     public Uri ChecksumsUri { get; set; }
 
     /// <summary>
+    /// SHA256SUMS.txt.sig: SHA256SUMS.txt signed with The Sharp Factory's key. Null when the release has none.
+    /// </summary>
+    public Uri SignatureUri { get; set; }
+
+    /// <summary>
     /// The app can download and check this release itself.
     /// </summary>
     public bool CanInstall
     {
         get
         {
-            return PackageUri != null && ChecksumsUri != null;
+            return PackageUri != null && ChecksumsUri != null && SignatureUri != null;
         }
     }
 }

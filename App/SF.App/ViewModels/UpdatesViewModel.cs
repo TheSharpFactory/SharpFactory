@@ -71,6 +71,11 @@ internal sealed partial class UpdatesViewModel : ViewModelBase
     public HttpClient Http { get; set; }
 
     /// <summary>
+    /// The public key updates must be signed for: the release key built into the app (tests sign with their own).
+    /// </summary>
+    public string TrustedKey { get; set; } = UpdateSignature.ReleaseKey;
+
+    /// <summary>
     /// Where the running app was unpacked (tests point it at a temporary folder).
     /// </summary>
     public InstallLocation Location
@@ -368,7 +373,7 @@ internal sealed partial class UpdatesViewModel : ViewModelBase
             _installCancellation = cancellation;
             try
             {
-                var installer = new UpdateInstaller(Http, release, location, CurrentVersion, new Progress<UpdateProgress>(OnInstallProgress), cancellation);
+                var installer = new UpdateInstaller(Http, release, location, CurrentVersion, new Progress<UpdateProgress>(OnInstallProgress), cancellation) { TrustedKey = TrustedKey };
                 await Task.Run(installer.RunAsync);
             }
             catch(OperationCanceledException) when(cancellation.IsCancelled)

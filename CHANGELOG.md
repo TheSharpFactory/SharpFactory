@@ -3,7 +3,7 @@
 What changed in each published release of The Sharp Factory, newest first. Each section is also the text of that
 release on GitHub, with its downloads.
 
-## 1.2.0.6 — 2026-11-12
+## 1.2.0.8 — 2026-11-13
 
 **Regenerate your code:** in 1.1.8.8 every paged read in the generated code failed on SQL Server ("Invalid attempt to
 read from column ordinal '0'. With CommandBehavior.SequentialAccess, ..."). Sync your solutions with this version to
@@ -14,6 +14,7 @@ fix it. The fix does not change the SQL the generated code sends.
 - **Automatic updates.** The app looks for a newer release on GitHub once a day, and when you click
   **Check for updates** on the About page. When there is one it shows what is new and asks; **Update now** downloads
   it, checks it, replaces the app and the command line next to it, and restarts with the model that was open.
+  Every release is signed: the app installs only a download whose checksums carry The Sharp Factory's signature.
   Nothing is downloaded before you say so, and **Cancel** stops the download. The check sends only the app's name and
   version; "Check for updates once a day" on the About page turns it off. Where the app cannot replace itself (a
   folder it cannot write to, or on macOS an app opened straight from Downloads), it offers the release page.
@@ -43,6 +44,7 @@ fix it. The fix does not change the SQL the generated code sends.
 | `TheSharpFactory-linux-x64.tar.gz` | The app for Linux, with the command line |
 | `sharpfactory-cli-*` | The command line alone, for the same systems |
 | `SHA256SUMS.txt` | The SHA-256 of every download (the app checks its update against it) |
+| `SHA256SUMS.txt.sig` | The signature of `SHA256SUMS.txt` (the app installs an update only when it matches) |
 
 Nothing to install: unpack and run. The .NET runtime is included. The macOS app is not signed yet, so macOS blocks
 it the first time: open it once, then go to System Settings > Privacy & Security and choose **Open Anyway**. On
