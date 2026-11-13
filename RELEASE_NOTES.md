@@ -4,6 +4,38 @@ Newest first. One entry per change set. Version rules: see [BACKLOG.md](BACKLOG.
 
 ---
 
+## 1.2.0.4 — 2026-11-12
+
+Changes
+- SF-174: **every paged read in the generated code failed on SQL Server** with `InvalidOperationException: Invalid attempt to read from column ordinal '0'. With CommandBehavior.SequentialAccess, you may only read from column ordinal 'N' or greater.` The generated readers are sequential (`CommandBehavior.SequentialAccess`), so columns must be read left to right, and a paged read returns the total row count in the last column; `RepositoryBase.MaterializeEntityResult` read that column before the first row's own columns. It now reads the first row, then the total, then the other rows. Found by the full repository walk of the reference model against its test database (937 paged reads failed, with and without the total and with every navigation property; the reference code read them all). The walk of 1.1.4.5 was clean; the first commit in the repository (1.1.8.7) already had it, so the published 1.1.8.8 has it. Of the 1,790 files generated for the reference model only `RepositoryBase.cs` changes (5 lines); the SQL text and parameters are unchanged.
+- Tests, so it cannot come back:
+  - `GeneratedPagingTests.APagedReadReadsTheRowBeforeTheTotalCount` (runs everywhere): the generated readers are sequential and `MaterializeEntityResult` reads the first row before the total.
+  - `GeneratedPagingTests.PagedReadsWorkOnSqlServer` (with `SHARPFACTORY_TEST_EDMJ`; in CI's Linux job, where a skip fails the build): compiles the code generated for the Coverage model with a small program (`Fixtures/PagingRunner/Program.cs.txt`) and pages through rows it adds to `Coverage.Region` and `Coverage.Store` (and deletes): with and without the total, the last page, a to-many and a to-one navigation property, sync and async. Until now no test ran generated code against a database.
+  - Both fail on the old template (the database test with exactly the error above) and pass now.
+  - `GeneratedResultListTests.AResultListIsCreatedOnItsFirstRow` checks the new loop instead of the old `do/while`.
+  - TESTING.md says what the database paging test needs and that it writes (and deletes) `'ZZ'` rows.
+
+Verification
+- `dotnet test Tests/SF.Tests/SF.Tests.csproj -c Release` with `SHARPFACTORY_TEST_EDMJ` set: 63 passed, none skipped.
+- The full repository walk of the reference model against its test database, the fixed code against the reference code: running when these notes were written; the result is added below when it finishes.
+
+Commit details
+
+```
+Read the first row before the total count in paged reads
+
+The generated readers use CommandBehavior.SequentialAccess, so the
+total row count in the last column has to be read after the row's own
+columns. Every paged read threw on SQL Server. Adds a test that
+compiles the generated code and pages through it on a real database.
+
+Bump version to 1.2.0.4.
+
+Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>
+```
+
+---
+
 ## 1.2.0.3 — 2026-11-12
 
 Changes

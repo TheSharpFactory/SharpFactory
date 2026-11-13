@@ -29,7 +29,8 @@ public sealed class GeneratedResultListTests
             var newList = method.IndexOf("var result = new List<TEntity>(listCapacity > 0 ? listCapacity : _unboundedListCapacity);", StringComparison.Ordinal);
 
             Assert.True(noRows > 0 && newList > noRows, "the first row is read before the list is created");
-            Assert.Contains("while(r.Read());", method);
+            //the first row, then the total row count, then the other rows (the order is checked in GeneratedPagingTests)
+            Assert.Matches(new Regex(@"while\(r\.Read\(\)\)\r?\n\s*result\.Add\(materializer\(r\)\);"), method);
             Assert.Contains("capacity = ToOneCapacity(resultSets[toOneParents[resultIndex]]);", text);
             Assert.Contains("protected abstract void GetNavPropMaterializers(NavProps navprops, Func<SqlDataReader, int, object>[] materializers, int[] toOneParents);", text);
         }

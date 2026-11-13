@@ -1,0 +1,179 @@
+#region Usings
+using Microsoft.Data.SqlClient;
+using SFTest.Entity.TestDb.Coverage;
+using SFTest.Query;
+using SFTest.Repository.Common;
+using SFTest.Repository.Container;
+using System;
+using System.Collections.Generic;
+using System.Threading.Tasks;
+#endregion
+
+/// <summary>
+/// Runs paged reads through the code generated for the Coverage model against a real SQL Server (GeneratedPagingTests
+/// compiles and runs it; it is not part of the test project). The generated readers are sequential
+/// (CommandBehavior.SequentialAccess), so reading a column out of order fails only here, on a real database.
+/// Writes "PASS name" per case; exits with 1 and the reason on the first failure.
+/// </summary>
+internal static class Program
+{
+    private const string _country = "ZZ";
+    private const int _regionCount = 25;
+    private const int _storesPerRegion = 2;
+
+    private static int Main()
+    {
+        //in the environment, not on the command line, so a password does not show in the process list
+        var connectionString = Environment.GetEnvironmentVariable("SF_PAGING_CONNECTION");
+        Database.RegisterModelConnectionString(RepoLookup.ModelId.TestDb, connectionString);
+        try
+        {
+            DeleteTestRows(connectionString);
+            InsertTestRows(connectionString);
+            RunAsync().GetAwaiter().GetResult();
+            Console.WriteLine("ALL PASSED");
+            return 0;
+        }
+        catch(Exception ex)
+        {
+            Console.WriteLine("FAIL " + ex);
+            return 1;
+        }
+        finally
+        {
+            DeleteTestRows(connectionString);
+        }
+    }
+
+    private static async Task RunAsync()
+    {
+        var container = new RepositoryContainer();
+        var regions = container.TestDb.Coverage.Region;
+        var stores = container.TestDb.Coverage.Store;
+
+        //page 2 of 3: R11 to R20, with the total
+        var withTotal = RegionPage(2, true);
+        CheckRegions("page with the total", regions.ToList(withTotal), 11);
+        CheckTotal("page with the total", withTotal.RecordCount, withTotal.PageCount, _regionCount, 3);
+
+        var withTotalAsync = RegionPage(2, true);
+        CheckRegions("page with the total, async", await regions.ToListAsync(withTotalAsync), 11);
+        CheckTotal("page with the total, async", withTotalAsync.RecordCount, withTotalAsync.PageCount, _regionCount, 3);
+
+        //the last page has 5 rows
+        var lastPage = RegionPage(3, true);
+        CheckRegions("last page", regions.ToList(lastPage), 21);
+
+        var withoutTotal = RegionPage(1, false);
+        CheckRegions("page without the total", regions.ToList(withoutTotal), 1);
+
+        //a to-many navigation property on a paged query
+        var withStores = RegionPage(2, true).BeginNavProps().Append(RegionNavProperty.Stores).EndNavProps();
+        var regionsWithStores = regions.ToList(withStores);
+        CheckRegions("page with a to-many navigation property", regionsWithStores, 11);
+        foreach(var region in regionsWithStores)
+        {
+            if(region.Stores == null || region.Stores.Count != _storesPerRegion)
+                throw new InvalidOperationException($"page with a to-many navigation property: {region.RegionCode} has {region.Stores?.Count ?? 0} stores, expected {_storesPerRegion}");
+        }
+
+        Console.WriteLine("PASS page with a to-many navigation property, its rows");
+
+        //a to-one navigation property on a paged query, sync and async
+        var storePage = StorePage();
+        CheckStores("page with a to-one navigation property", stores.ToList(storePage));
+        CheckTotal("page with a to-one navigation property", storePage.RecordCount, storePage.PageCount, _regionCount * _storesPerRegion, 5);
+
+        var storePageAsync = StorePage();
+        CheckStores("page with a to-one navigation property, async", await stores.ToListAsync(storePageAsync));
+    }
+
+    private static Query<RegionProperty> RegionPage(int pageNumber, bool returnTotal)
+    {
+        return new Query<RegionProperty>()
+            .BeginPredicate().Where(RegionProperty.CountryCode).Equals(_country).EndPredicate()
+            .BeginSorting().OrderBy(RegionProperty.RegionCode).EndSorting()
+            .BeginPagination().PageSize(10).PageNumber(pageNumber).ReturnTotalCount(returnTotal).EndPagination();
+    }
+
+    private static Query<StoreProperty> StorePage()
+    {
+        return new Query<StoreProperty>()
+            .BeginPredicate().Where(StoreProperty.CountryCode).Equals(_country).EndPredicate()
+            .BeginSorting().OrderBy(StoreProperty.Name).EndSorting()
+            .BeginPagination().PageSize(10).PageNumber(1).ReturnTotalCount(true).EndPagination()
+            .BeginNavProps().Append(StoreNavProperty.Region).EndNavProps();
+    }
+
+    private static void CheckRegions(string name, List<Region> rows, int first)
+    {
+        var expected = Math.Min(10, _regionCount - first + 1);
+        if(rows == null || rows.Count != expected)
+            throw new InvalidOperationException($"{name}: {rows?.Count ?? 0} rows, expected {expected}");
+
+        for(var i = 0; i < rows.Count; i++)
+        {
+            var code = RegionCode(first + i);
+            if(!string.Equals(rows[i].RegionCode, code, StringComparison.Ordinal) || !string.Equals(rows[i].Name, "Paging " + code, StringComparison.Ordinal))
+                throw new InvalidOperationException($"{name}: row {i} is {rows[i].RegionCode} / {rows[i].Name}, expected {code}");
+        }
+
+        Console.WriteLine("PASS " + name);
+    }
+
+    private static void CheckStores(string name, List<Store> rows)
+    {
+        if(rows == null || rows.Count != 10)
+            throw new InvalidOperationException($"{name}: {rows?.Count ?? 0} rows, expected 10");
+
+        foreach(var store in rows)
+        {
+            if(store.Region == null || !string.Equals(store.Region.RegionCode, store.RegionCode, StringComparison.Ordinal))
+                throw new InvalidOperationException($"{name}: store {store.Name} has no region or the wrong one");
+        }
+
+        Console.WriteLine("PASS " + name);
+    }
+
+    private static void CheckTotal(string name, double recordCount, int pageCount, int expectedRecords, int expectedPages)
+    {
+        if(recordCount != expectedRecords || pageCount != expectedPages)
+            throw new InvalidOperationException($"{name}: total {recordCount} in {pageCount} pages, expected {expectedRecords} in {expectedPages}");
+
+        Console.WriteLine("PASS " + name + ", the total");
+    }
+
+    private static string RegionCode(int number)
+    {
+        return "R" + number.ToString("00", System.Globalization.CultureInfo.InvariantCulture);
+    }
+
+    private static void InsertTestRows(string connectionString)
+    {
+        var sql = new System.Text.StringBuilder();
+        for(var i = 1; i <= _regionCount; i++)
+        {
+            var code = RegionCode(i);
+            sql.Append($"INSERT INTO Coverage.Region (CountryCode, RegionCode, Name) VALUES ('{_country}', '{code}', N'Paging {code}');");
+            for(var s = 1; s <= _storesPerRegion; s++)
+                sql.Append($"INSERT INTO Coverage.Store (CountryCode, RegionCode, Name) VALUES ('{_country}', '{code}', N'Paging {code} store {s}');");
+        }
+
+        Execute(connectionString, sql.ToString());
+    }
+
+    private static void DeleteTestRows(string connectionString)
+    {
+        Execute(connectionString, $"DELETE FROM Coverage.Store WHERE CountryCode = '{_country}'; DELETE FROM Coverage.Region WHERE CountryCode = '{_country}';");
+    }
+
+    private static void Execute(string connectionString, string sql)
+    {
+        using(var connection = new SqlConnection(connectionString))
+        {
+            connection.Open();
+            using(var command = new SqlCommand(sql, connection))
+                command.ExecuteNonQuery();
+        }
+    }
+}
