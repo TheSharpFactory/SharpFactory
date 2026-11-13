@@ -16,4 +16,8 @@
     <ProjectReference Include="..\SF.Models\SF.Models.csproj" />
   </ItemGroup>
 
+  <ItemGroup>
+    <InternalsVisibleTo Include="SF.Tests" />
+  </ItemGroup>
+
 </Project>

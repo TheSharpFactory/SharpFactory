@@ -4,6 +4,34 @@ Newest first. One entry per change set. Version rules: see [BACKLOG.md](BACKLOG.
 
 ---
 
+## 1.2.1.2 — 2026-11-13
+
+Changes
+- SF-147: `StoreUtils.GetRoutineTableResultType` skipped every result column whose `IsHidden` was empty, and SQL Server leaves it empty (DBNull, with Microsoft.Data.SqlClient 5.1.1 and 7.1.1 alike) for a column computed from an expression. `Ticker.GetClientBets`, which returns `CAST(0 AS BIGINT) AS [PlatformBetId]` when called with NULLs, lost its only column on Update and its generated `_Result` lost `PlatformBetId`. Now only a column SQL Server marks hidden is skipped: those are the key columns `CommandBehavior.KeyInfo` adds (checked: `SELECT [Name] FROM [Coverage].[Region]` is described as `Name` plus hidden `CountryCode` and `RegionCode`, and a normal call returns one column). An empty `AllowDBNull` reads as nullable instead of throwing. The column building moved to `ComposeRoutineResult(routineName, DataTable)`; `SF.Utils` lets `SF.Tests` see its internals.
+- SF-183: `CreateChange(int propertyId, object value)` switches on `(XProp)propertyId` (one `case XProp.Column:` per property) instead of the property name; `Set(IQueryFilter change)` adds the change as it is, without the owner check, so `PropertyFilter.Owner` is gone and `PropertyFilter.cs` and `Prop.cs` generate exactly as in 1.2.0.9.
+
+Verification
+- New `RoutineResultTests.OnlyColumnsMarkedHiddenAreSkipped` with SQL Server's description as it comes back for an expression column, a hidden key column and an empty `AllowDBNull`. `GeneratedChangesTests` checks the enum switch and the unchecked `Set(change)`; `GeneratedPagingTests` updates through `GetChanges` and `CreateChange((int)RegionProp.Name, …)` on SQL Server.
+- The user updated the reference model with the Debug build and `GetClientBets_Result.PlatformBetId` came back as `long?`.
+- `SF.Tests` 66 passed with the database tests on; `SF.App.Tests` 106 passed.
+
+Commit details
+
+```
+Keep expression result columns; CreateChange switches on the enum
+
+The schema reader skipped result columns with an empty IsHidden, which is
+how SQL Server describes a column computed from an expression, so a
+procedure such as Ticker.GetClientBets lost its result columns on Update.
+Only columns marked hidden (the key columns KeyInfo adds) are skipped now.
+CreateChange takes the property id and switches on the XProp enum, and
+Set(change) adds the change without a check.
+
+Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>
+```
+
+---
+
 ## 1.2.1.1 — 2026-11-13
 
 Changes

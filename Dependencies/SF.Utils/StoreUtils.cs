@@ -353,7 +353,15 @@ internal sealed class StoreUtils
     public static Entity GetRoutineTableResultType(ConnectionInfo conInfo, string schema, string routineName, int paramCount, bool isFunction)
     {
         var raw = SqlConnector.GetRoutineReturnTypeColumns(conInfo, schema, routineName, paramCount, isFunction);
+        return ComposeRoutineResult(routineName, raw);
+    }
 
+    /// <summary>
+    /// The result entity of a routine from SQL Server's description of its result (GetSchemaTable); null when the
+    /// description has no columns.
+    /// </summary>
+    public static Entity ComposeRoutineResult(string routineName, System.Data.DataTable raw)
+    {
         if(IsDataTableEmpty(raw))
             return null;
 
@@ -366,20 +374,14 @@ internal sealed class StoreUtils
         var repeatedProps = new Dictionary<string, int>(StringComparer.OrdinalIgnoreCase);
         foreach(var c in raw.Rows.Cast<System.Data.DataRow>())
         {
-            var isHiddenObj = c[SqlSchemaColumn.Params.IsHidden];
-
-            if(isHiddenObj == null)
-                continue;
-
-            if(string.IsNullOrWhiteSpace(isHiddenObj.ToString()))
-                continue;
-
-            if((bool)isHiddenObj)//if it is a hidden property then just skip
+            //a column SQL Server marks hidden (a key column KeyInfo adds) is not in the result; an expression column has an
+            //empty flag (Microsoft.Data.SqlClient; System.Data.SqlClient said false) and is a real column
+            if(c[SqlSchemaColumn.Params.IsHidden] is bool isHidden && isHidden)
                 continue;
 
             var isNullableObj = c[SqlSchemaColumn.Params.IsNullable];
 
-            var isNullable = isNullableObj == null || (bool)isNullableObj;
+            var isNullable = !(isNullableObj is bool allowsNull) || allowsNull;
 
             var sizeObj = c[SqlSchemaColumn.Params.Size];
             var typeName = c[SqlSchemaColumn.Params.DataType].ToString();

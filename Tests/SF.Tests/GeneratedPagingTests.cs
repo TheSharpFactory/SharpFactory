@@ -75,7 +75,6 @@ public sealed class GeneratedPagingTests
             Assert.Contains("PASS navigation properties from a collection initializer", output, StringComparison.Ordinal);
             Assert.Contains("PASS update from GetChanges", output, StringComparison.Ordinal);
             Assert.Contains("PASS update from CreateChange", output, StringComparison.Ordinal);
-            Assert.Contains("PASS a change of another entity is refused", output, StringComparison.Ordinal);
             Assert.Contains("ALL PASSED", output, StringComparison.Ordinal);
         }
     }

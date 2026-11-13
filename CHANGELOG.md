@@ -3,7 +3,7 @@
 What changed in each published release of The Sharp Factory, newest first. Each section is also the text of that
 release on GitHub, with its downloads.
 
-## 1.2.1.1 — 2026-11-13
+## 1.2.1.2 — 2026-11-13
 
 **Important if one solution uses another solution's generated projects:** in earlier versions, a Sync into a
 solution that had the generated projects in another folder (another solution's data access, added to it) moved
@@ -14,12 +14,15 @@ where they are, their project files are left as they are, and no file is deleted
 ### What's new
 
 - **Updates from changes.** `Set(change)` on an update takes a change made by `XUtils.GetChanges(original, changed)`,
-  and `XProperty.CreateChange(name, value)` makes one for a property picked by name at run time. Code written for the
-  earlier query API that set changed columns in a loop (`uv.Set(change.Property, change.Value)`) becomes
-  `uv.Set(change)`. Same Set clause and SQL as `Set(prop, value)`; a change of another entity is refused.
+  and `XProperty.CreateChange(propertyId, value)` makes one for a property picked at run time by its `XProp` value.
+  Code written for the earlier query API that set changed columns in a loop (`uv.Set(change.Property, change.Value)`)
+  becomes `uv.Set(change)`. Same Set clause and SQL as `Set(prop, value)`.
 
 ### Fixes
 
+- **Stored procedures and functions keep result columns computed from an expression.** A column such as
+  `SELECT CAST(0 AS BIGINT) AS [PlatformBetId]` was left out of the model on Update, so a procedure whose result is
+  only such columns lost its result type. Update your models to get them back.
 - **Sync suggests the right solution.** The solution the model was last synced into comes first; when the model was
   never synced, the solution nearest the model file. The app no longer guesses a solution "open in an IDE": that
   guess named the solution an IDE was started with, even after another one was opened in it.

@@ -73,8 +73,6 @@ public static partial class QueryGenerator
 
         private static void GenerateInstanceFields()
         {
-            //the property container (XProperty) the filter's property belongs to: an update takes only its own changes
-            CSharpFile.Line("private readonly Type _owner");
             CSharpFile.Line("private readonly int _propertyId");
             CSharpFile.Line("private readonly string _propName");
             CSharpFile.Line($"private readonly {_conditionEnumType} _condition");
@@ -101,9 +99,8 @@ public static partial class QueryGenerator
             {
                 Name = Common.Names.PropertyFilter,
                 AccessModifier = AccessModifiers.Internal,
-                Parameters = new List<MethodParameter>(9)
+                Parameters = new List<MethodParameter>(8)
                 {
-                    new MethodParameter { Name = "owner", ParamType = "Type" },
                     new MethodParameter { Name = "propertyId", ParamType = "int" },
                     new MethodParameter { Name = "propertyName", ParamType = "string" },
                     new MethodParameter { Name = "filterType", ParamType = "Type" },
@@ -116,7 +113,6 @@ public static partial class QueryGenerator
             });
 
             CSharpFile.OpenBlock();
-            CSharpFile.Line("_owner = owner");
             CSharpFile.Line("_propertyId = propertyId");
             CSharpFile.Line("_propName = propertyName");
             CSharpFile.Line("_type = filterType");
@@ -212,7 +208,6 @@ public static partial class QueryGenerator
 
         private static void GenerateProperties()
         {
-            PropertyExtensions.FullNoSetter(new TypeInfo("Type"), "Owner", backingField: "_owner", propAccessModifier: AccessModifiers.Internal, description: "The property container (XProperty) the property belongs to.");
             PropertyExtensions.FullNoSetter(TypeInfo.Int, "PropertyId", backingField: "_propertyId");
             PropertyExtensions.FullNoSetter(TypeInfo.String, "PropertyName", backingField: "_propName");
             PropertyExtensions.FullNoSetter(new TypeInfo(_conditionEnumType), "Condition", backingField: "_condition");

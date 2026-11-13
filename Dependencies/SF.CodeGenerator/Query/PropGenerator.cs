@@ -108,7 +108,7 @@ public static partial class QueryGenerator
 
             CSharpFile.DeclareMethod(method);
             CSharpFile.OpenBlock();
-            CSharpFile.Return($"new {Common.Names.PropertyFilter}(typeof({Common.Names.GenericProp}), _enumValue, _name, _filterType, _isNullable, _isBinary, condition, op, value)");
+            CSharpFile.Return($"new {Common.Names.PropertyFilter}(_enumValue, _name, _filterType, _isNullable, _isBinary, condition, op, value)");
             CSharpFile.CloseBlock();
 
             method.Name = "CreateSort";
@@ -511,7 +511,7 @@ public static partial class QueryGenerator
                 });
             }
 
-            GenerateCreateChange(entity, containerName);
+            GenerateCreateChange(entity, propEnum);
 
             CSharpFile.Constructor(new ConstructorDeclaration
             {
@@ -533,10 +533,11 @@ public static partial class QueryGenerator
         }
 
         /// <summary>
-        /// CreateChange(name, value): the change of the property with that name, for code that picks the property at
-        /// run time; UpdateValuesBuilder.Set(change) adds it. One case per property, each the typed Prop's filter.
+        /// CreateChange(propertyId, value): the change of the property with that id (its XProp value), for code that
+        /// picks the property at run time; UpdateValuesBuilder.Set(change) adds it. A switch on the property enum, one
+        /// case per property, each the typed Prop's filter.
         /// </summary>
-        private static void GenerateCreateChange(Entity entity, string containerName)
+        private static void GenerateCreateChange(Entity entity, string propEnum)
         {
             CSharpFile.DeclareMethod(new MethodDeclaration
             {
@@ -545,17 +546,17 @@ public static partial class QueryGenerator
                 ReturnType = new TypeInfo(Common.Names.IQueryFilter),
                 Parameters = new List<MethodParameter>
                 {
-                  new MethodParameter { Name = "propertyName", ParamType = "string", Description = "The property's name, as the entity names it." },
+                  new MethodParameter { Name = "propertyId", ParamType = "int", Description = $"The property's id: its {propEnum} value." },
                   new MethodParameter { Name = "value", ParamType = "object", Description = "The new value, of the property's type." },
                 },
-                Summary = new List<string> { $"The change that sets the property of {entity.N} named propertyName to value: what Set(prop, value) adds to an update. Pass it to Set(change). Throws ArgumentException for a name that is not a property, InvalidCastException for a value of another type." }
+                Summary = new List<string> { $"The change that sets the property of {entity.N} with id propertyId to value: what Set(prop, value) adds to an update. Pass it to Set(change). Throws ArgumentException for an id that is not a property, InvalidCastException for a value of another type." }
             });
             CSharpFile.OpenBlock();
-            CSharpFile.Switch("propertyName");
+            CSharpFile.Switch($"({propEnum})propertyId");
             CSharpFile.OpenBlock();
             foreach(var p in entity.Ps)
             {
-                CSharpFile.Case($"nameof({p.N})");
+                CSharpFile.Case($"{propEnum}.{p.N}");
                 CSharpFile.Indent();
                 CSharpFile.Return($"{Common.Names.QueryFilter}.New({p.N}, {Common.Names.FilterConditionsEnum}.Equals, ({ComposeValueType(p)})value)");
                 CSharpFile.Outdent();
@@ -563,7 +564,7 @@ public static partial class QueryGenerator
 
             CSharpFile.CaseDefault();
             CSharpFile.Indent();
-            CSharpFile.Line($"throw new ArgumentException($\"{{propertyName}} is not a property of {entity.N}.\", nameof(propertyName))");
+            CSharpFile.Line($"throw new ArgumentException($\"{{propertyId}} is not a property of {entity.N}.\", nameof(propertyId))");
             CSharpFile.Outdent();
             CSharpFile.CloseBlock();
             CSharpFile.CloseBlock();
