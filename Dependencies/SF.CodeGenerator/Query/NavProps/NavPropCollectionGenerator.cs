@@ -217,7 +217,9 @@ public static partial class QueryGenerator
                 IsPartial = false,
                 InheritanceModifier = InheritanceModifiers.Sealed,
                 Summary = new List<string>(1) { "This class is a collection of Navigation Properties." },
-                GenericParams = _genericParamsWithNavProps
+                GenericParams = _genericParamsWithNavProps,
+                //a collection, so it takes a collection initializer: new NavProps<CustomerProperty> { CustomerNavProperty.Orders }
+                Interfaces = new List<string> { $"IEnumerable<{navProp}>" }
             };
 
             CSharpFile.OpenClass(genericType);
@@ -239,6 +241,26 @@ public static partial class QueryGenerator
             CSharpFile.DeclareMethod(method);
             CSharpFile.OpenBlock();
             CSharpFile.Line("_items.Add(item.CreateItem())");
+            CSharpFile.CloseBlock();
+
+            CSharpFile.DeclareMethod(new MethodDeclaration
+            {
+                Name = "GetEnumerator",
+                ReturnType = new TypeInfo($"IEnumerator<{navProp}>"),
+                Summary = new List<string>(1) { "The navigation properties added, in order." },
+            });
+            CSharpFile.OpenBlock();
+            CSharpFile.Return("_items.GetEnumerator()");
+            CSharpFile.CloseBlock();
+
+            CSharpFile.DeclareMethod(new MethodDeclaration
+            {
+                Name = "System.Collections.IEnumerable.GetEnumerator",
+                AccessModifier = AccessModifiers.None,
+                ReturnType = new TypeInfo("System.Collections.IEnumerator"),
+            });
+            CSharpFile.OpenBlock();
+            CSharpFile.Return("_items.GetEnumerator()");
             CSharpFile.CloseBlock();
 
             CSharpFile.CloseType();

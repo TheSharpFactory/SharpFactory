@@ -4,6 +4,31 @@ Newest first. One entry per change set. Version rules: see [BACKLOG.md](BACKLOG.
 
 ---
 
+## 1.2.0.9 — 2026-11-13
+
+Changes
+- SF-179: the generated `NavProps<TProps>` implements `IEnumerable<NavProp>` (`GetEnumerator` over its items, plus the explicit non-generic one), so `new NavProps<CustomerProperty> { CustomerNavProperty.Orders }` compiles. Production code written for the old API used `new NavProps<XNavProperty> { ... }` in 71 places; with this it only needs the type argument changed.
+- `CSharpFile.MemberSignature` writes each modifier with its own trailing space and nothing for `AccessModifiers.None`, so an explicit interface member has no modifier and no stray space. No existing member used `None`: the rest of the generated code is byte-identical.
+
+Verification
+- The Coverage model and the reference model generated with 1.2.0.8 and with this version: only `<Root>.Query/Query/NavProps/NavProps.cs` differs, by the interface and the two methods.
+- `SF.Tests` 64 passed with the database tests on (the quoted-names test skips without its database); `GeneratedPagingTests` now also compiles and runs `ByPKAsync(..., new NavProps<RegionProperty> { RegionNavProperty.Stores })` against SQL Server and checks the stores are loaded. New `GeneratedNavPropsTests.NavPropsOfAContainerIsACollection` checks the generated declaration.
+
+Commit details
+
+```
+Let NavProps<T> take a collection initializer
+
+The generated NavProps<TProps> implements IEnumerable<NavProp>, so
+new NavProps<CustomerProperty> { CustomerNavProperty.Orders } compiles,
+as code written for the old query API did with NavProps<XNavProperty>.
+The C# writer writes no access modifier for explicit interface members.
+
+Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>
+```
+
+---
+
 ## 1.2.0.8 — 2026-11-13
 
 Changes

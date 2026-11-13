@@ -110,21 +110,21 @@ public static partial class CSharpFile
             }
             else
             {
-                _b.Append(_accessModifiers[member.AccessModifier]);
+                //each modifier with the space after it; None (an explicit interface implementation) writes nothing
+                if(member.AccessModifier != AccessModifiers.None)
+                    _b.Append(_accessModifiers[member.AccessModifier]).Append(' ');
 
                 if(member.IsStatic)
-                    _b.Append(" static");
+                    _b.Append("static ");
 
                 if(hideMember)
-                    _b.Append(" new");
+                    _b.Append("new ");
 
                 if(isReadOnly)
-                    _b.Append(" readonly");
+                    _b.Append("readonly ");
 
                 if(!hideMember && member.InheritanceModifier != InheritanceModifiers.None)
-                    _b.Append(' ').Append(_inheritanceModifiers[member.InheritanceModifier]);
-
-                _b.Append(' ');
+                    _b.Append(_inheritanceModifiers[member.InheritanceModifier]).Append(' ');
             }
         }
 

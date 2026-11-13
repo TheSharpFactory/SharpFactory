@@ -3,6 +3,20 @@
 What changed in each published release of The Sharp Factory, newest first. Each section is also the text of that
 release on GitHub, with its downloads.
 
+## 1.2.0.9 — 2026-11-13
+
+**Code written for the earlier query API:** navigation properties can again be given with a collection initializer,
+`new NavProps<CustomerProperty> { CustomerNavProperty.Orders }`. Code that used `new NavProps<CustomerNavProperty> { ... }`
+compiles after changing the type argument to the entity's property container. Sync your solutions with this version
+to get it; nothing else in the generated code changes, and neither does the SQL.
+
+### Downloads
+
+| Download | What |
+|
+
+---
+
 ## 1.2.0.8 — 2026-11-13
 
 **Regenerate your code:** in 1.1.8.8 every paged read in the generated code failed on SQL Server ("Invalid attempt to

@@ -81,6 +81,13 @@ internal static class Program
         //the navigation property's result set must not change the page's total
         CheckTotal("page with a to-many navigation property", withStores.RecordCount, withStores.PageCount, _regionCount, 3);
 
+        //navigation properties given with a collection initializer (NavProps<T> is a collection)
+        var oneRegion = await regions.ByPKAsync(_country, RegionCode(1), new NavProps<RegionProperty> { RegionNavProperty.Stores });
+        if(oneRegion == null || oneRegion.Stores == null || oneRegion.Stores.Count != _storesPerRegion)
+            throw new InvalidOperationException($"navigation properties from a collection initializer: {oneRegion?.Stores?.Count ?? 0} stores, expected {_storesPerRegion}");
+
+        Console.WriteLine("PASS navigation properties from a collection initializer");
+
         //a to-one navigation property on a paged query, sync and async
         var storePage = StorePage();
         CheckStores("page with a to-one navigation property", stores.ToList(storePage));
