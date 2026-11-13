@@ -220,18 +220,20 @@ public sealed class UpdateTests
     {
         using(var folder = new TestFolder())
         {
+            //a program in a plain folder: the Windows or the Linux layout (macOS has a bundle, tested on its own)
+            var platform = OperatingSystem.IsWindows() ? AppPlatform.Windows : AppPlatform.Linux;
             var program = Path.Combine(folder.Path, OperatingSystem.IsWindows() ? "TheSharpFactory.exe" : "TheSharpFactory");
             File.WriteAllText(program, "app");
 
-            var release = InstallLocation.Find(program, InstallLocation.CurrentPlatform);
+            var release = InstallLocation.Find(program, platform);
             Assert.Null(release.Problem);
             Assert.Equal(folder.Path, release.Folder);
             Assert.Equal(Path.GetFileName(program), release.RelativeExecutable);
 
             File.WriteAllText(Path.Combine(folder.Path, "TheSharpFactory.dll"), "dll");
-            Assert.NotNull(InstallLocation.Find(program, InstallLocation.CurrentPlatform).Problem);
-            Assert.NotNull(InstallLocation.Find(Path.Combine(folder.Path, "Other.exe"), InstallLocation.CurrentPlatform).Problem);
-            Assert.NotNull(InstallLocation.Find(null, InstallLocation.CurrentPlatform).Problem);
+            Assert.NotNull(InstallLocation.Find(program, platform).Problem);
+            Assert.NotNull(InstallLocation.Find(Path.Combine(folder.Path, "Other.exe"), platform).Problem);
+            Assert.NotNull(InstallLocation.Find(null, platform).Problem);
         }
     }
 
@@ -484,23 +486,20 @@ public sealed class UpdateTests
     [Fact]
     public async Task WhenAFileCannotBeReplacedTheOthersArePutBack()
     {
-        //a file open without sharing cannot be renamed on Windows; Linux and macOS rename it anyway
-        Assert.SkipUnless(OperatingSystem.IsWindows(), "Only Windows refuses to rename an open file.");
-
         using(var folder = new TestFolder())
         {
             var install = CreateInstall(Path.Combine(folder.Path, "app"));
             var handler = new FakeHttpHandler();
             var release = PublishPackage(handler, folder.Path, "TheSharpFactory-test.zip", null);
-            var before = ListFolder(install.Folder);
 
-            using(new FileStream(Path.Combine(install.Folder, "LICENSE"), FileMode.Open, FileAccess.Read, FileShare.None))
+            using(BlockReplacingTheLicense(install.Folder))
             {
+                var before = ListFolder(install.Folder);
                 var error = await Assert.ThrowsAsync<UpdateException>(new UpdateInstaller(new HttpClient(handler), release, install, new Version(1, 0), null, null).RunAsync);
                 Assert.Contains("left as it was", error.Message, StringComparison.Ordinal);
+                Assert.Equal(before, ListFolder(install.Folder));
             }
 
-            Assert.Equal(before, ListFolder(install.Folder));
             Assert.Equal("old app", File.ReadAllText(Path.Combine(install.Folder, "TheSharpFactory.exe")));
             Assert.Equal("old cli", File.ReadAllText(Path.Combine(install.Folder, "sharpfactory.exe")));
             Assert.True(File.Exists(Path.Combine(install.Folder, "licenses", "Old.txt")));
@@ -510,29 +509,31 @@ public sealed class UpdateTests
     [Fact]
     public async Task ARunningProgramIsReplacedByRenamingIt()
     {
-        //what makes the update work on Windows: a running program cannot be overwritten or deleted, but renamed
-        Assert.SkipUnless(OperatingSystem.IsWindows(), "Linux and macOS replace a running program without renaming tricks.");
-
+        //what makes the update work on Windows: a running program cannot be overwritten or deleted, but it can be
+        //renamed. Linux and macOS rename (and delete) a running program too
         using(var folder = new TestFolder())
         {
             var install = CreateInstall(Path.Combine(folder.Path, "app"));
             var program = Path.Combine(install.Folder, "TheSharpFactory.exe");
-            File.Copy(Path.Combine(Environment.SystemDirectory, "cmd.exe"), program, true);
+            var start = StartSomethingLong(program);
             var handler = new FakeHttpHandler();
             var release = PublishPackage(handler, folder.Path, "TheSharpFactory-test.zip", null);
 
-            var running = Process.Start(new ProcessStartInfo(program, "/c ping -n 30 127.0.0.1 >nul") { UseShellExecute = false, CreateNoWindow = true });
+            var running = Process.Start(start);
             try
             {
-                var deleteError = Record.Exception(() => File.Delete(program));
-                Assert.True(deleteError is IOException || deleteError is UnauthorizedAccessException);
+                if(OperatingSystem.IsWindows())
+                {
+                    var deleteError = Record.Exception(() => File.Delete(program));
+                    Assert.True(deleteError is IOException || deleteError is UnauthorizedAccessException);
+                }
 
                 await new UpdateInstaller(new HttpClient(handler), release, install, new Version(1, 0), null, null).RunAsync();
 
                 Assert.Equal("new app", File.ReadAllText(program));
                 Assert.False(running.HasExited);
-                //still running, so it cannot be deleted yet: the clean-up leaves it for the next start
-                Assert.False(UpdateInstaller.TryCleanUp(install.Folder));
+                //on Windows the old program cannot be deleted while it runs: the clean-up leaves it for the next start
+                Assert.Equal(!OperatingSystem.IsWindows(), UpdateInstaller.TryCleanUp(install.Folder));
             }
             finally
             {
@@ -912,6 +913,35 @@ public sealed class UpdateTests
         };
     }
 
+    /// <summary>
+    /// Copies a system program that waits half a minute to <paramref name="program"/>: cmd.exe on Windows (pinging
+    /// itself), sleep on Linux and macOS.
+    /// </summary>
+    private static ProcessStartInfo StartSomethingLong(string program)
+    {
+        if(OperatingSystem.IsWindows())
+        {
+            File.Copy(Path.Combine(Environment.SystemDirectory, "cmd.exe"), program, true);
+            return new ProcessStartInfo(program, "/c ping -n 30 127.0.0.1 >nul") { UseShellExecute = false, CreateNoWindow = true };
+        }
+
+        File.Copy("/bin/sleep", program, true);
+        File.SetUnixFileMode(program, UnixFileMode.UserRead | UnixFileMode.UserWrite | UnixFileMode.UserExecute);
+        return new ProcessStartInfo(program, "30") { UseShellExecute = false, CreateNoWindow = true };
+    }
+
+    /// <summary>
+    /// Makes replacing LICENSE fail: Windows refuses to rename a file open without sharing; on Linux and macOS a left-over
+    /// "LICENSE.sf-old" folder that cannot be emptied (it is read-only), which the swap deletes first.
+    /// </summary>
+    private static IDisposable BlockReplacingTheLicense(string folder)
+    {
+        if(OperatingSystem.IsWindows())
+            return new FileStream(Path.Combine(folder, "LICENSE"), FileMode.Open, FileAccess.Read, FileShare.None);
+
+        return new ReadOnlyFolder(Path.Combine(folder, "LICENSE" + UpdateInstaller.OldSuffix));
+    }
+
     private static List<string> ListFolder(string folder)
     {
         var names = new List<string>();
@@ -1039,5 +1069,28 @@ internal sealed class RecordingProgress : IProgress<UpdateProgress>
         {
             Stages.Add(value.Stage);
         }
+    }
+}
+
+/// <summary>
+/// A folder with a file in it that cannot be deleted while the folder is read-only (Linux, macOS); writable again when
+/// disposed, so the test's folder can be deleted.
+/// </summary>
+[System.Runtime.Versioning.UnsupportedOSPlatform("windows")]
+internal sealed class ReadOnlyFolder : IDisposable
+{
+    private readonly string _path;
+
+    public ReadOnlyFolder(string path)
+    {
+        _path = path;
+        Directory.CreateDirectory(path);
+        File.WriteAllText(Path.Combine(path, "left over"), "left over");
+        File.SetUnixFileMode(path, UnixFileMode.UserRead | UnixFileMode.UserExecute);
+    }
+
+    public void Dispose()
+    {
+        File.SetUnixFileMode(_path, UnixFileMode.UserRead | UnixFileMode.UserWrite | UnixFileMode.UserExecute);
     }
 }

@@ -4,6 +4,33 @@ Newest first. One entry per change set. Version rules: see [BACKLOG.md](BACKLOG.
 
 ---
 
+## 1.2.0.7 — 2026-11-13
+
+Changes
+- SF-177: CI failed for the push of 1.2.0.3 to 1.2.0.6 in the UI tests on Linux and macOS (Windows passed; the engine tests, including the SQL Server paging test, passed everywhere). The job logs need a GitHub sign-in, so the causes come from the code:
+  - **macOS:** `AReleaseDownloadCanUpdateItselfButABuildFromTheSourceCannot` asked `InstallLocation.Find` for the current system since 1.2.0.6, which on macOS expects an `.app` bundle around the program; the test checks a program in a plain folder. It now asks for the Windows or the Linux layout (the macOS bundle has its own test).
+  - **Linux:** `WhenAFileCannotBeReplacedTheOthersArePutBack` and `ARunningProgramIsReplacedByRenamingIt` were Windows-only and skipped elsewhere, and CI's Linux job fails on a skipped test (`xUnit.FailSkips`). Both run on every system now: the replacement is blocked by a file open without sharing on Windows and by a read-only left-over `LICENSE.sf-old` folder on Linux and macOS; the running program is a copy of `cmd.exe` on Windows and of `sleep` on Linux and macOS (which also rename and delete a running program, so the clean-up succeeds there at once).
+
+Verification
+- `dotnet test SF.slnx -c Release -- xUnit.FailSkips=true` with the database tests on (Windows): `SF.Tests` 63 passed, `SF.App.Tests` 103 passed, none skipped. The Linux and macOS branches run only in CI.
+
+Commit details
+
+```
+Run the update tests on Linux and macOS too
+
+The folder-layout test asks for the Windows or Linux layout instead of
+the current system (macOS expects a bundle). The roll-back and
+running-program tests no longer skip outside Windows, which CI's Linux
+job counts as failures.
+
+Bump version to 1.2.0.7.
+
+Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>
+```
+
+---
+
 ## 1.2.0.6 — 2026-11-12
 
 Changes
