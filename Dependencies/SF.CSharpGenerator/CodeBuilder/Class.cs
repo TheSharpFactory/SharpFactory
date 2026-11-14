@@ -16,7 +16,7 @@ public static partial class CSharpFile
     }
     private static void ComposeClassDeclaration(ClassDeclaration declaration)
     {
-        _b.Append(_currentIndent);
+        AppendIndent();
 
         _b.Append(_accessModifiers[declaration.AccessModifier]);
 
@@ -53,7 +53,7 @@ public static partial class CSharpFile
 
         for(var i = 0; i < attrCount; i++)
         {
-            _b.Append(_currentIndent);
+            AppendIndent();
 
             _b.Append('[');
 

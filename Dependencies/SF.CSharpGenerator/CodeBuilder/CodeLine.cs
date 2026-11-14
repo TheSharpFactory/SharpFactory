@@ -24,7 +24,7 @@ public static partial class CSharpFile
     }
     private static void LineBase(string line)
     {
-        _b.Append(_currentIndent).Append(line);
+        AppendIndent().Append(line);
         AddSemicolon(line);
     }
     private static void AddSemicolon(string line)
@@ -47,7 +47,7 @@ public static partial class CSharpFile
     /// <param name="line"></param>
     public static void LineIndented(string line)
     {
-        _b.Append(_baseIndent);
+        AppendIndentStep();
         Line(line);
     }
 
@@ -57,7 +57,7 @@ public static partial class CSharpFile
     /// <param name="line"></param>
     public static void LineNoEnding(string line)
     {
-        _b.Append(_currentIndent).AppendLine(line);
+        AppendIndent().AppendLine(line);
     }
     public static void EmptyLine()
     {

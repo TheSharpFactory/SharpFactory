@@ -37,7 +37,7 @@ public static partial class CSharpFile
 
     private static void ConstuctorSignature(ConstructorDeclaration member)
     {
-        _b.Append(_currentIndent);
+        AppendIndent();
 
         if(member.IsStatic)
             _b.Append("static ");

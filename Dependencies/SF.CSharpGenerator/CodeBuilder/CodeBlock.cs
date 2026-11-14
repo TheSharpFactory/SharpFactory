@@ -4,7 +4,7 @@ public static partial class CSharpFile
 {
     public static void OpenBlock()
     {
-        _b.Append(_currentIndent).AppendLine("{");
+        AppendIndent().AppendLine("{");
         Indent();
     }
     public static void CloseBlock()
@@ -26,6 +26,6 @@ public static partial class CSharpFile
     public static void CloseBlock(string customEnding)
     {
         Outdent();
-        _b.Append(_currentIndent).AppendLine(customEnding);
+        AppendIndent().AppendLine(customEnding);
     }
 }

@@ -4,6 +4,33 @@ Newest first. One entry per change set. Version rules: see [BACKLOG.md](BACKLOG.
 
 ---
 
+## 1.2.1.7 — 2026-11-14
+
+Changes
+- SF-188, inside `CSharpFile` only (SF.CSharpGenerator/CodeBuilder; no generator or other caller changed): the indent is a level (`_indentLevel`), written with `AppendIndent()` / `AppendIndentStep()` as `_b.Append(' ', count)`, instead of the strings `_currentIndent` / `_baseIndent` that `Indent()` and `Outdent()` rebuilt (concatenation and `Substring`) on every block; `Outdent()` still stops at the left margin. Doc comments write the type in words with `AppendTypeDescription`, slicing the type name with `ReadOnlySpan<char>` (`IndexOfAny('<', '>')`) instead of two `Replace` strings. `ComposeInterfaceInheritance` appends each interface instead of `string.Join`. The header example's keyword is a constant (`DescribeKeyword`) instead of `ToString().ToLowerInvariant()`.
+
+Verification
+- GenCheck against 1.2.1.6: the reference model (1,783 files), the test database model (1,424), Coverage (174) and Coverage with indent size 2 (174): every file byte-identical.
+- Allocations generating the reference model: 138.9 MB per run before, 137.7 MB after (five runs, three times each).
+- `CSharpFileTests` (new, 49 cases): indentation (nesting, sizes 0 to 8, 40 levels, closing past the margin, Start), lines and semicolons, control flow, block endings, comments and regions, usings, classes, interfaces, enums, properties of every kind, fields, methods (async, abstract, generic, interface members), constructors, doc comments (the type in words for nested generics, given text, properties, fields), the header and footer, TypeInfo. `CSharpWriterTests` adds: every generated line scales with the indent size (2 against 4, over 10,000 lines) and generating twice gives the same files. All of them pass on the 1.2.1.6 writer too (the behavior is unchanged), and each of five deliberate breaks in the new code (outdent below zero, a wider step, the type words, the interface spacing, the header keyword) makes at least one of them fail.
+- `SF.Tests` 121 passed with the database tests on (the generated code compiles and runs against SQL Server); `SF.App.Tests` 110 passed.
+
+Commit details
+
+```
+CSharpFile: indent by level, type words from spans, no joined strings
+
+The writer kept the indent as strings rebuilt on every block; it now
+keeps a level and writes the spaces straight into the file. Doc comment
+type words are written from slices of the type name, the interface list
+one by one and the header keyword is a constant. Changes are inside
+CSharpFile only; the generated code is byte-identical.
+
+Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>
+```
+
+---
+
 ## 1.2.1.6 — 2026-11-14
 
 Changes

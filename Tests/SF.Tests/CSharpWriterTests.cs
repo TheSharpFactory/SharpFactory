@@ -39,6 +39,92 @@ public sealed class CSharpWriterTests
         }
     }
 
+    /// <summary>
+    /// Every line the writer indents scales with the indent size: generated with 2 and with 4, each line of every file
+    /// has exactly twice the leading spaces with 4 and the same text after them. The SQL engine files are copied as
+    /// they are (not written by the writer), so they are left out.
+    /// </summary>
+    [Fact]
+    public void EveryGeneratedLineScalesWithTheIndentSize()
+    {
+        using(var folder = new TestFolder())
+        {
+            var four = folder.Combine("four");
+            var two = folder.Combine("two");
+            GenerateWithIndent(4, four);
+            GenerateWithIndent(2, two);
+
+            var checkedLines = 0;
+            var indentedLines = 0;
+            var files = Directory.GetFiles(four, "*.cs", SearchOption.AllDirectories);
+            Assert.NotEmpty(files);
+            foreach(var file in files)
+            {
+                var relative = Path.GetRelativePath(four, file);
+                if(relative.Contains("SQLEngine", StringComparison.Ordinal))
+                    continue;
+
+                var linesFour = File.ReadAllLines(file);
+                var linesTwo = File.ReadAllLines(Path.Combine(two, relative));
+                Assert.True(linesFour.Length == linesTwo.Length, relative + " has a different number of lines");
+                for(var i = 0; i < linesFour.Length; i++)
+                {
+                    var spacesFour = CountLeadingSpaces(linesFour[i]);
+                    var spacesTwo = CountLeadingSpaces(linesTwo[i]);
+                    Assert.True(spacesFour == spacesTwo * 2, $"{relative} line {i + 1}: {spacesFour} spaces with 4, {spacesTwo} with 2");
+                    Assert.True(string.Equals(linesFour[i].Substring(spacesFour), linesTwo[i].Substring(spacesTwo), StringComparison.Ordinal), $"{relative} line {i + 1} differs after its indent");
+                    checkedLines++;
+                    if(spacesFour > 0)
+                        indentedLines++;
+                }
+            }
+
+            Assert.True(checkedLines > 10000, "lines checked: " + checkedLines);
+            Assert.True(indentedLines > 5000, "indented lines checked: " + indentedLines);
+        }
+    }
+
+    /// <summary>
+    /// The writer keeps no state between files: generating the same model twice in one process gives the same files.
+    /// </summary>
+    [Fact]
+    public void GeneratingTwiceGivesTheSameFiles()
+    {
+        using(var folder = new TestFolder())
+        {
+            var first = folder.Combine("first");
+            var second = folder.Combine("second");
+            GenerationRunner.Run(Fixtures.LoadCoverage(), new FolderProjectHost(first), NullProgressLog.Instance);
+            GenerationRunner.Run(Fixtures.LoadCoverage(), new FolderProjectHost(second), NullProgressLog.Instance);
+
+            var files = Directory.GetFiles(first, "*", SearchOption.AllDirectories);
+            Assert.NotEmpty(files);
+            foreach(var file in files)
+            {
+                var relative = Path.GetRelativePath(first, file);
+                Assert.True(File.ReadAllText(file) == File.ReadAllText(Path.Combine(second, relative)), relative + " differs the second time");
+            }
+
+            Assert.Equal(files.Length, Directory.GetFiles(second, "*", SearchOption.AllDirectories).Length);
+        }
+    }
+
+    private static void GenerateWithIndent(int indentSize, string output)
+    {
+        var container = Fixtures.LoadCoverage();
+        container.CommonSettings.IndentSize = indentSize;
+        GenerationRunner.Run(container, new FolderProjectHost(output), NullProgressLog.Instance);
+    }
+
+    private static int CountLeadingSpaces(string line)
+    {
+        var count = 0;
+        while(count < line.Length && line[count] == ' ')
+            count++;
+
+        return count;
+    }
+
     private static string Read(string folder, string name)
     {
         var files = Directory.GetFiles(folder, name, SearchOption.AllDirectories);

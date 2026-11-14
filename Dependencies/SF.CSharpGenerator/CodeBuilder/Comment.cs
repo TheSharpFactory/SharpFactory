@@ -8,17 +8,17 @@ public static partial class CSharpFile
 {
     public static void Comment(string comment)
     {
-        _b.Append(_currentIndent).Append("// ").AppendLine(comment);
+        AppendIndent().Append("// ").AppendLine(comment);
     }
     public static void Comment(List<string> comment)
     {
-        _b.Append(_currentIndent)
+        AppendIndent()
           .AppendLine("/*");
         Indent();
 
         foreach(var c in comment)
         {
-            _b.Append(_currentIndent).AppendLine(c);
+            AppendIndent().AppendLine(c);
         }
 
         Outdent();

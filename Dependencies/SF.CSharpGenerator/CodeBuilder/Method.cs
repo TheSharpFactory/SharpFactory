@@ -9,7 +9,7 @@ public static partial class CSharpFile
         if(method.Attributes?.Count > 0)
         {
             foreach(var attribute in method.Attributes)
-                _b.Append(_currentIndent).Append('[').Append(attribute).Append(']').AppendLine();
+                AppendIndent().Append('[').Append(attribute).Append(']').AppendLine();
         }
 
         MemberSignature(method);

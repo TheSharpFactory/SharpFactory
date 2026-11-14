@@ -5,7 +5,7 @@ public static partial class CSharpFile
     public static void EnumMember(EnumMemberDeclaration member)
     {
         XmlSummary(member.Summary);
-        _b.Append(_currentIndent)
+        AppendIndent()
           .Append(member.Name);
 
         if(!string.IsNullOrWhiteSpace(member.Value))

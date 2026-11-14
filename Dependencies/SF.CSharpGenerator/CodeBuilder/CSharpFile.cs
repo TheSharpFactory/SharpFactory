@@ -31,8 +31,8 @@ public static partial class CSharpFile
     private static readonly StringBuilder _b = new StringBuilder(100000);
 
     private static int _indentSize = 4;
-    private static string _currentIndent = "";
-    private static string _baseIndent = "";
+    //how many blocks deep the next line is: its spaces are written straight into the file, no indent strings
+    private static int _indentLevel = 0;
 
     /// <summary>
     /// Start a new code file. Call this every time you are going to start a new code file.
@@ -51,10 +51,23 @@ public static partial class CSharpFile
     public static void Start()
     {
         _b.Length = 0;
+        _indentLevel = 0;
+    }
 
-        _baseIndent = new string(' ', _indentSize);
+    /// <summary>
+    /// Writes the current indentation (the spaces of every open block).
+    /// </summary>
+    private static StringBuilder AppendIndent()
+    {
+        return _b.Append(' ', _indentLevel * _indentSize);
+    }
 
-        _currentIndent = "";
+    /// <summary>
+    /// Writes one more level of indentation (a single statement under an if, foreach or while without braces).
+    /// </summary>
+    private static StringBuilder AppendIndentStep()
+    {
+        return _b.Append(' ', _indentSize);
     }
 
     public static void Append(string val)
@@ -74,7 +87,7 @@ public static partial class CSharpFile
     /// <param name="val">The value to append</param>
     public static void AppendIndented(string val)
     {
-        _b.Append(_currentIndent).Append(val);
+        AppendIndent().Append(val);
     }
     public static void Replace(string oldValue, string newValue)
     {
@@ -96,7 +109,7 @@ public static partial class CSharpFile
     #region Member Helpers
     private static void MemberSignature(IComplexDeclaration member, bool isReadOnly = false)
     {
-        _b.Append(_currentIndent);
+        AppendIndent();
 
         var hideMember = member.InheritanceModifier == InheritanceModifiers.New;
 
@@ -190,37 +203,37 @@ public static partial class CSharpFile
 
     public static void Return(string val)
     {
-        _b.Append(_currentIndent).Append("return ").Append(val);
+        AppendIndent().Append("return ").Append(val);
         AddSemicolon(val);
         _b.AppendLine();
     }
     public static void ReturnNoEnding(string val)
     {
-        _b.Append(_currentIndent).Append("return ").Append(val);
+        AppendIndent().Append("return ").Append(val);
         _b.AppendLine();
     }
     public static void ReturnIndented(string val)
     {
-        _b.Append(_baseIndent);
+        AppendIndentStep();
         Return(val);
     }
     public static void Return()
     {
-        _b.Append(_currentIndent).AppendLine("return;");
+        AppendIndent().AppendLine("return;");
     }
     public static void ReturnIndented()
     {
-        _b.Append(_baseIndent);
+        AppendIndentStep();
         Return();
     }
 
     public static void Continue()
     {
-        _b.Append(_currentIndent).AppendLine("continue;");
+        AppendIndent().AppendLine("continue;");
     }
     public static void ContinueIndented()
     {
-        _b.Append(_baseIndent);
+        AppendIndentStep();
         Continue();
     }
 

@@ -39,14 +39,14 @@ public static partial class CSharpFile
         _b.AppendLine();
         OpenNamespace(type.Namespace);
 
-        _b.Append(_currentIndent);
+        AppendIndent();
 
         _b.Append(_accessModifiers[type.AccessModifier]);
 
         if(type.IsPartial)
             _b.Append(" partial");
 
-        _b.Append(' ').Append(type.Artifact.ToString().ToLowerInvariant()).Append(' ');
+        _b.Append(' ').Append(DescribeKeyword(type.Artifact)).Append(' ');
 
         _b.Append(type.Name);
         //a generic type's other part needs its type parameters, or it declares another type
@@ -60,6 +60,22 @@ public static partial class CSharpFile
 
         CloseNamespace();
         _b.AppendLine();
+    }
+    private static string DescribeKeyword(ArtifactKind kind)
+    {
+        switch(kind)
+        {
+            case ArtifactKind.Class:
+                return "class";
+            case ArtifactKind.Interface:
+                return "interface";
+            case ArtifactKind.Enum:
+                return "enum";
+            case ArtifactKind.Struct:
+                return "struct";
+            default:
+                return kind.ToString().ToLowerInvariant();
+        }
     }
     public static void Footer(List<string> footer = null)
     {

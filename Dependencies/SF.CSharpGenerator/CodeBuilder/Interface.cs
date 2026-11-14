@@ -15,7 +15,7 @@ public static partial class CSharpFile
     }
     private static void ComposeInterfaceDeclaration(InterfaceDeclaration declaration)
     {
-        _b.Append(_currentIndent);
+        AppendIndent();
 
         _b.Append(_accessModifiers[declaration.AccessModifier]);
 
@@ -39,7 +39,15 @@ public static partial class CSharpFile
         if(!type.ImplementsInterfaces)
             return;
 
-        _b.Append(" : ").Append(string.Join(", ", type.Interfaces));
+        _b.Append(" : ");
+        var count = type.Interfaces.Count;
+        for(var i = 0; i < count; i++)
+        {
+            if(i > 0)
+                _b.Append(',').Append(' ');
+
+            _b.Append(type.Interfaces[i]);
+        }
     }
     public static void CloseInterface()
     {

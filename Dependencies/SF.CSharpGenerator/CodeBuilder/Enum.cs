@@ -15,7 +15,7 @@ public static partial class CSharpFile
     }
     private static void ComposeEnumDeclaration(EnumDeclaration declaration)
     {
-        _b.Append(_currentIndent);
+        AppendIndent();
 
         _b.Append(_accessModifiers[declaration.AccessModifier]);
 

@@ -1,4 +1,5 @@
 ﻿#region Usings
+using System;
 using System.Collections.Generic;
 #endregion
 
@@ -19,12 +20,12 @@ public static partial class CSharpFile
             return;
 
         _b.AppendLine();
-        _b.Append(_currentIndent).AppendLine("/// <summary>");
+        AppendIndent().AppendLine("/// <summary>");
 
         foreach(var line in summary)
-            _b.Append(_currentIndent).Append("/// <para>").Append(line).AppendLine("</para>");
+            AppendIndent().Append("/// <para>").Append(line).AppendLine("</para>");
 
-        _b.Append(_currentIndent).AppendLine("/// </summary>");
+        AppendIndent().AppendLine("/// </summary>");
     }
     public static void PropXmlComment(PropertyDeclaration prop)
     {
@@ -34,9 +35,10 @@ public static partial class CSharpFile
         XmlSummary(prop.Summary);
 
         //a property documents its value; <returns> is for methods
-        _b.Append(_currentIndent).AppendLine("/// <value>");
-        _b.Append(_currentIndent).Append("/// ").AppendLine(DescribeType(prop));
-        _b.Append(_currentIndent).AppendLine("/// </value>");
+        AppendIndent().AppendLine("/// <value>");
+        AppendIndent().Append("/// ");
+        AppendTypeDescription(prop);
+        AppendIndent().AppendLine("/// </value>");
     }
     public static void FieldXmlComment(FieldDeclaration field)
     {
@@ -56,7 +58,7 @@ public static partial class CSharpFile
         {
             foreach(var p in method.Parameters)
             {
-                _b.Append(_currentIndent)
+                AppendIndent()
                   .Append("/// <param name=\"")
                   .Append(p.Name)
                   .Append("\">")
@@ -81,7 +83,7 @@ public static partial class CSharpFile
 
         foreach(var p in method.Parameters)
         {
-            _b.Append(_currentIndent)
+            AppendIndent()
               .Append("/// <param name=\"")
               .Append(p.Name)
               .Append("\">")
@@ -91,16 +93,37 @@ public static partial class CSharpFile
     }
     private static void ReturnTypeXmlComment(IComplexDeclaration member)
     {
-        _b.Append(_currentIndent).AppendLine("/// <returns>");
+        AppendIndent().AppendLine("/// <returns>");
 
-        _b.Append(_currentIndent).Append("/// ").AppendLine(DescribeType(member));
-        _b.Append(_currentIndent).AppendLine("/// </returns>");
+        AppendIndent().Append("/// ");
+        AppendTypeDescription(member);
+        AppendIndent().AppendLine("/// </returns>");
     }
-    private static string DescribeType(IComplexDeclaration member)
+    /// <summary>
+    /// Ends the line with the member's type in words: its ReturnTypeForComments, or its type with "&lt;" read as
+    /// " of " and "&gt;" left out (List&lt;Region&gt; is "List of Region"). Written straight from the type name, in
+    /// slices, without building the text first.
+    /// </summary>
+    private static void AppendTypeDescription(IComplexDeclaration member)
     {
         if(!string.IsNullOrWhiteSpace(member.ReturnTypeForComments))
-            return member.ReturnTypeForComments;
+        {
+            _b.AppendLine(member.ReturnTypeForComments);
+            return;
+        }
 
-        return member.ReturnType.ToString().Replace("<", " of ").Replace(">", "");
+        var rest = member.ReturnType.ToString().AsSpan();
+        var next = rest.IndexOfAny('<', '>');
+        while(next >= 0)
+        {
+            _b.Append(rest.Slice(0, next));
+            if(rest[next] == '<')
+                _b.Append(" of ");
+
+            rest = rest.Slice(next + 1);
+            next = rest.IndexOfAny('<', '>');
+        }
+
+        _b.Append(rest).AppendLine();
     }
 }

@@ -72,7 +72,7 @@ public static partial class CSharpFile
     }
     public static void OpenGetter()
     {
-        _b.Append(_currentIndent).AppendLine("get");
+        AppendIndent().AppendLine("get");
         OpenBlock();
     }
     public static void CloseGetter()
@@ -81,7 +81,7 @@ public static partial class CSharpFile
     }
     public static void OpenSetter()
     {
-        _b.Append(_currentIndent).AppendLine("set");
+        AppendIndent().AppendLine("set");
         OpenBlock();
     }
     public static void CloseSetter()

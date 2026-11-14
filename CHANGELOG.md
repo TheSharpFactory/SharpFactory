@@ -3,6 +3,21 @@
 What changed in each published release of The Sharp Factory, newest first. Each section is also the text of that
 release on GitHub, with its downloads.
 
+## 1.2.1.7 — 2026-11-14
+
+### What's new
+
+- **Leaner code writer.** The part of the app that writes the C# no longer builds a new string for every level of
+  indentation or for the type names in doc comments. The generated code is exactly the same as in 1.2.1.6, byte
+  for byte, so there is nothing to Sync.
+
+### Downloads
+
+| Download | What |
+|
+
+---
+
 ## 1.2.1.6 — 2026-11-14
 
 ### Fixes
