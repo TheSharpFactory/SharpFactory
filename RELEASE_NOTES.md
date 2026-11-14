@@ -5,7 +5,7 @@ release gives them its version. Version rules: see [BACKLOG.md](BACKLOG.md).
 
 ---
 
-## Unreleased
+## 1.2.1.8 — 2026-11-14
 
 ### CRLF from the writer (SF-191)
 
