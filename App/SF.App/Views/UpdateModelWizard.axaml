@@ -26,37 +26,39 @@
         </Grid>
       </Border>
 
-      <Panel Margin="24,20">
-        <!-- 1. connection summary -->
-        <StackPanel Spacing="10" IsVisible="{Binding IsSummaryStep}" MaxWidth="520" HorizontalAlignment="Left">
-          <TextBlock Classes="subtle" TextWrapping="Wrap" Text="The model is read again from its database. Its layers and connection stay as they are." />
-          <Grid ColumnDefinitions="160,*" RowDefinitions="Auto,Auto,Auto,Auto" Margin="0,8,0,0">
-            <TextBlock Classes="subtle" Text="Model" />
-            <TextBlock Grid.Column="1" Name="SummaryName" FontWeight="SemiBold" Text="{Binding Model.Name}" />
-            <TextBlock Grid.Row="1" Classes="subtle" Text="Server" Margin="0,8,0,0" />
-            <TextBlock Grid.Row="1" Grid.Column="1" Text="{Binding Model.ConInfo.Server}" Margin="0,8,0,0" />
-            <TextBlock Grid.Row="2" Classes="subtle" Text="Database" Margin="0,8,0,0" />
-            <TextBlock Grid.Row="2" Grid.Column="1" Text="{Binding Model.ConInfo.Database}" Margin="0,8,0,0" />
-            <TextBlock Grid.Row="3" Classes="subtle" Text="Sign-in" Margin="0,8,0,0" />
-            <TextBlock Grid.Row="3" Grid.Column="1" Name="SummarySignIn" Text="{Binding SignInText}" Margin="0,8,0,0" />
-          </Grid>
-          <ProgressBar IsIndeterminate="True" IsVisible="{Binding IsWorking}" Height="3" />
-        </StackPanel>
+      <ScrollViewer Name="WizardBody" HorizontalScrollBarVisibility="Disabled" VerticalScrollBarVisibility="Auto" AllowAutoHide="False">
+        <Panel Margin="24,20">
+          <!-- 1. connection summary -->
+          <StackPanel Spacing="10" IsVisible="{Binding IsSummaryStep}" MaxWidth="520" HorizontalAlignment="Left">
+            <TextBlock Classes="subtle" TextWrapping="Wrap" Text="The model is read again from its database. Its layers and connection stay as they are." />
+            <Grid ColumnDefinitions="160,*" RowDefinitions="Auto,Auto,Auto,Auto" Margin="0,8,0,0">
+              <TextBlock Classes="subtle" Text="Model" />
+              <TextBlock Grid.Column="1" Name="SummaryName" FontWeight="SemiBold" Text="{Binding Model.Name}" />
+              <TextBlock Grid.Row="1" Classes="subtle" Text="Server" Margin="0,8,0,0" />
+              <TextBlock Grid.Row="1" Grid.Column="1" Text="{Binding Model.ConInfo.Server}" Margin="0,8,0,0" />
+              <TextBlock Grid.Row="2" Classes="subtle" Text="Database" Margin="0,8,0,0" />
+              <TextBlock Grid.Row="2" Grid.Column="1" Text="{Binding Model.ConInfo.Database}" Margin="0,8,0,0" />
+              <TextBlock Grid.Row="3" Classes="subtle" Text="Sign-in" Margin="0,8,0,0" />
+              <TextBlock Grid.Row="3" Grid.Column="1" Name="SummarySignIn" Text="{Binding SignInText}" Margin="0,8,0,0" />
+            </Grid>
+            <ProgressBar IsIndeterminate="True" IsVisible="{Binding IsWorking}" Height="3" />
+          </StackPanel>
 
-        <!-- 2. objects -->
-        <ContentControl Content="{Binding Chooser}" IsVisible="{Binding IsObjectsStep}" Height="440">
-          <ContentControl.DataTemplates>
-            <DataTemplate DataType="vm:ObjectChooserViewModel"><views:ObjectChooserView /></DataTemplate>
-          </ContentControl.DataTemplates>
-        </ContentControl>
+          <!-- 2. objects -->
+          <ContentControl Content="{Binding Chooser}" IsVisible="{Binding IsObjectsStep}" Height="440">
+            <ContentControl.DataTemplates>
+              <DataTemplate DataType="vm:ObjectChooserViewModel"><views:ObjectChooserView /></DataTemplate>
+            </ContentControl.DataTemplates>
+          </ContentControl>
 
-        <!-- 3. progress -->
-        <ContentControl Content="{Binding Progress}" IsVisible="{Binding IsProgressStep}" Height="440">
-          <ContentControl.DataTemplates>
-            <DataTemplate DataType="vm:ProgressViewModel"><views:ProgressView /></DataTemplate>
-          </ContentControl.DataTemplates>
-        </ContentControl>
-      </Panel>
+          <!-- 3. progress -->
+          <ContentControl Content="{Binding Progress}" IsVisible="{Binding IsProgressStep}" Height="440">
+            <ContentControl.DataTemplates>
+              <DataTemplate DataType="vm:ProgressViewModel"><views:ProgressView /></DataTemplate>
+            </ContentControl.DataTemplates>
+          </ContentControl>
+        </Panel>
+      </ScrollViewer>
     </DockPanel>
   </Border>
 </UserControl>

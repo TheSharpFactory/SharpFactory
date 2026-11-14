@@ -4,6 +4,29 @@ Newest first. One entry per change set. Version rules: see [BACKLOG.md](BACKLOG.
 
 ---
 
+## 1.2.1.4 — 2026-11-14
+
+Changes
+- SF-185: `DialogView` is a `DockPanel`: the title on top, the buttons at the bottom and the message and details in a `ScrollViewer` (`DialogBody`, vertical bar always shown when it scrolls, `AllowAutoHide="False"`) that sits in the card's right padding. Width: 520 to 760 (was 420 to 560); a dialog with details is at least 720 (style `Border.dialog.withDetails`). The details box scrolls up to 320 (was 260) with the bar always shown. `MainWindow`'s dialog host keeps a 40 margin, so a long dialog stops short of the window edges. Wizards: 880 wide (was 780); the step area of both wizards is a `ScrollViewer` (`WizardBody`), so the buttons stay on screen in a short window.
+
+Verification
+- `PopupLayoutTests` (new, 4): long release notes scroll inside a dialog over 700 wide; a long message in a 1000×640 window scrolls and keeps both buttons inside the window; a dialog with details is at least 720 and a short question stays between 520 and 720; the Add wizard is 880 and its Next button is inside a 1000×640 window. Screens checked: the update question with 60 lines of notes, the long message in the small window, the Sync-into-another-solution question, the delete question and both wizard steps.
+- `SF.App.Tests` 110 passed.
+
+Commit details
+
+```
+Give popups room: wider dialogs and wizards that scroll
+
+Dialogs are 520 to 760 wide (720 with details) and their message and
+details scroll with a visible bar while the title and buttons stay put.
+Wizards are 880 wide and their step scrolls in a short window.
+
+Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>
+```
+
+---
+
 ## 1.2.1.3 — 2026-11-13
 
 Changes

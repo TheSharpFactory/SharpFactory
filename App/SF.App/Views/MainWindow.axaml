@@ -117,7 +117,7 @@
 
     <!-- messages and questions -->
     <Border Name="DialogHost" Background="{DynamicResource OverlayBackground}" IsVisible="{Binding Dialog, Converter={x:Static ObjectConverters.IsNotNull}}">
-      <ContentControl Content="{Binding Dialog}" HorizontalAlignment="Center" VerticalAlignment="Center" />
+      <ContentControl Content="{Binding Dialog}" HorizontalAlignment="Center" VerticalAlignment="Center" Margin="40" />
     </Border>
   </Grid>
 </Window>

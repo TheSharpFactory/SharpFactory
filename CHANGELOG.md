@@ -3,6 +3,22 @@
 What changed in each published release of The Sharp Factory, newest first. Each section is also the text of that
 release on GitHub, with its downloads.
 
+## 1.2.1.4 — 2026-11-14
+
+### What's new
+
+- **Roomier popups.** Messages and questions are wider (up to 760 pixels, 720 when they show details such as paths
+  or release notes), and their text scrolls with a scroll bar that stays visible, so the title and the buttons stay
+  on screen however long the text is. The New model file and Update model wizards are wider too, and their steps
+  scroll when the window is short.
+
+### Downloads
+
+| Download | What |
+|
+
+---
+
 ## 1.2.1.3 — 2026-11-13
 
 ### What's new

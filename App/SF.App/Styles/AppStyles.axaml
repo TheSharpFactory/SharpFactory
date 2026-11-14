@@ -156,9 +156,9 @@
     <Setter Property="Padding" Value="14,8" />
   </Style>
 
-  <!-- wizards: one width, height from the step -->
+  <!-- wizards: one width, height from the step (the step scrolls when the window is shorter) -->
   <Style Selector="Border.wizard">
-    <Setter Property="Width" Value="780" />
+    <Setter Property="Width" Value="880" />
   </Style>
 
   <!-- a note that needs attention (amber) -->

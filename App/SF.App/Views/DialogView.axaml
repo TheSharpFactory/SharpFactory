@@ -4,24 +4,25 @@
              x:Class="SF.App.Views.DialogView"
              x:ClassModifier="internal"
              x:DataType="vm:DialogViewModel">
-  <Border Classes="card" MinWidth="420" MaxWidth="560" BoxShadow="0 8 32 0 #40000000">
-    <StackPanel Spacing="16">
-      <StackPanel Orientation="Horizontal" Spacing="10">
+  <!-- the title and the buttons stay put; the message and details scroll when they are taller than the window allows -->
+  <UserControl.Styles>
+    <!-- a dialog with a details box (paths, release notes) opens at the full width instead of shrinking to its wrapped lines -->
+    <Style Selector="Border.dialog">
+      <Setter Property="MinWidth" Value="520" />
+    </Style>
+    <Style Selector="Border.dialog.withDetails">
+      <Setter Property="MinWidth" Value="720" />
+    </Style>
+  </UserControl.Styles>
+  <Border Name="DialogCard" Classes="card dialog" Classes.withDetails="{Binding HasDetails}" MaxWidth="760" BoxShadow="0 8 32 0 #40000000">
+    <DockPanel>
+      <StackPanel DockPanel.Dock="Top" Orientation="Horizontal" Spacing="10" Margin="0,0,0,16">
         <!-- red for an error, amber for a warning -->
         <PathIcon Name="DialogErrorSign" Data="{StaticResource IconWarning}" Width="22" Height="22" Foreground="{DynamicResource ErrorText}" IsVisible="{Binding HasErrorSign}" />
         <PathIcon Name="DialogWarningSign" Data="{StaticResource IconWarning}" Width="22" Height="22" Foreground="{DynamicResource WarningText}" IsVisible="{Binding HasWarningSign}" />
         <TextBlock Classes="sectionTitle" FontSize="18" Margin="0" Text="{Binding Title}" VerticalAlignment="Center" />
       </StackPanel>
-      <SelectableTextBlock Text="{Binding Message}" TextWrapping="Wrap" />
-      <StackPanel Name="DialogDetails" Spacing="6" IsVisible="{Binding HasDetails}">
-        <TextBlock Text="{Binding DetailsTitle}" FontWeight="SemiBold" Foreground="{DynamicResource SubtleText}" IsVisible="{Binding DetailsTitle, Converter={x:Static StringConverters.IsNotNullOrEmpty}}" />
-        <Border Background="{DynamicResource RailBackground}" BorderBrush="{DynamicResource CardBorder}" BorderThickness="1" CornerRadius="6">
-          <ScrollViewer MaxHeight="260" HorizontalScrollBarVisibility="Disabled">
-            <SelectableTextBlock Text="{Binding Details}" TextWrapping="Wrap" LineHeight="21" Margin="14,10" />
-          </ScrollViewer>
-        </Border>
-      </StackPanel>
-      <ItemsControl ItemsSource="{Binding Buttons}" HorizontalAlignment="Right">
+      <ItemsControl DockPanel.Dock="Bottom" ItemsSource="{Binding Buttons}" HorizontalAlignment="Right" Margin="0,20,0,0">
         <ItemsControl.ItemsPanel>
           <ItemsPanelTemplate>
             <StackPanel Orientation="Horizontal" Spacing="8" />
@@ -34,6 +35,20 @@
           </DataTemplate>
         </ItemsControl.ItemTemplate>
       </ItemsControl>
-    </StackPanel>
+      <!-- the scroll bar sits in the card's right padding, so the text never runs under it -->
+      <ScrollViewer Name="DialogBody" HorizontalScrollBarVisibility="Disabled" VerticalScrollBarVisibility="Auto" AllowAutoHide="False" Margin="0,0,-16,0">
+        <StackPanel Spacing="16" Margin="0,0,16,0">
+          <SelectableTextBlock Text="{Binding Message}" TextWrapping="Wrap" LineHeight="21" />
+          <StackPanel Name="DialogDetails" Spacing="6" IsVisible="{Binding HasDetails}">
+            <TextBlock Text="{Binding DetailsTitle}" FontWeight="SemiBold" Foreground="{DynamicResource SubtleText}" IsVisible="{Binding DetailsTitle, Converter={x:Static StringConverters.IsNotNullOrEmpty}}" />
+            <Border Background="{DynamicResource RailBackground}" BorderBrush="{DynamicResource CardBorder}" BorderThickness="1" CornerRadius="6">
+              <ScrollViewer Name="DialogDetailsScroll" MaxHeight="320" HorizontalScrollBarVisibility="Disabled" VerticalScrollBarVisibility="Auto" AllowAutoHide="False">
+                <SelectableTextBlock Text="{Binding Details}" TextWrapping="Wrap" LineHeight="21" Margin="14,10,22,10" />
+              </ScrollViewer>
+            </Border>
+          </StackPanel>
+        </StackPanel>
+      </ScrollViewer>
+    </DockPanel>
   </Border>
 </UserControl>
