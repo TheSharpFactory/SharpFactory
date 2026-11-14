@@ -1,10 +1,11 @@
 # TheSharpFactory — Release Notes
 
-Newest first. One entry per change set. Version rules: see [BACKLOG.md](BACKLOG.md).
+Newest first. One entry per change set; the entries since the last release are under "Unreleased" until the next
+release gives them its version. Version rules: see [BACKLOG.md](BACKLOG.md).
 
 ---
 
-## 1.2.1.8 — 2026-11-14
+## Unreleased
 
 Changes
 - SF-189: `IOUtils.ToCrlf` (every generated file goes through it before it is written, and the code preview) did `Replace("

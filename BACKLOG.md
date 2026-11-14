@@ -7,16 +7,23 @@ Current version: see [VERSION](VERSION). History: [RELEASE_NOTES.md](RELEASE_NOT
 - Four parts: `A.B.C.D`. Each part goes 0–9.
 - Every bump adds 1 to the last part. When a part would hit 10, it resets to 0 and the part to its left goes up by 1.
   - `1.0.0.9` → `1.0.1.0`, `1.0.9.9` → `1.1.0.0`, `1.9.9.9` → `2.0.0.0`
-- One bump per completed change set (each piece of work that changes code).
-- Every change set gets an entry in [RELEASE_NOTES.md](RELEASE_NOTES.md) (date, version, changes, commit details).
-- Every published release gets a section in [CHANGELOG.md](CHANGELOG.md), written for users; it becomes the text of the GitHub release for the tag `v<VERSION>`.
+- **The version changes only when a release is published** (user, 2026-11-14: bumping it for every change set left
+  versions on GitHub that were never released). `VERSION` holds the last published version until the next release,
+  which raises it by exactly one step, so the releases on GitHub follow each other with no gaps.
+- Every change set gets an entry in [RELEASE_NOTES.md](RELEASE_NOTES.md) (changes, verification, commit details).
+  Until the release, the entries collect under `## Unreleased`, and the backlog items they finish say `Done (unreleased)`.
+- Every published release gets a section in [CHANGELOG.md](CHANGELOG.md), written for users; it becomes the text of the
+  GitHub release for the tag `v<VERSION>`. Between releases it is `## Unreleased`.
+- To release ("push to prod"): raise `VERSION` by one step; rename `## Unreleased` to `## <version> — <date>` in
+  CHANGELOG.md and RELEASE_NOTES.md; turn `Done (unreleased)` into `Done (<version>)`; commit "Release <version>";
+  push; when CI passes, push the tag `v<version>`.
 - `VERSION` is the only place to edit: `Directory.Build.props` stamps it into every assembly (file and product version), the app's About page and toolbar read it from the assembly, and the release workflow checks that the tag matches it.
 
 ## Sprints
 
 - A **sprint** is a batch of backlog items worked on together (user, 2026-11-05).
 - When the user asks for the next sprint, pick the open items that are easiest to do or give the greatest benefit, skipping items that are deferred, need an outside action, or wait on a decision. Propose the batch (items, why, how each is verified) before starting.
-- Each change set inside a sprint still gets its own version bump and release-notes entry; finished items are marked Done with the version.
+- Each change set inside a sprint gets its own release-notes entry; finished items are marked `Done (unreleased)` and get the version when it is released.
 
 | Sprint | Started | Items | Status |
 |--------|---------|-------|--------|
@@ -178,7 +185,7 @@ Current version: see [VERSION](VERSION). History: [RELEASE_NOTES.md](RELEASE_NOT
 | SF-186 | Bugs | From the review of the C# generator (user, 2026-11-14: "fix the one in the picture / also fix 2 and 6"): generated names were lowered with the machine's culture (Turkish gave `int ıd`), now invariant in the generator and `Inflector`; the base classes' `ArgumentNullException` got the message as the parameter name and they threw `NullReferenceException`/`Exception`, now `ArgumentNullException(nameof(x), message)`, `ArgumentException`, `InvalidOperationException`; comment typos "sepparate", "chages" | Done (1.2.1.5) |
 | SF-187 | Bugs | From the review of the C# writer (user, 2026-11-14: "fix 1,2,3"): the header's partial-class example left out a generic type's type parameters (`BatchEntry<TEntity>` showed `partial class BatchEntry`, another type); properties and fields got `<returns>`, now `<value>` for properties and nothing for fields; spacing of base types, type parameters, property braces and trailing comments | Done (1.2.1.6) |
 | SF-188 | Performance | Allocations inside `CSharpFile` (user, 2026-11-14: "do them and test thourughly"; "the changes are inside the CSharpFile and not on the outside callers"): the indent is a level written as spaces (no indent strings per block), doc comment type words written from `ReadOnlySpan<char>` slices, the interface list appended one by one, the header keyword a constant. Generated code byte-identical; 50 writer unit tests plus indent-scaling and repeat-generation tests | Done (1.2.1.7) |
-| SF-189 | Performance | Allocation culprits found by measuring a reference-model generation (user, 2026-11-14: "lets find the allocations culprit" / "fix 1 and 2"): `IOUtils.ToCrlf` copied every file twice (42% of all allocations), now returns CRLF text as it is; `CSharpFile` takes `$"..."` through an interpolated string handler. 138 MB to 74 MB per generation, output byte-identical. Still open: the writer's buffer reset after a split (about 12 MB, #3) and the strings the generators build before they reach the writer (repository interfaces: 22.5 MB for 11 MB of text) | Done (1.2.1.8) |
+| SF-189 | Performance | Allocation culprits found by measuring a reference-model generation (user, 2026-11-14: "lets find the allocations culprit" / "fix 1 and 2"): `IOUtils.ToCrlf` copied every file twice (42% of all allocations), now returns CRLF text as it is; `CSharpFile` takes `$"..."` through an interpolated string handler. 138 MB to 74 MB per generation, output byte-identical. Still open: the writer's buffer reset after a split (about 12 MB, #3) and the strings the generators build before they reach the writer (repository interfaces: 22.5 MB for 11 MB of text) | Done (unreleased) |
 | SF-004 | Open-source preparation | Server side (user decision 2026-11-05): **the website stays** and must offer a way to download the software. Remove the encrypted components and all subscription/licensing features (selling licenses, subscriptions, invoices, payments, app sessions). Decisions 2026-11-05: **no user accounts** on the website (no register/login/password reset/support tickets; support moves to GitHub Issues / Contact), and **Download links to GitHub Releases**. So the website needs no database, backend API, business layer or encryption. No updater either (user 2026-11-05) | Done (1.0.8.1) |
 | SF-005 | Open-source preparation | Remove the light-client design (log in, download `SharpFactoryDeps`, load DLLs in memory). WPF now references `SCF.CodeGenerator`, `SCF.Db`, `SCF.Models`, `SCF.Utils` directly; the `SharpFactoryDeps` intermediary is deleted; no network calls or dynamic loading; no user/password login and no cookie (user confirmed 2026-11-05) | Done (1.0.8.0) |
 | SF-006 | Open-source preparation | Remove the company/licensing leftovers (user 2026-11-05: Sun Code Factory LLC was the user's own company, now defunct; the user owns the code). Scope: the "Copyright (c) Sun Code Factory LLC. All rights reserved." header in 275 files (generator 160, WPF 54, website 37, DataAccess 19, SCF.Common 5); the WPF About box copyright; the website footer street address and "All Rights Reserved". Generated output is not affected (it has no company header) | Done (1.0.8.2) |
