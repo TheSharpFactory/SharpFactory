@@ -5,6 +5,32 @@ release gives them its version. Version rules: see [BACKLOG.md](BACKLOG.md).
 
 ---
 
+## Unreleased
+
+### Writer fixes from the review (SF-192)
+
+Changes
+- SF-192, inside `CSharpFile` only: a static constructor was written `static  Name()` (two spaces: `"static "` and then the space before the name); it is `static Name()`. The private method is `ComposeConstructorSignature` (it was `ConstuctorSignature`). `Comment(List<string>)` closes its block comment at the indent it opened it (`*/` was at the left margin). No generator writes either today, so no generated file changes.
+
+Verification
+- GenCheck against 1.2.1.6: the reference model (1,783 files), the test database model (1,424), Coverage (174) and Coverage with indent size 2 (174): every file byte-identical.
+- `CSharpFileTests`: a static constructor next to the public and private ones; the block comment's closing line at its indent.
+- `SF.Tests` 162 passed with the database tests on; `SF.App.Tests` 110 passed.
+
+Commit details
+
+```
+CSharpFile: one space after static, block comments close at their indent
+
+A static constructor was written with two spaces after "static", and a
+block comment's closing */ went to the left margin. No generator writes
+either today, so the generated code does not change.
+
+Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>
+```
+
+---
+
 ## 1.2.1.8 — 2026-11-14
 
 ### CRLF from the writer (SF-191)

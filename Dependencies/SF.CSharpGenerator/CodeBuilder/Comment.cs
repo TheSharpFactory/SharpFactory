@@ -22,6 +22,7 @@ public static partial class CSharpFile
         }
 
         Outdent();
-        _b.AppendLine("*/");
+        //closed at the same indent it was opened
+        AppendIndent().AppendLine("*/");
     }
 }

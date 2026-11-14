@@ -301,7 +301,7 @@ public sealed class CSharpFileTests
             "    /*\n" +
             "        first\n" +
             "        second\n" +
-            "*/\n" +
+            "    */\n" +
             "    throw new ArgumentException(\"bad\");\n" +
             "    throw new NotSupportedException(\"This feature is not supported.\");\n" +
             "    throw new NotImplementedException(\"This feature has not been implemented.\");\n" +
@@ -507,8 +507,10 @@ public sealed class CSharpFileTests
             BaseConstructor = "base(modelId)",
         });
         CSharpFile.ConstructorEmpty(new ConstructorDeclaration { Name = "Empty", AccessModifier = AccessModifiers.Private });
+        //a static constructor has no access modifier and one space before its name
+        CSharpFile.ConstructorEmpty(new ConstructorDeclaration { Name = "Lookup", IsStatic = true });
 
-        Assert.Equal("{\n    public Repo(int modelId, string name) : base(modelId)\n    private Empty()\n    {\n    }\n", Text());
+        Assert.Equal("{\n    public Repo(int modelId, string name) : base(modelId)\n    private Empty()\n    {\n    }\n    static Lookup()\n    {\n    }\n", Text());
     }
     #endregion
 

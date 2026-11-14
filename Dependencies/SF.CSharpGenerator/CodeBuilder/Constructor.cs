@@ -6,7 +6,7 @@ public static partial class CSharpFile
     {
         ConstructorXmlComment(constructor);
 
-        ConstuctorSignature(constructor);
+        ComposeConstructorSignature(constructor);
 
         _b.Append('(');
 
@@ -35,12 +35,15 @@ public static partial class CSharpFile
         CloseBlock();
     }
 
-    private static void ConstuctorSignature(ConstructorDeclaration member)
+    /// <summary>
+    /// "public Name" or, for a static constructor (which takes no access modifier), "static Name".
+    /// </summary>
+    private static void ComposeConstructorSignature(ConstructorDeclaration member)
     {
         AppendIndent();
 
         if(member.IsStatic)
-            _b.Append("static ");
+            _b.Append("static");
         else
             _b.Append(_accessModifiers[member.AccessModifier]);
 

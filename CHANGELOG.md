@@ -3,6 +3,20 @@
 What changed in each published release of The Sharp Factory, newest first. Each section is also the text of that
 release on GitHub, with its downloads.
 
+## Unreleased
+
+### Fixes
+
+- **Code writer details.** A static constructor is written with one space after `static`, and a block comment
+  closes at its own indent. Nothing generated today uses either, so the generated code does not change.
+
+### Downloads
+
+| Download | What |
+|
+
+---
+
 ## 1.2.1.8 — 2026-11-14
 
 ### What's new
