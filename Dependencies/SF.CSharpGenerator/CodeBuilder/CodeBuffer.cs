@@ -14,11 +14,14 @@ public static partial class CSharpFile
     /// generation of a large model, mostly on the large object heap. Here a reset is only a length of zero, and
     /// Replace copies the text into a second array kept for it and writes the result back, so neither allocates
     /// once the arrays are big enough.</para>
-    /// <para>Same results as the StringBuilder calls it replaces (AppendLine ends with Environment.NewLine, Append of
-    /// null writes nothing, Replace replaces every match from left to right).</para>
+    /// <para>Same results as the StringBuilder calls it replaces (Append of null writes nothing, Replace replaces every
+    /// match from left to right), except that AppendLine always ends the line with CRLF: generated files are CRLF on
+    /// every operating system, so they no longer need converting before they are written.</para>
     /// </summary>
     private sealed class CodeBuffer
     {
+        private const string _newLine = "\r\n";
+
         private char[] _chars;
         private char[] _spare;
         private int _length;
@@ -108,15 +111,18 @@ public static partial class CSharpFile
             return this;
         }
 
+        /// <summary>
+        /// Ends the line with CRLF, on every operating system.
+        /// </summary>
         public CodeBuffer AppendLine()
         {
-            return Append(Environment.NewLine);
+            return Append(_newLine);
         }
 
         public CodeBuffer AppendLine(string value)
         {
             Append(value);
-            return Append(Environment.NewLine);
+            return Append(_newLine);
         }
 
         /// <summary>

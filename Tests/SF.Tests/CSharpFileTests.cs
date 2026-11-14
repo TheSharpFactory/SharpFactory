@@ -1006,6 +1006,34 @@ public sealed class CSharpFileTests
         Assert.DoesNotContain("SF.Query", CSharpFile.ToString(), StringComparison.Ordinal);
     }
 
+    [Fact]
+    public void EveryLineEndsWithCrlfOnEveryOperatingSystem()
+    {
+        var name = "count";
+        CSharpFile.Start(4);
+        CSharpFile.Header(new ClassDeclaration { Name = "Sample", Namespace = "A", IsPartial = true }, "/*SFF*/");
+        CSharpFile.UsingStatements(new List<UsingNamespace> { new UsingNamespace { Name = "System" } });
+        CSharpFile.OpenNamespace("A");
+        CSharpFile.OpenClass(new ClassDeclaration { Name = "Sample", Summary = new List<string> { "A class." } });
+        CSharpFile.DeclareMethod(new MethodDeclaration { Name = "Run", Summary = new List<string> { "Runs." }, ReturnType = TypeInfo.Int });
+        CSharpFile.OpenBlock();
+        CSharpFile.Comment(new List<string> { "one", "two" });
+        CSharpFile.If($"{name} > 0");
+        CSharpFile.ReturnIndented($"{name}");
+        CSharpFile.Line($"var x = {name}", "note");
+        CSharpFile.Return("0");
+        CSharpFile.CloseBlock();
+        CSharpFile.CloseClass();
+        CSharpFile.Footer(new List<string> { "end" });
+        var text = CSharpFile.ToString();
+
+        Assert.Contains("\r\n", text, StringComparison.Ordinal);
+        Assert.Equal(-1, text.Replace("\r\n", "", StringComparison.Ordinal).IndexOf('\n'));
+        Assert.Equal(-1, text.Replace("\r\n", "", StringComparison.Ordinal).IndexOf('\r'));
+        //nothing left for the file writer to convert: it gets the same string back
+        Assert.Same(text, SF.Utils.IOUtils.ToCrlf(text));
+    }
+
     private static string BuildTemplate()
     {
         var text = new StringBuilder();

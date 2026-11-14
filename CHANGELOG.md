@@ -10,8 +10,9 @@ release on GitHub, with its downloads.
 - **Code generation uses less than half the memory.** Generating a large model (1,783 files) allocated 138 MB; it
   now allocates 64 MB. Every file was copied twice on its way to disk to make its line endings CRLF, although they
   already were; the code writer no longer builds a string for each line it writes; and it keeps the file in one
-  buffer that it reuses without reallocating. The generated code is exactly the same, byte for byte, so there is
-  nothing to Sync.
+  buffer that it reuses without reallocating. On Linux and macOS the writer now ends lines with CRLF itself, so
+  the files no longer need converting. The generated code is exactly the same, byte for byte, so there is nothing
+  to Sync.
 
 ### Downloads
 

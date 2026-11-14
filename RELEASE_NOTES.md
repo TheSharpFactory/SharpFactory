@@ -7,6 +7,30 @@ release gives them its version. Version rules: see [BACKLOG.md](BACKLOG.md).
 
 ## Unreleased
 
+### CRLF from the writer (SF-191)
+
+Changes
+- SF-191, inside `CSharpFile` only: `CodeBuffer.AppendLine` ends every line with CRLF instead of `Environment.NewLine`. Every line break of the generated C# comes from it (the generators' strings hold none; the SQL engine's templates are CRLF in every checkout, `.gitattributes`), so on Linux and macOS the files are CRLF before they reach `IOUtils.ToCrlf`, which now only checks them instead of copying each one to convert it. On Windows nothing changes. `ToCrlf` stays for text written some other way; its comment says so.
+
+Verification
+- GenCheck against 1.2.1.6: the reference model (1,783 files), the test database model (1,424), Coverage (174) and Coverage with indent size 2 (174): every file byte-identical (Windows).
+- `CSharpFileTests`: a file with a header, usings, doc comments, a block comment, interpolated lines and a footer has only CRLF line breaks, and `ToCrlf` gives back the same string. `CSharpWriterTests`: every file of a Coverage generation is CRLF when it is handed to the file writer; CI runs it on Windows, Linux and macOS.
+- `SF.Tests` 162 passed with the database tests on; `SF.App.Tests` 110 passed.
+
+Commit details
+
+```
+CSharpFile: end every line with CRLF on every OS
+
+The writer ended lines with Environment.NewLine, so on Linux and macOS
+every generated file was copied once more to turn LF into CRLF before
+it was written. AppendLine now writes CRLF everywhere: the files reach
+the file writer as CRLF and ToCrlf only checks them. Same files on
+disk; on Windows nothing changes.
+
+Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>
+```
+
 ### The writer's own buffer (SF-190)
 
 Changes

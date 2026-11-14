@@ -109,6 +109,59 @@ public sealed class CSharpWriterTests
         }
     }
 
+    /// <summary>
+    /// Every file the generators hand to the file writer is CRLF already, on every operating system (CI runs this on
+    /// Windows, Linux and macOS): the C# writer ends its lines with CRLF and the SQL engine's templates are CRLF in
+    /// every checkout, so ToCrlf has nothing to convert and makes no copy.
+    /// </summary>
+    [Fact]
+    public void EveryGeneratedFileIsCrlfBeforeItIsWritten()
+    {
+        using(var folder = new TestFolder())
+        {
+            var host = new CrlfCheckingHost(new FolderProjectHost(folder.Combine("generate")));
+            GenerationRunner.Run(Fixtures.LoadCoverage(), host, NullProgressLog.Instance);
+
+            Assert.True(host.Files > 100, "files checked: " + host.Files);
+            Assert.True(host.NotCrlf.Count == 0, "not CRLF before writing: " + string.Join(", ", host.NotCrlf));
+        }
+    }
+
+    private sealed class CrlfCheckingHost : IProjectHost
+    {
+        private readonly FolderProjectHost _inner;
+
+        public CrlfCheckingHost(FolderProjectHost inner)
+        {
+            _inner = inner;
+        }
+
+        public int Files { get; set; }
+        public System.Collections.Generic.List<string> NotCrlf { get; } = new System.Collections.Generic.List<string>();
+
+        public string PrepareProject(string projectName)
+        {
+            return _inner.PrepareProject(projectName);
+        }
+
+        public void PrepareReferences(SF.Models.ModelContainer modelContainer, SF.Models.Model model)
+        {
+            _inner.PrepareReferences(modelContainer, model);
+        }
+
+        public void WriteFile(System.Collections.Generic.List<SF.Models.CodeFile> filesInModel, string folder, string fileName, string content)
+        {
+            if(!string.IsNullOrWhiteSpace(content))
+            {
+                Files++;
+                if(!object.ReferenceEquals(content, IOUtils.ToCrlf(content)))
+                    NotCrlf.Add(fileName);
+            }
+
+            _inner.WriteFile(filesInModel, folder, fileName, content);
+        }
+    }
+
     private static void GenerateWithIndent(int indentSize, string output)
     {
         var container = Fixtures.LoadCoverage();

@@ -33,9 +33,8 @@ public static class IOUtils
     public static bool CreateFolders { get; set; } = true;
 
     /// <summary>
-    /// Generated files always use CRLF, on every operating system. The generator ends lines with the
-    /// operating system's new line, so on macOS and Linux this turns its LF into CRLF; on Windows nothing changes.
-    /// Every line break (CRLF, a lone LF or a lone CR) becomes CRLF. The text is scanned once: when every line break
+    /// Generated files always use CRLF, on every operating system. The C# writer already ends every line with CRLF,
+    /// so for its files this only checks; it converts text written some other way. Every line break (CRLF, a lone LF or a lone CR) becomes CRLF. The text is scanned once: when every line break
     /// is CRLF already it comes back as it is, without a copy; otherwise a second scan writes it into one new string
     /// of the exact length.
     /// </summary>
