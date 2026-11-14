@@ -34,7 +34,7 @@ internal static class RepoMethodSignatures
             var entityName = entity.N;
             var paramType = !entity.FullyQualify ? entityName : $"{entityNamespace.Alias}.{entityName}";
 
-            var entityNameLower = entityName.ToLower();
+            var entityNameLower = entityName.ToLowerInvariant();
             var methodParams = new List<MethodParameter>(2);
 
             summary += GenerateSharedConnectionParam(methodParams, shareConnection);
@@ -99,7 +99,7 @@ internal static class RepoMethodSignatures
             var entityName = entity.N;
             var paramType = !entity.FullyQualify ? entityName : $"{entityNamespace.Alias}.{entityName}";
 
-            var entitySetNameLower = Inflector.Pluralize(entityName).ToLower();
+            var entitySetNameLower = Inflector.Pluralize(entityName).ToLowerInvariant();
             var methodParams = new List<MethodParameter>(1)
             {
               new MethodParameter{ Name = entitySetNameLower, ParamType = $"List<{paramType}>", Description = $"List of {entityFullName} to create." }
@@ -172,7 +172,7 @@ internal static class RepoMethodSignatures
                 if(p.Ide == YesOrNo.No)
                     continue;
 
-                var param = p.N.ToLower();
+                var param = p.N.ToLowerInvariant();
                 methodParams.Add(new MethodParameter { Name = param, ParamType = p.T, Description = "The identity of this Entity." });
                 break;//if we reach here it means we found it
             }
@@ -207,7 +207,7 @@ internal static class RepoMethodSignatures
             var asyncSuffix = isAsync ? "Async" : "";
 
             foreach(var p in entity.PK.Ps)
-                methodParams.Add(new MethodParameter { Name = p.N.ToLower(), ParamType = entity.Ps.GetByName(p.N).T, Description = "Primary Key Field." });
+                methodParams.Add(new MethodParameter { Name = p.N.ToLowerInvariant(), ParamType = entity.Ps.GetByName(p.N).T, Description = "Primary Key Field." });
 
             summary += GenerateNavPropParam(methodParams, entity, hasNavProps);
 
@@ -239,7 +239,7 @@ internal static class RepoMethodSignatures
             var asyncSuffix = isAsync ? "Async" : "";
 
             foreach(var p in uniqueKey.Ps)
-                methodParams.Add(new MethodParameter { Name = p.N.ToLower(), ParamType = entity.Ps.GetByName(p.N).T, Description = "Unique Key Field." });
+                methodParams.Add(new MethodParameter { Name = p.N.ToLowerInvariant(), ParamType = entity.Ps.GetByName(p.N).T, Description = "Unique Key Field." });
 
             summary += GenerateNavPropParam(methodParams, entity, hasNavProps);
 
@@ -989,7 +989,7 @@ internal static class RepoMethodSignatures
             var entityName = entity.N;
             var paramType = !entity.FullyQualify ? entityName : $"{entityNamespace.Alias}.{entityName}";
 
-            var entityNameLower = entityName.ToLower();
+            var entityNameLower = entityName.ToLowerInvariant();
             var methodParams = new List<MethodParameter>(2);
 
             summary += GenerateSharedConnectionParam(methodParams, shareConnection);
@@ -1188,13 +1188,13 @@ internal static class RepoMethodSignatures
         {
             var summary = $"<para>Updates the specified {entityFullName} in the database. If not found then it is created.</para><para>This function only updates those fields that have changed.</para><para>If no fields have changed then no call is made to the database.</para>";
             var returnType = "bool";
-            var returnTypeForComments = "True if succeeded. False if it already exists but no chages were made.";
+            var returnTypeForComments = "True if succeeded. False if it already exists but no changes were made.";
             var asyncSuffix = isAsync ? "Async" : "";
 
             var entityName = entity.N;
             var paramType = !entity.FullyQualify ? entityName : $"{entityNamespace.Alias}.{entityName}";
 
-            var entityNameLower = entityName.ToLower();
+            var entityNameLower = entityName.ToLowerInvariant();
             var methodParams = new List<MethodParameter>(2);
 
             summary += GenerateSharedConnectionParam(methodParams, shareConnection);
@@ -1222,7 +1222,7 @@ internal static class RepoMethodSignatures
             var entityName = "TEntity";
             var summary = $"<para>Updates the specified {entityName} in the database. If not found then it is created.</para><para>This function only updates those fields that have changed.</para><para>If no fields have changed then no call is made to the database.</para>";
             var returnType = "bool";
-            var returnTypeForComments = "True if succeeded. False if it already exists but no chages were made.";
+            var returnTypeForComments = "True if succeeded. False if it already exists but no changes were made.";
             var asyncSuffix = isAsync ? "Async" : "";
 
             var methodParams = new List<MethodParameter>(2);
@@ -1258,7 +1258,7 @@ internal static class RepoMethodSignatures
             var entityName = entity.N;
             var paramType = !entity.FullyQualify ? entityName : $"{entityNamespace.Alias}.{entityName}";
 
-            var entitySetNameLower = Inflector.Pluralize(entityName).ToLower();
+            var entitySetNameLower = Inflector.Pluralize(entityName).ToLowerInvariant();
             var methodParams = new List<MethodParameter>(1)
             {
               new MethodParameter { Name = entitySetNameLower, ParamType = $"List<{paramType}>", Description = $"List of {entityFullName} to update." }
@@ -1318,7 +1318,7 @@ internal static class RepoMethodSignatures
             var entityName = entity.N;
             var paramType = !entity.FullyQualify ? entityName : $"{entityNamespace.Alias}.{entityName}";
 
-            var entitySetNameLower = Inflector.Pluralize(entityName).ToLower();
+            var entitySetNameLower = Inflector.Pluralize(entityName).ToLowerInvariant();
             var methodParams = new List<MethodParameter>(1)
             {
               new MethodParameter { Name = entitySetNameLower,ParamType=$"List<{paramType}>", Description = $"List of {entityFullName} to update or create." }
@@ -1487,7 +1487,7 @@ internal static class RepoMethodSignatures
             var methodParams = new List<MethodParameter>(entity.PK.Ps.Count);
 
             foreach(var p in entity.PK.Ps)
-                methodParams.Add(new MethodParameter { Name = p.N.ToLower(), ParamType = entity.Ps.GetByName(p.N).T, Description = "Primary Key Field." });
+                methodParams.Add(new MethodParameter { Name = p.N.ToLowerInvariant(), ParamType = entity.Ps.GetByName(p.N).T, Description = "Primary Key Field." });
 
             var methodInfo = new MethodDeclaration
             {
@@ -1515,7 +1515,7 @@ internal static class RepoMethodSignatures
             var methodParams = new List<MethodParameter>(uniqueKey.Ps.Count);
 
             foreach(var p in uniqueKey.Ps)
-                methodParams.Add(new MethodParameter { Name = p.N.ToLower(), ParamType = entity.Ps.GetByName(p.N).T, Description = "Unique Key Field." });
+                methodParams.Add(new MethodParameter { Name = p.N.ToLowerInvariant(), ParamType = entity.Ps.GetByName(p.N).T, Description = "Unique Key Field." });
 
             var methodInfo = new MethodDeclaration
             {
@@ -1543,7 +1543,7 @@ internal static class RepoMethodSignatures
             var entityName = entity.N;
             var paramType = !entity.FullyQualify ? entityName : $"{entityNamespace.Alias}.{entityName}";
 
-            var entityNameLower = entityName.ToLower();
+            var entityNameLower = entityName.ToLowerInvariant();
             var methodParams = new List<MethodParameter>(2);
 
             summary += GenerateSharedConnectionParam(methodParams, shareConnection);
@@ -1666,7 +1666,7 @@ internal static class RepoMethodSignatures
             var entityName = entity.N;
             var paramType = !entity.FullyQualify ? entityName : $"{entityNamespace.Alias}.{entityName}";
 
-            var entitySetNameLower = Inflector.Pluralize(entityName).ToLower();
+            var entitySetNameLower = Inflector.Pluralize(entityName).ToLowerInvariant();
             var methodParams = new List<MethodParameter>(1)
             {
               new MethodParameter { Name = entitySetNameLower, ParamType=$"List<{paramType}>", Description = $"List of {entityFullName} to delete." }

@@ -3,6 +3,27 @@
 What changed in each published release of The Sharp Factory, newest first. Each section is also the text of that
 release on GitHub, with its downloads.
 
+## 1.2.1.5 — 2026-11-14
+
+### Fixes
+
+- **Same code on every machine.** Parameter and variable names were lowered with the machine's language, so a
+  computer set to Turkish generated `ByPK(int ıd)` instead of `ByPK(int id)` (and Sync rewrote those files). Names
+  are now the same everywhere.
+- **Clearer errors from the repositories.** A null argument now names its parameter (`ArgumentNullException`
+  with the parameter name), a null `Original` or `Changed` in a batch update throws `ArgumentException` instead
+  of `NullReferenceException`, and a list create that fails throws `InvalidOperationException` instead of
+  `Exception`. Typos in the generated comments are fixed.
+
+Sync your solutions to get it; the SQL does not change.
+
+### Downloads
+
+| Download | What |
+|
+
+---
+
 ## 1.2.1.4 — 2026-11-14
 
 ### What's new

@@ -97,7 +97,7 @@ public static class Inflector
     public static string Singularize(string word)
     {
         var count = _singularEndingInS.Count;
-        var wordLower = word.ToLower();
+        var wordLower = word.ToLowerInvariant();
 
         for(var i = 0; i < count; i++)
         {
@@ -115,7 +115,7 @@ public static class Inflector
 
     private static string GetFirstCapture(Match match)
     {
-        return match.Captures[0].Value.ToUpper();
+        return match.Captures[0].Value.ToUpperInvariant();
     }
 
     public static string Humanize(string lowercaseAndUnderscoredWord)
@@ -128,7 +128,7 @@ public static class Inflector
     }
     private static string GetSecondGroup(Match match)
     {
-        return match.Groups[1].Value.ToUpper();
+        return match.Groups[1].Value.ToUpperInvariant();
     }
     public static string Camelize(string lowercaseAndUnderscoredWord)
     {
@@ -136,7 +136,7 @@ public static class Inflector
     }
     public static string Underscore(string pascalCasedWord)
     {
-        return Regex.Replace(Regex.Replace(Regex.Replace(pascalCasedWord, @"([A-Z]+)([A-Z][a-z])", "$1_$2"), @"([a-z\d])([A-Z])", "$1_$2"), @"[-\s]", "_").ToLower();
+        return Regex.Replace(Regex.Replace(Regex.Replace(pascalCasedWord, @"([A-Z]+)([A-Z][a-z])", "$1_$2"), @"([a-z\d])([A-Z])", "$1_$2"), @"[-\s]", "_").ToLowerInvariant();
     }
     public static string Capitalize(string word)
     {
@@ -172,11 +172,11 @@ public static class Inflector
     }
     internal static void AddUncountable(string word)
     {
-        _uncountables.Add(word.ToLower());
+        _uncountables.Add(word.ToLowerInvariant());
     }
     private static void AddSingularEndingInS(string word)
     {
-        _singularEndingInS.Add(word.ToLower());
+        _singularEndingInS.Add(word.ToLowerInvariant());
     }
     private static void AddPlural(string rule, string replacement)
     {
@@ -190,7 +190,7 @@ public static class Inflector
     private static string ApplyRules(List<Rule> rules, string word)
     {
         var count = _uncountables.Count;
-        var wordLower = word.ToLower();
+        var wordLower = word.ToLowerInvariant();
 
         for(var i = 0; i < count; i++)
         {
@@ -237,7 +237,7 @@ public static class Inflector
 
         public Rule(string pattern, string replacement)
         {
-            _regex = new Regex(pattern, RegexOptions.IgnoreCase);
+            _regex = new Regex(pattern, RegexOptions.IgnoreCase | RegexOptions.CultureInvariant);
             _replacement = replacement;
         }
 

@@ -3,7 +3,9 @@ using Avalonia;
 using Avalonia.Controls;
 using Avalonia.Headless.XUnit;
 using SF.App.ViewModels;
-using System.Linq;
+using System;
+using System.Collections.Generic;
+using System.Text;
 using System.Threading.Tasks;
 using Xunit;
 #endregion
@@ -45,8 +47,10 @@ public sealed class PopupLayoutTests
         {
             app.Window.Width = 1000;
             app.Window.Height = 640;
-            var message = string.Join(" ", Enumerable.Repeat("This message is much longer than the window is tall, so it scrolls.", 60));
-            var dialog = NewDialog("A long message", message, 30);
+            var message = new StringBuilder();
+            for(var i = 0; i < 60; i++)
+                message.Append("This message is much longer than the window is tall, so it scrolls. ");
+            var dialog = NewDialog("A long message", message.ToString(), 30);
             var pending = app.ViewModel.ShowDialogAsync(dialog);
             app.Screenshot("51-dialog-small-window");
 
@@ -95,7 +99,7 @@ public sealed class PopupLayoutTests
             app.Pump();
             Assert.IsType<AddModelWizardViewModel>(app.ViewModel.Overlay);
 
-            var wizard = app.FindAll<Border>().First(b => b.Classes.Contains("wizard"));
+            var wizard = FindWizard(app);
             Assert.Equal(880, wizard.Bounds.Width);
             Assert.False(app.Find<ScrollViewer>("WizardBody").AllowAutoHide);
             AssertOnScreen(app, "Next");
@@ -105,7 +109,11 @@ public sealed class PopupLayoutTests
 
     private static DialogViewModel NewDialog(string title, string message, int noteLines)
     {
-        var notes = string.Join("\n", Enumerable.Range(1, noteLines).Select(i => "- Change " + i + ": a line of release notes that is long enough to wrap in a narrow dialog."));
+        var lines = new List<string>(noteLines);
+        for(var i = 1; i <= noteLines; i++)
+            lines.Add("- Change " + i + ": a line of release notes that is long enough to wrap in a narrow dialog.");
+
+        var notes = string.Join("\n", lines);
         var dialog = new DialogViewModel
         {
             Title = title,
@@ -123,9 +131,31 @@ public sealed class PopupLayoutTests
         return app.Find<Border>("DialogCard");
     }
 
+    private static Border FindWizard(AppHarness app)
+    {
+        foreach(var border in app.FindAll<Border>())
+        {
+            if(border.Classes.Contains("wizard"))
+                return border;
+        }
+
+        throw new InvalidOperationException("No wizard is open.");
+    }
+
+    private static Button FindVisibleButton(AppHarness app, string buttonText)
+    {
+        foreach(var button in app.FindAll<Button>())
+        {
+            if(button.IsEffectivelyVisible && string.Equals(button.Content as string, buttonText, StringComparison.Ordinal))
+                return button;
+        }
+
+        throw new InvalidOperationException("No visible button " + buttonText);
+    }
+
     private static void AssertOnScreen(AppHarness app, string buttonText)
     {
-        var button = app.FindAll<Button>().First(b => b.IsEffectivelyVisible && string.Equals(b.Content as string, buttonText, System.StringComparison.Ordinal));
+        var button = FindVisibleButton(app, buttonText);
         var topLeft = button.TranslatePoint(new Point(0, 0), app.Window);
         Assert.True(topLeft.HasValue);
         Assert.True(topLeft.Value.Y >= 0 && topLeft.Value.Y + button.Bounds.Height <= app.Window.Bounds.Height, buttonText + " is inside the window: " + topLeft.Value.Y);

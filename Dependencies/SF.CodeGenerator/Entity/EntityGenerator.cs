@@ -273,7 +273,7 @@ public static class EntityGenerator
         if(string.IsNullOrWhiteSpace(prop.Def) || prop.RO == YesOrNo.Yes)
             return null;
 
-        var defUpper = prop.Def.ToUpper();
+        var defUpper = prop.Def.ToUpperInvariant();
 
         //this is new feature in sql for using sequences
         var sequenceIndex = defUpper.IndexOf("NEXT VALUE FOR", StringComparison.OrdinalIgnoreCase);
@@ -293,7 +293,7 @@ public static class EntityGenerator
 
         var val = prop.Def.Replace("(", "").Replace(")", "").Replace('\'', '"');
 
-        if(string.CompareOrdinal(val.ToLower(), "null") == 0)
+        if(string.CompareOrdinal(val.ToLowerInvariant(), "null") == 0)
             return "null";
 
         if(val.StartsWith("N\"", StringComparison.Ordinal) || val.StartsWith("n\"", StringComparison.Ordinal))

@@ -4,6 +4,34 @@ Newest first. One entry per change set. Version rules: see [BACKLOG.md](BACKLOG.
 
 ---
 
+## 1.2.1.5 — 2026-11-14
+
+Changes
+- SF-186 (from the generator review): every `ToLower()`/`ToUpper()` in the C# generator (`RepoMethodSignatures`, `EntityRepoGenerator`, `EntityGenerator`, `Property.cs`, `FileParts.cs`) and in `Inflector` (plus `RegexOptions.CultureInvariant` on its rules) uses the invariant culture: under tr-TR, 36 of the Coverage model's 174 files differed (`int ıd`, `ınterface` in the header example). `BaseClassGenerator`: `ArgumentNullException(nameof(entities|entity|batchEntries), message)` (the message was passed as the parameter name), `ArgumentException(message, nameof(batchEntries))` for a null `Original`/`Changed` (was `NullReferenceException`), `InvalidOperationException` when a list create fails (was `Exception`). Typos: "sepparate" in the partial-class header, "chages" in the UpdateOrCreate doc comment.
+- `PopupLayoutTests` uses loops instead of LINQ lambdas (house rule).
+
+Verification
+- The Coverage model generated before and after: 93 files differ, only in the header typo (96 lines), the doc comment typo (32) and the base classes' throws; under tr-TR and en-US the 174 files are now identical.
+- `GeneratedCultureTests` (new, 2): Turkish generates the same files as English; the base classes' exceptions name their parameter.
+- `SF.Tests` 68 passed with the database tests on (the generated code compiles and runs against SQL Server); `SF.App.Tests` 110 passed.
+
+Commit details
+
+```
+Generate the same code in every culture; name parameters in exceptions
+
+Names were lowered with the machine's culture, so Turkish generated
+different code (int ıd). The generator and Inflector now use the
+invariant culture. The base classes pass the parameter name to
+ArgumentNullException and throw ArgumentException and
+InvalidOperationException instead of NullReferenceException and
+Exception. Two comment typos fixed.
+
+Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>
+```
+
+---
+
 ## 1.2.1.4 — 2026-11-14
 
 Changes

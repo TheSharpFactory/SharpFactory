@@ -618,12 +618,12 @@ public static partial class RepoGenerator
                 CSharpFile.OpenBlock();
 
                 CSharpFile.If($"{entityCollection} == null");
-                CSharpFile.LineIndented($"throw new ArgumentNullException(\"The {entityCollection} parameter cannot be null. Failed to create list.\")");
+                CSharpFile.LineIndented($"throw new ArgumentNullException(nameof({entityCollection}), \"The {entityCollection} parameter cannot be null. Failed to create list.\")");
 
                 CSharpFile.ForEach("entity", entityCollection);
                 CSharpFile.OpenBlock();
                 CSharpFile.If($"!{RepoMethodNames.Create}(entity)");
-                CSharpFile.LineIndented($"throw new Exception(\"Failed to create one or more {entityCollection}.\")");
+                CSharpFile.LineIndented($"throw new InvalidOperationException(\"Failed to create one or more {entityCollection}.\")");
                 CSharpFile.CloseBlock();
 
                 CSharpFile.CloseBlock();
@@ -632,13 +632,13 @@ public static partial class RepoGenerator
                 CSharpFile.OpenBlock();
 
                 CSharpFile.If($"{entityCollection} == null");
-                CSharpFile.LineIndented($"throw new ArgumentNullException(\"The {entityCollection} parameter cannot be null. Failed to create list.\")");
+                CSharpFile.LineIndented($"throw new ArgumentNullException(nameof({entityCollection}), \"The {entityCollection} parameter cannot be null. Failed to create list.\")");
 
                 CSharpFile.ForEach("entity", entityCollection);
                 CSharpFile.OpenBlock();
                 CSharpFile.Line($"var created = await {RepoMethodNames.Create}Async(entity)");
                 CSharpFile.If("!created");
-                CSharpFile.LineIndented($"throw new Exception(\"Failed to create one or more {entityCollection}.\")");
+                CSharpFile.LineIndented($"throw new InvalidOperationException(\"Failed to create one or more {entityCollection}.\")");
                 CSharpFile.CloseBlock();
                 CSharpFile.Return("true");
 
@@ -802,7 +802,7 @@ public static partial class RepoGenerator
                 CSharpFile.OpenBlock();
 
                 CSharpFile.If($"{entityCollection} == null");
-                CSharpFile.LineIndented($"throw new ArgumentNullException(\"The {entityCollection} parameter cannot be null. Failed to update list.\")");
+                CSharpFile.LineIndented($"throw new ArgumentNullException(nameof({entityCollection}), \"The {entityCollection} parameter cannot be null. Failed to update list.\")");
                 CSharpFile.ForEach("entity", entityCollection);
                 CSharpFile.LineIndented($"{RepoMethodNames.Update}(entity)");
 
@@ -811,7 +811,7 @@ public static partial class RepoGenerator
                 RepoMethodSignatures.UpdateMethods.GenerateGenericUpdateList(true, false);
                 CSharpFile.OpenBlock();
                 CSharpFile.If($"{entityCollection} == null");
-                CSharpFile.LineIndented($"throw new ArgumentNullException(\"The {entityCollection} parameter cannot be null. Failed to update list.\")");
+                CSharpFile.LineIndented($"throw new ArgumentNullException(nameof({entityCollection}), \"The {entityCollection} parameter cannot be null. Failed to update list.\")");
                 CSharpFile.ForEach("entity", entityCollection);
                 CSharpFile.LineIndented($"await {RepoMethodNames.Update}Async(entity)");
                 CSharpFile.Return("true");
@@ -1130,7 +1130,7 @@ public static partial class RepoGenerator
                 CSharpFile.DeclareMethod(method);
                 CSharpFile.OpenBlock();
                 CSharpFile.If($"entity == null");
-                CSharpFile.LineIndented($"throw new ArgumentNullException($\"The {{typeof({genericEntity}).FullName}} parameter cannot be null. Failed to create.\")");
+                CSharpFile.LineIndented($"throw new ArgumentNullException(nameof(entity), $\"The {{typeof({genericEntity}).FullName}} parameter cannot be null. Failed to create.\")");
 
                 CSharpFile.Line($"var insertValues = {RepoMethodNames.ComposeInsertPredicate}(entity)");
                 CSharpFile.Line("var resultSets = new object[1]");
@@ -1187,7 +1187,7 @@ public static partial class RepoGenerator
                 CSharpFile.DeclareMethod(method);
                 CSharpFile.OpenBlock();
                 CSharpFile.If($"entity == null");
-                CSharpFile.LineIndented($"throw new ArgumentNullException($\"The {{typeof({genericEntity}).FullName}} parameter cannot be null. Failed to update.\")");
+                CSharpFile.LineIndented($"throw new ArgumentNullException(nameof(entity), $\"The {{typeof({genericEntity}).FullName}} parameter cannot be null. Failed to update.\")");
 
                 CSharpFile.Line($"var where = {RepoMethodNames.ComposeKeys}(entity)");
 
@@ -1252,7 +1252,7 @@ public static partial class RepoGenerator
                 CSharpFile.OpenBlock();
 
                 CSharpFile.If("batchEntries == null");
-                CSharpFile.LineIndented("throw new ArgumentNullException(\"The batchEntries parameter cannot be null. Failed to update.\")");
+                CSharpFile.LineIndented("throw new ArgumentNullException(nameof(batchEntries), \"The batchEntries parameter cannot be null. Failed to update.\")");
 
                 CSharpFile.If("batchEntries.Count < 1");
                 CSharpFile.LineIndented("throw new ArgumentException(\"The batchEntries parameter cannot be empty. Failed to update.\")");
@@ -1265,9 +1265,9 @@ public static partial class RepoGenerator
                 CSharpFile.Line("var original = entry.Original");
                 CSharpFile.Line("var changed = entry.Changed");
                 CSharpFile.If("original == null");
-                CSharpFile.LineIndented("throw new NullReferenceException(\"The Original property cannot be null. Failed to update.\")");
+                CSharpFile.LineIndented("throw new ArgumentException(\"The Original property cannot be null. Failed to update.\", nameof(batchEntries))");
                 CSharpFile.If("changed == null");
-                CSharpFile.LineIndented("throw new NullReferenceException(\"The Changed property cannot be null. Failed to update.\")");
+                CSharpFile.LineIndented("throw new ArgumentException(\"The Changed property cannot be null. Failed to update.\", nameof(batchEntries))");
                 CSharpFile.Line($"var changes = {RepoMethodNames.GetChanges}(original, changed)");
                 CSharpFile.If("changes == null");
                 CSharpFile.ContinueIndented();
@@ -1400,7 +1400,7 @@ public static partial class RepoGenerator
                 CSharpFile.OpenBlock();
 
                 CSharpFile.If($"entity == null");
-                CSharpFile.LineIndented($"throw new ArgumentNullException($\"The {{typeof({genericEntity}).FullName}} parameter cannot be null. Failed to update or create.\")");
+                CSharpFile.LineIndented($"throw new ArgumentNullException(nameof(entity), $\"The {{typeof({genericEntity}).FullName}} parameter cannot be null. Failed to update or create.\")");
 
                 CSharpFile.Line($"var where = {RepoMethodNames.ComposeKeys}(entity)");
 

@@ -92,6 +92,6 @@ public static partial class CSharpFile
         if(!string.IsNullOrWhiteSpace(prop.BackingField))
             return;
 
-        prop.BackingField = "_" + prop.Name[0].ToString().ToLower() + (prop.Name.Length > 1 ? prop.Name.Substring(1) : "");
+        prop.BackingField = "_" + prop.Name[0].ToString().ToLowerInvariant() + (prop.Name.Length > 1 ? prop.Name.Substring(1) : "");
     }
 }

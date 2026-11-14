@@ -17,7 +17,7 @@ public static partial class CSharpFile
         if(type.IsPartial)
         {
             _b.AppendLine($"To add your own code create a partial {typeKind} in");
-            _b.AppendLine("a sepparate file with the following declaration:");
+            _b.AppendLine("a separate file with the following declaration:");
             TypeDeclarationExample(type);
         }
 
@@ -46,7 +46,7 @@ public static partial class CSharpFile
         if(type.IsPartial)
             _b.Append(" partial");
 
-        _b.Append(' ').Append(type.Artifact.ToString().ToLower()).Append(' ');
+        _b.Append(' ').Append(type.Artifact.ToString().ToLowerInvariant()).Append(' ');
 
         _b.AppendLine(type.Name);
 

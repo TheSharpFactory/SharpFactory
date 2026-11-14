@@ -359,7 +359,7 @@ public static partial class RepoGenerator
                 {
                     if(p.Ide == YesOrNo.Yes)
                     {
-                        CSharpFile.Append($"{queryFilter}.New({containerName}.{p.N}, {conditionEnum}.Equals, {p.N.ToLower()} ), }}");
+                        CSharpFile.Append($"{queryFilter}.New({containerName}.{p.N}, {conditionEnum}.Equals, {p.N.ToLowerInvariant()} ), }}");
                         break;
                     }
                 }
@@ -376,7 +376,7 @@ public static partial class RepoGenerator
 
                 CSharpFile.AppendIndented($"var {RepoMethodSignatures.ParamNames._queryFilters} = new {queryFilterCollection}({entity.PK.Ps.Count}){{ ");
                 foreach(var p in entity.PK.Ps)
-                    CSharpFile.Append($"{queryFilter}.New({containerName}.{p.N}, {conditionEnum}.Equals, {p.N.ToLower()} ), ");
+                    CSharpFile.Append($"{queryFilter}.New({containerName}.{p.N}, {conditionEnum}.Equals, {p.N.ToLowerInvariant()} ), ");
 
                 CSharpFile.CloseLine("}");
                 Helpers.GenerateSelectCall(isAsync, true, supportsNavProps, hasNavProps, true, DefaultSortField, false, true, false);
@@ -391,7 +391,7 @@ public static partial class RepoGenerator
                 CSharpFile.Comment($"this method uses the UniqueKey {uk.N}");
                 CSharpFile.AppendIndented($"var {RepoMethodSignatures.ParamNames._queryFilters} = new {queryFilterCollection}({uk.Ps.Count}){{ ");
                 foreach(var p in uk.Ps)
-                    CSharpFile.Append($"{queryFilter}.New({containerName}.{p.N}, {conditionEnum}.Equals, {p.N.ToLower()} ), ");
+                    CSharpFile.Append($"{queryFilter}.New({containerName}.{p.N}, {conditionEnum}.Equals, {p.N.ToLowerInvariant()} ), ");
 
                 CSharpFile.CloseLine("}");
 
@@ -498,7 +498,7 @@ public static partial class RepoGenerator
                 {
                     if(p.Ide == YesOrNo.Yes)
                     {
-                        CSharpFile.Append($"{queryFilter}.New({containerName}.{p.N}, {conditionEnum}.Equals, {p.N.ToLower()}), }}");
+                        CSharpFile.Append($"{queryFilter}.New({containerName}.{p.N}, {conditionEnum}.Equals, {p.N.ToLowerInvariant()}), }}");
                         break;
                     }
                 }
@@ -519,7 +519,7 @@ public static partial class RepoGenerator
                 CSharpFile.AppendIndented($"var {RepoMethodSignatures.ParamNames._queryFilters} = new {queryFilterCollection}({entity.PK.Ps.Count}){{ ");
 
                 foreach(var p in entity.PK.Ps)
-                    CSharpFile.Append($"{queryFilter}.New({containerName}.{p.N}, {conditionEnum}.Equals, {p.N.ToLower()}), ");
+                    CSharpFile.Append($"{queryFilter}.New({containerName}.{p.N}, {conditionEnum}.Equals, {p.N.ToLowerInvariant()}), ");
                 CSharpFile.CloseLine("}");
 
                 var await = isAsync ? "await " : "";
@@ -537,7 +537,7 @@ public static partial class RepoGenerator
                 CSharpFile.AppendIndented($"var {RepoMethodSignatures.ParamNames._queryFilters} = new {queryFilterCollection}({uk.Ps.Count}){{ ");
 
                 foreach(var p in uk.Ps)
-                    CSharpFile.Append($"{queryFilter}.New({containerName}.{p.N}, {conditionEnum}.Equals, {p.N.ToLower()}), ");
+                    CSharpFile.Append($"{queryFilter}.New({containerName}.{p.N}, {conditionEnum}.Equals, {p.N.ToLowerInvariant()}), ");
                 CSharpFile.CloseLine("}");
 
                 var await = isAsync ? "await " : "";
@@ -1079,7 +1079,7 @@ public static partial class RepoGenerator
                 var containerName = Common.GeneratePropClassName(entity);
                 var entityName = entity.N;
                 var entityType = !entity.FullyQualify ? entityName : $"{entityNamespace.Alias}.{entityName}";
-                var entityNameLower = entityName.ToLower();
+                var entityNameLower = entityName.ToLowerInvariant();
                 var filterCollection = $"List<{Common.Names.IQueryFilter}>";
                 var keys = RepoGenerator.Helpers.GenerateKeysForSelectSingle(entity, queryFilter, containerName, filterConditionEnum, entityNameLower);
 
@@ -1172,7 +1172,7 @@ public static partial class RepoGenerator
                 var containerName = Common.GeneratePropClassName(entity);
                 var entityName = entity.N;
                 var entityType = !entity.FullyQualify ? entityName : $"{entityNamespace.Alias}.{entityName}";
-                var entityNameLower = entityName.ToLower();
+                var entityNameLower = entityName.ToLowerInvariant();
                 var filterCollection = $"List<{Common.Names.IQueryFilter}>";
 
                 var method = new MethodDeclaration
