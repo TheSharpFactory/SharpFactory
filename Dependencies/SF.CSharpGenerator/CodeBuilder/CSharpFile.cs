@@ -52,6 +52,9 @@ public static partial class CSharpFile
     {
         _b.Length = 0;
         _indentLevel = 0;
+        //an interpolated argument left over from a file that failed halfway
+        _pending.Length = 0;
+        _pendingInUse = false;
     }
 
     /// <summary>

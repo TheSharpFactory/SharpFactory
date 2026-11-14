@@ -696,6 +696,191 @@ public sealed class CSharpFileTests
     }
     #endregion
 
+    #region Interpolated arguments
+    private static readonly string _empty = "";
+
+    private enum Kind
+    {
+        Value,
+    }
+
+    [Fact]
+    public void InterpolatedArgumentsWriteTheSameTextAsStrings()
+    {
+        var withHandler = WriteInterpolated("count", 5);
+        var withStrings = WriteStrings("count", 5);
+
+        Assert.Equal(withStrings, withHandler);
+        Assert.Equal(
+            "{\n" +
+            "    var count = 5;\n" +
+            "    var count2 = 5;\n" +
+            "    count(a,\n" +
+            "    ;\n" +
+            "    x = 5; // note\n" +
+            "        count++;\n" +
+            "    // count\n" +
+            "    return count;\n" +
+            "    return count\n" +
+            "        return 5;\n" +
+            "    var count3 = 5;\n" +
+            "    // about count\n" +
+            "    if(count > 5)\n" +
+            "    else if(count < 5)\n" +
+            "    while(count != 5)\n" +
+            "    switch(count)\n" +
+            "    case 5:\n" +
+            "}\n", withHandler);
+    }
+
+    [Fact]
+    public void InterpolatedArgumentsFormatLikeAnInterpolatedString()
+    {
+        var previous = System.Globalization.CultureInfo.CurrentCulture;
+        System.Globalization.CultureInfo.CurrentCulture = new System.Globalization.CultureInfo("de-DE");
+        try
+        {
+            var number = 1234.5;
+            var small = 7;
+            var name = "ab";
+            var nothing = (string)null;
+            var flag = true;
+            var kind = Kind.Value;
+            var type = new SF.CodeGeneration.TypeInfo("Region", isList: true);
+
+            CSharpFile.Start(4);
+            CSharpFile.Line($"x = {number}, {number:N1}, [{small,4}], [{name,-4}], [{nothing}], {flag}, {kind}, {type}, {number.ToString(System.Globalization.CultureInfo.InvariantCulture)}");
+            var withHandler = Text();
+
+            var asString = $"x = {number}, {number:N1}, [{small,4}], [{name,-4}], [{nothing}], {flag}, {kind}, {type}, {number.ToString(System.Globalization.CultureInfo.InvariantCulture)}";
+            CSharpFile.Start(4);
+            CSharpFile.Line(asString);
+
+            Assert.Equal(Text(), withHandler);
+            Assert.Equal("x = 1234,5, 1.234,5, [   7], [ab  ], [], True, Value, List<Region>, 1234.5;\n", withHandler);
+        }
+        finally
+        {
+            System.Globalization.CultureInfo.CurrentCulture = previous;
+        }
+    }
+
+    [Fact]
+    public void AnInterpolatedArgumentIsWrittenWithoutAString()
+    {
+        //string holes: an int hole is boxed while the JIT still runs the method unoptimized, which says nothing about the writer
+        var names = new string[200];
+        var values = new string[200];
+        for(var i = 0; i < 200; i++)
+        {
+            names[i] = "x" + i;
+            values[i] = i.ToString(System.Globalization.CultureInfo.InvariantCulture);
+        }
+
+        CSharpFile.Start(4);
+        for(var i = 0; i < 200; i++)
+            CSharpFile.Line($"var {names[i]} = {values[i]}");
+
+        CSharpFile.Start(4);
+        var before = GC.GetAllocatedBytesForCurrentThread();
+        for(var i = 0; i < 200; i++)
+            CSharpFile.Line($"var {names[i]} = {values[i]}");
+        var withHandler = GC.GetAllocatedBytesForCurrentThread() - before;
+
+        CSharpFile.Start(4);
+        before = GC.GetAllocatedBytesForCurrentThread();
+        for(var i = 0; i < 200; i++)
+            CSharpFile.Line(ComposeLine(i));
+        var withStrings = GC.GetAllocatedBytesForCurrentThread() - before;
+
+        Assert.Equal(0, withHandler);
+        Assert.True(withStrings > 0, "the string lines allocate");
+        Assert.Equal("var x199 = 199;\n", Text().Substring(Text().Length - "var x199 = 199;\n".Length));
+    }
+
+    [Fact]
+    public void AnInterpolatedArgumentInsideAnotherOneFailsAndStartRecovers()
+    {
+        CSharpFile.Start(4);
+        Assert.Throws<InvalidOperationException>(WriteNested);
+
+        CSharpFile.Start(4);
+        CSharpFile.Line($"c {1}");
+        Assert.Equal("c 1;\n", Text());
+    }
+
+    private static void WriteNested()
+    {
+        CSharpFile.Line($"a {WriteInner()}");
+    }
+
+    private static string WriteInner()
+    {
+        CSharpFile.Line($"b {2}");
+        return "x";
+    }
+
+    private static string ComposeLine(int i)
+    {
+        return "var x" + i + " = " + i;
+    }
+
+    private static string WriteInterpolated(string name, int count)
+    {
+        CSharpFile.Start(4);
+        CSharpFile.OpenBlock();
+        CSharpFile.Line($"var {name} = {count}");
+        CSharpFile.Line($"var {name}2 = {count};");
+        CSharpFile.Line($"{name}(a,");
+        CSharpFile.Line($"{_empty}");
+        CSharpFile.Line($"x = {count}", "note");
+        CSharpFile.LineIndented($"{name}++");
+        CSharpFile.LineNoEnding($"// {name}");
+        CSharpFile.Return($"{name}");
+        CSharpFile.ReturnNoEnding($"{name}");
+        CSharpFile.ReturnIndented($"{count}");
+        CSharpFile.AppendIndented($"var {name}3 = ");
+        CSharpFile.Append($"{count}");
+        CSharpFile.CloseLine();
+        CSharpFile.Comment($"about {name}");
+        CSharpFile.If($"{name} > {count}");
+        CSharpFile.ElseIf($"{name} < {count}");
+        CSharpFile.While($"{name} != {count}");
+        CSharpFile.Switch($"{name}");
+        CSharpFile.Case($"{count}");
+        CSharpFile.CloseBlock();
+        return Text();
+    }
+
+    private static string WriteStrings(string name, int count)
+    {
+        var number = count.ToString(System.Globalization.CultureInfo.InvariantCulture);
+        CSharpFile.Start(4);
+        CSharpFile.OpenBlock();
+        CSharpFile.Line(string.Concat("var ", name, " = ", number));
+        CSharpFile.Line(string.Concat("var ", name, "2 = ", number, ";"));
+        CSharpFile.Line(string.Concat(name, "(a,"));
+        CSharpFile.Line(string.Concat(_empty, ""));
+        CSharpFile.Line(string.Concat("x = ", number), "note");
+        CSharpFile.LineIndented(string.Concat(name, "++"));
+        CSharpFile.LineNoEnding(string.Concat("// ", name));
+        CSharpFile.Return(string.Concat(name, ""));
+        CSharpFile.ReturnNoEnding(string.Concat(name, ""));
+        CSharpFile.ReturnIndented(string.Concat(number, ""));
+        CSharpFile.AppendIndented(string.Concat("var ", name, "3 = "));
+        CSharpFile.Append(string.Concat(number, ""));
+        CSharpFile.CloseLine();
+        CSharpFile.Comment(string.Concat("about ", name));
+        CSharpFile.If(string.Concat(name, " > ", number));
+        CSharpFile.ElseIf(string.Concat(name, " < ", number));
+        CSharpFile.While(string.Concat(name, " != ", number));
+        CSharpFile.Switch(string.Concat(name, ""));
+        CSharpFile.Case(string.Concat(number, ""));
+        CSharpFile.CloseBlock();
+        return Text();
+    }
+    #endregion
+
     #region TypeInfo
     [Fact]
     public void TypeNamesShowNullableArrayAndList()

@@ -4,6 +4,41 @@ Newest first. One entry per change set. Version rules: see [BACKLOG.md](BACKLOG.
 
 ---
 
+## 1.2.1.8 — 2026-11-14
+
+Changes
+- SF-189: `IOUtils.ToCrlf` (every generated file goes through it before it is written, and the code preview) did `Replace("
+", "
+").Replace("", "
+").Replace("
+", "
+")`: two full copies of every file, which was CRLF already (1,839 of 1,839 files of the reference model). It now scans once (`IndexOfAny('', '
+')`) and returns the same string when every line break is CRLF; otherwise a second scan writes the converted text into one `string.Create` of the exact length. Same result for any text.
+- SF-189, inside `CSharpFile` only: an interpolated string handler (`CSharpFile.InterpolatedCode`, wrapping `StringBuilder.AppendInterpolatedStringHandler` over a reused buffer) and overloads of `Line` (with and without a comment), `LineIndented`, `LineNoEnding`, `Return`, `ReturnIndented`, `ReturnNoEnding`, `Append`, `AppendIndented`, `Comment`, `If`, `ElseIf`, `While`, `Switch` and `Case`. The generators' `$"..."` arguments (about 420 call sites) now format straight into the writer instead of becoming strings; the generators' code is unchanged. The semicolon rule is the same as `AddSemicolon`. An interpolated argument whose own text writes another one throws (`Start()` clears it).
+
+Verification
+- GenCheck against 1.2.1.6: the reference model (1,783 files), the test database model (1,424), Coverage (174) and Coverage with indent size 2 (174): every file byte-identical.
+- Allocations generating the reference model: 137.7 MB per run before, 74 MB after (writing the files 57.9 MB to 1.1 MB; generating 79.1 MB to 72.6 MB).
+- `CrlfTests` (new): CRLF text comes back as the same string; 14 conversions with the expected text; 5,000 random texts and a 20,000-line file give the same result as the three `Replace` calls. `CSharpFileTests`: every interpolated overload writes the same text as its string overload; formatting is the same as an interpolated string (German culture, format, alignment, null, enum, `TypeInfo`); 200 interpolated lines allocate nothing while the same lines as strings do; an interpolated argument inside another one throws and `Start()` recovers.
+- `SF.Tests` 143 passed with the database tests on (the generated code compiles and runs against SQL Server); `SF.App.Tests` 110 passed.
+
+Commit details
+
+```
+Halve generation allocations: CRLF without copies, interpolated lines
+
+ToCrlf copied every generated file twice although it was CRLF already;
+it now returns CRLF text as it is and converts other text into one new
+string. CSharpFile takes $"..." through an interpolated string handler,
+so the generators' lines are formatted straight into the writer.
+Generating the reference model allocates 74 MB instead of 138 MB; the
+generated code is byte-identical.
+
+Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>
+```
+
+---
+
 ## 1.2.1.7 — 2026-11-14
 
 Changes

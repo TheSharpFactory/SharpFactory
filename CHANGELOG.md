@@ -3,6 +3,22 @@
 What changed in each published release of The Sharp Factory, newest first. Each section is also the text of that
 release on GitHub, with its downloads.
 
+## 1.2.1.8 — 2026-11-14
+
+### What's new
+
+- **Code generation uses about half the memory.** Generating a large model (1,783 files) allocated 138 MB; it now
+  allocates 74 MB. Every file was copied twice on its way to disk to make its line endings CRLF, although they
+  already were, and the code writer no longer builds a string for each line it writes. The generated code is
+  exactly the same, byte for byte, so there is nothing to Sync.
+
+### Downloads
+
+| Download | What |
+|
+
+---
+
 ## 1.2.1.7 — 2026-11-14
 
 ### What's new

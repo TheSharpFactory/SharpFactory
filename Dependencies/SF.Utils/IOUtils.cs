@@ -35,13 +35,83 @@ public static class IOUtils
     /// <summary>
     /// Generated files always use CRLF, on every operating system. The generator ends lines with the
     /// operating system's new line, so on macOS and Linux this turns its LF into CRLF; on Windows nothing changes.
+    /// Every line break (CRLF, a lone LF or a lone CR) becomes CRLF. The text is scanned once: when every line break
+    /// is CRLF already it comes back as it is, without a copy; otherwise a second scan writes it into one new string
+    /// of the exact length.
     /// </summary>
     public static string ToCrlf(string content)
     {
         if(string.IsNullOrEmpty(content))
             return content;
 
-        return content.Replace("\r\n", "\n").Replace("\r", "\n").Replace("\n", "\r\n");
+        var length = CalculateCrlfLength(content);
+        if(length < 0)
+            return content;
+
+        return string.Create(length, content, WriteCrlf);
+    }
+
+    /// <summary>
+    /// The length of the text with CRLF line breaks, or -1 when every line break is CRLF already.
+    /// </summary>
+    private static int CalculateCrlfLength(string content)
+    {
+        var length = content.Length;
+        var changes = false;
+        var next = content.AsSpan().IndexOfAny('\r', '\n');
+        while(next >= 0)
+        {
+            if(content[next] == '\r' && next + 1 < content.Length && content[next + 1] == '\n')
+            {
+                //already CRLF: skip both
+                next += 2;
+            }
+            else
+            {
+                //a lone CR or LF becomes CRLF: one more character
+                length++;
+                changes = true;
+                next++;
+            }
+
+            if(next >= content.Length)
+                break;
+
+            var found = content.AsSpan(next).IndexOfAny('\r', '\n');
+            next = found < 0 ? -1 : next + found;
+        }
+
+        return changes ? length : -1;
+    }
+
+    private static void WriteCrlf(Span<char> destination, string content)
+    {
+        var target = 0;
+        var start = 0;
+        var next = content.AsSpan().IndexOfAny('\r', '\n');
+        while(next >= 0)
+        {
+            //the text up to the line break, then CRLF
+            content.AsSpan(start, next - start).CopyTo(destination.Slice(target));
+            target += next - start;
+            destination[target] = '\r';
+            destination[target + 1] = '\n';
+            target += 2;
+
+            if(content[next] == '\r' && next + 1 < content.Length && content[next + 1] == '\n')
+                start = next + 2;
+            else
+                start = next + 1;
+
+            if(start >= content.Length)
+                break;
+
+            var found = content.AsSpan(start).IndexOfAny('\r', '\n');
+            next = found < 0 ? -1 : start + found;
+        }
+
+        if(start < content.Length)
+            content.AsSpan(start).CopyTo(destination.Slice(target));
     }
 
     public static bool IsFileContentDifferent(string fileName, string newContent)
