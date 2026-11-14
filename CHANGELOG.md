@@ -3,6 +3,26 @@
 What changed in each published release of The Sharp Factory, newest first. Each section is also the text of that
 release on GitHub, with its downloads.
 
+## 1.2.1.6 — 2026-11-14
+
+### Fixes
+
+- **Your own code in generic types.** The header of `BatchEntry<TEntity>` and `StoredProcResult<TResult>` showed
+  how to add your own code as `public partial class BatchEntry`, which declares a different class. It now shows
+  `public partial class BatchEntry<TEntity>`.
+- **Tidier generated code.** Properties document their value with `<value>` (it was `<returns>`, which tooltips
+  ignore on properties), fields no longer get a `<returns>` comment, and base types, type parameters and trailing
+  comments are spaced (`Base<A, B>, IThing`, `x = 0; // comment`).
+
+Sync your solutions to get it; the SQL does not change.
+
+### Downloads
+
+| Download | What |
+|
+
+---
+
 ## 1.2.1.5 — 2026-11-14
 
 ### Fixes

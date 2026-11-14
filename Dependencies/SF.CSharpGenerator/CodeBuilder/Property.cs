@@ -31,15 +31,16 @@ public static partial class CSharpFile
             case PropertyKind.FullNoSetter:
             {
                 ComposeBackingFieldName(prop);
-                _b.Append(" get{ return ").Append(prop.BackingField).Append("; } ");
+                _b.Append(" get{ return ").Append(prop.BackingField).Append("; }");
 
                 if(prop.Kind == PropertyKind.FullNoSetter)
                     break;
 
+                _b.Append(' ');
                 if(prop.SetterModifier != AccessModifiers.None)
                     _b.Append(_accessModifiers[prop.SetterModifier]).Append(' ');
 
-                _b.Append("set{ ").Append(prop.BackingField).Append(" = value; } ");
+                _b.Append("set{ ").Append(prop.BackingField).Append(" = value; }");
             }
 
             break;

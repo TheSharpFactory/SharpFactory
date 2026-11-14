@@ -20,7 +20,7 @@ public static partial class CSharpFile
     public static void Line(string line, string comment)
     {
         LineBase(line);
-        _b.Append("// ").AppendLine(comment);
+        _b.Append(" // ").AppendLine(comment);
     }
     private static void LineBase(string line)
     {

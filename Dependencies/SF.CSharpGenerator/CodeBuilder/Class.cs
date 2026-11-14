@@ -73,15 +73,15 @@ public static partial class CSharpFile
         _b.Append(" : ");
 
         if(type.IsDerived)
-            _b.Append(type.BaseClass).Append(',');
+            _b.Append(type.BaseClass).Append(',').Append(' ');
 
         if(type.ImplementsInterfaces)
         {
             foreach(var i in type.Interfaces)
-                _b.Append(i).Append(',');
+                _b.Append(i).Append(',').Append(' ');
         }
 
-        _b.Length--;//remove last unused comma
+        _b.Length -= 2;//remove the last unused comma and space
     }
 
     public static void CloseClass()

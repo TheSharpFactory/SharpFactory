@@ -168,9 +168,9 @@ public static partial class CSharpFile
         _b.Append('<');
 
         foreach(var g in type.GenericParams)
-            _b.Append(g.Name).Append(',');
+            _b.Append(g.Name).Append(',').Append(' ');
 
-        _b.Length--;//remove last unused comma
+        _b.Length -= 2;//remove the last unused comma and space
         _b.Append('>');
     }
     private static void ComposeGenericConstraints(IGenericDeclaration type)

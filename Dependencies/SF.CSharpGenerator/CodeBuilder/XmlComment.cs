@@ -33,7 +33,10 @@ public static partial class CSharpFile
 
         XmlSummary(prop.Summary);
 
-        ReturnTypeXmlComment(prop);
+        //a property documents its value; <returns> is for methods
+        _b.Append(_currentIndent).AppendLine("/// <value>");
+        _b.Append(_currentIndent).Append("/// ").AppendLine(DescribeType(prop));
+        _b.Append(_currentIndent).AppendLine("/// </value>");
     }
     public static void FieldXmlComment(FieldDeclaration field)
     {
@@ -41,8 +44,6 @@ public static partial class CSharpFile
             return;
 
         XmlSummary(field.Summary);
-
-        ReturnTypeXmlComment(field);
     }
     public static void MethodXmlComment(MethodDeclaration method)
     {
@@ -92,11 +93,14 @@ public static partial class CSharpFile
     {
         _b.Append(_currentIndent).AppendLine("/// <returns>");
 
-        if(!string.IsNullOrWhiteSpace(member.ReturnTypeForComments))
-            _b.Append(_currentIndent).Append("/// ").AppendLine(member.ReturnTypeForComments);
-        else
-            _b.Append(_currentIndent).Append("/// ").AppendLine(member.ReturnType.ToString().Replace("<", " of ").Replace(">", ""));
-
+        _b.Append(_currentIndent).Append("/// ").AppendLine(DescribeType(member));
         _b.Append(_currentIndent).AppendLine("/// </returns>");
+    }
+    private static string DescribeType(IComplexDeclaration member)
+    {
+        if(!string.IsNullOrWhiteSpace(member.ReturnTypeForComments))
+            return member.ReturnTypeForComments;
+
+        return member.ReturnType.ToString().Replace("<", " of ").Replace(">", "");
     }
 }

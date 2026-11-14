@@ -4,6 +4,31 @@ Newest first. One entry per change set. Version rules: see [BACKLOG.md](BACKLOG.
 
 ---
 
+## 1.2.1.6 — 2026-11-14
+
+Changes
+- SF-187 (from the review of the C# writer, SF.CSharpGenerator): `FileParts.TypeDeclarationExample` writes a generic type's type parameters (`IGenericDeclaration`), so the header's partial-class example declares the same type. `XmlComment`: a property's comment ends with `<value>` (was `<returns>`), a field's with its summary only; the type text is `DescribeType`, shared with `<returns>`. Spacing: `Class.ComposeClassInheritance` and `ComposeGenericParams` separate with ", "; a property with a backing field ends `} }` (was `}  }`); `Line(line, comment)` writes " // ".
+
+Verification
+- The Coverage model generated before and after: 75 files differ, only in those lines (165 `<returns>` blocks out, 64 `<value>` blocks in, the two generic headers, the spacing); it compiles with no errors.
+- `CSharpWriterTests` (new): the generic header example, `<value>`, the field comment, the spacing.
+- `SF.Tests` 69 passed with the database tests on; `SF.App.Tests` 110 passed.
+
+Commit details
+
+```
+C# writer: generic header examples, <value> on properties, spacing
+
+The partial-class example in a generic type's header now repeats its
+type parameters, so it declares the same type. Properties document
+their value with <value> and fields get no <returns>. Base types, type
+parameters and trailing comments are spaced.
+
+Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>
+```
+
+---
+
 ## 1.2.1.5 — 2026-11-14
 
 Changes

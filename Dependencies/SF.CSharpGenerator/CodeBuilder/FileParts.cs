@@ -48,7 +48,12 @@ public static partial class CSharpFile
 
         _b.Append(' ').Append(type.Artifact.ToString().ToLowerInvariant()).Append(' ');
 
-        _b.AppendLine(type.Name);
+        _b.Append(type.Name);
+        //a generic type's other part needs its type parameters, or it declares another type
+        if(type is IGenericDeclaration genericType)
+            ComposeGenericParams(genericType);
+
+        _b.AppendLine();
 
         OpenBlock();
         CloseBlock();
