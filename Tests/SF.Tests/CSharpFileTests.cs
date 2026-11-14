@@ -881,6 +881,160 @@ public sealed class CSharpFileTests
     }
     #endregion
 
+    #region Buffer
+    [Theory]
+    [InlineData("aaa", "aa", "b", "ba")]
+    [InlineData("aaaa", "aa", "b", "bb")]
+    [InlineData("abab", "ab", "", "")]
+    [InlineData("using SF.Query;", "SF.Query", "Cortex.Query", "using Cortex.Query;")]
+    [InlineData("SF.Query.SF.Query", "SF.Query", "X", "X.X")]
+    [InlineData("no match here", "SF.Query", "X", "no match here")]
+    [InlineData("xSF.Queryx", "SF.Query", "SF.Query.Longer", "xSF.Query.Longerx")]
+    [InlineData("ab", "ab", "ab", "ab")]
+    public void ReplaceWorksLikeStringReplace(string text, string oldValue, string newValue, string expected)
+    {
+        CSharpFile.Start(4);
+        CSharpFile.Append(text);
+        CSharpFile.Replace(oldValue, newValue);
+
+        Assert.Equal(expected, CSharpFile.ToString());
+        Assert.Equal(text.Replace(oldValue, newValue, StringComparison.Ordinal), expected);
+    }
+
+    [Fact]
+    public void ReplaceGivesTheSameTextAsStringReplaceForAnyText()
+    {
+        //made-up text from a fixed seed (a failure repeats), replaced with shorter, equal, longer and empty text
+        var random = new Random(1114);
+        var pieces = new[] { "a", "ab", "b", "SF.", "Query", " ", "\r\n" };
+        var patterns = new[] { "a", "ab", "aa", "SF.Query", "b a", "Query\r\n" };
+        var replacements = new[] { "", "x", "ab", "Cortex.Query", "a much longer replacement" };
+        for(var i = 0; i < 3000; i++)
+        {
+            var text = new StringBuilder();
+            var count = random.Next(0, 60);
+            for(var j = 0; j < count; j++)
+                text.Append(pieces[random.Next(pieces.Length)]);
+
+            var oldValue = patterns[random.Next(patterns.Length)];
+            var newValue = replacements[random.Next(replacements.Length)];
+            var value = text.ToString();
+
+            CSharpFile.Start(4);
+            CSharpFile.Append(value);
+            CSharpFile.Replace(oldValue, newValue);
+            Assert.Equal(value.Replace(oldValue, newValue, StringComparison.Ordinal), CSharpFile.ToString());
+        }
+    }
+
+    [Fact]
+    public void ReplaceTwiceAndKeepWriting()
+    {
+        CSharpFile.Start(4);
+        CSharpFile.Append("using SF.Query;\nusing SF.Repository.Common;\n");
+        CSharpFile.Replace("SF.Query", "My.Query");
+        CSharpFile.Replace("SF.Repository.Common", "My.Repository.Common");
+        CSharpFile.Replace("System.Data.SqlClient", "Microsoft.Data.SqlClient");
+        CSharpFile.Line("var x = 1");
+
+        Assert.Equal("using My.Query;\nusing My.Repository.Common;\nvar x = 1;\n", Text());
+    }
+
+    [Fact]
+    public void ReplaceRefusesAnEmptyText()
+    {
+        CSharpFile.Start(4);
+        CSharpFile.Append("abc");
+
+        Assert.Throws<ArgumentException>(ReplaceEmpty);
+        Assert.Throws<ArgumentNullException>(ReplaceNull);
+        Assert.Equal("abc", CSharpFile.ToString());
+    }
+
+    [Fact]
+    public void NullTextWritesNothing()
+    {
+        CSharpFile.Start(4);
+        CSharpFile.Append("a");
+        CSharpFile.Append((string)null);
+        CSharpFile.Line("b", null);
+        CSharpFile.Replace("zz", null);
+
+        Assert.Equal("ab; // \n", Text());
+    }
+
+    [Fact]
+    public void AFileBiggerThanTheBufferGrowsAndTheNextFileStartsClean()
+    {
+        var line = new string('x', 999) + "\n";
+        var expected = new StringBuilder();
+        CSharpFile.Start(4);
+        for(var i = 0; i < 1200; i++)
+        {
+            CSharpFile.Append(line);
+            expected.Append(line);
+        }
+
+        CSharpFile.Replace("xxxxxxxxxx\n", "yyyyyyyyyyyy\n");
+        expected.Replace("xxxxxxxxxx\n", "yyyyyyyyyyyy\n");
+        Assert.Equal(expected.ToString(), CSharpFile.ToString());
+        Assert.Equal(1200 * 1002, CSharpFile.ToString().Length);
+
+        CSharpFile.Start(4);
+        CSharpFile.OpenBlock();
+        CSharpFile.Line("x");
+        CSharpFile.CloseBlock();
+        Assert.Equal("{\n    x;\n}\n", Text());
+    }
+
+    [Fact]
+    public void NewFilesAndReplaceDoNotAllocateOnceTheBufferIsBigEnough()
+    {
+        var template = BuildTemplate();
+
+        //the first time grows the buffer and its spare array
+        WriteTemplate(template);
+        CSharpFile.ToString();
+
+        var before = GC.GetAllocatedBytesForCurrentThread();
+        for(var i = 0; i < 20; i++)
+            WriteTemplate(template);
+        var allocated = GC.GetAllocatedBytesForCurrentThread() - before;
+
+        Assert.Equal(0, allocated);
+        Assert.Contains("using Cortex.Query;", CSharpFile.ToString(), StringComparison.Ordinal);
+        Assert.DoesNotContain("SF.Query", CSharpFile.ToString(), StringComparison.Ordinal);
+    }
+
+    private static string BuildTemplate()
+    {
+        var text = new StringBuilder();
+        for(var i = 0; i < 2000; i++)
+            text.Append("using SF.Query;\r\nnamespace SF.Repository.Common;\r\n    var x = SF.Query.Something(); // a typical line\r\n");
+
+        return text.ToString();
+    }
+
+    private static void WriteTemplate(string template)
+    {
+        CSharpFile.Start(4);
+        CSharpFile.LineNoEnding(template);
+        CSharpFile.Replace("SF.Query", "Cortex.Query");
+        CSharpFile.Replace("SF.Repository.Common", "Cortex.Repository.Common");
+        CSharpFile.Replace("System.Data.SqlClient", "Microsoft.Data.SqlClient");
+    }
+
+    private static void ReplaceEmpty()
+    {
+        CSharpFile.Replace("", "x");
+    }
+
+    private static void ReplaceNull()
+    {
+        CSharpFile.Replace(null, "x");
+    }
+    #endregion
+
     #region TypeInfo
     [Fact]
     public void TypeNamesShowNullableArrayAndList()

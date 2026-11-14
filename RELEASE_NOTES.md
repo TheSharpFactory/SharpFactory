@@ -7,14 +7,37 @@ release gives them its version. Version rules: see [BACKLOG.md](BACKLOG.md).
 
 ## Unreleased
 
+### The writer's own buffer (SF-190)
+
 Changes
-- SF-189: `IOUtils.ToCrlf` (every generated file goes through it before it is written, and the code preview) did `Replace("
-", "
-").Replace("", "
-").Replace("
-", "
-")`: two full copies of every file, which was CRLF already (1,839 of 1,839 files of the reference model). It now scans once (`IndexOfAny('', '
-')`) and returns the same string when every line break is CRLF; otherwise a second scan writes the converted text into one `string.Create` of the exact length. Same result for any text.
+- SF-190, inside `CSharpFile` only: the text of the file being written is a `CodeBuffer` (private, `CodeBuffer.cs`): one `char[]` that doubles when full and is never split, instead of a `StringBuilder`. Measured on the reference model's real file sequence, the `StringBuilder`'s reset (`Length = 0`) after it had been split, by a file bigger than its capacity or by `StringBuilder.Replace` (the SQL engine's eight templates), allocated a new array of its whole capacity every time: about 11 MB per generation, most of it on the large object heap. Now a reset is a length of zero; `Replace` copies the text into a spare array kept for it and writes the result back, matching from left to right like `StringBuilder.Replace`; `AppendLine` ends with `Environment.NewLine` and a null append writes nothing, as before. The header's three `AppendLine($"...")` lines append their pieces instead.
+
+Verification
+- GenCheck against 1.2.1.6: the reference model (1,783 files), the test database model (1,424), Coverage (174) and Coverage with indent size 2 (174): every file byte-identical.
+- Allocations generating the reference model: about 74 MB per run before, 63.7 MB after. A replay of the reference model's 1,783 files through both buffers (three generations): 34.0 MB against 2.7 MB besides the files' text (the 2.7 MB is the first growth to the 690,000-character file), 40.2 MB against 10.5 MB on the large object heap, one gen-2 collection against none, the same time (Release builds, optimized assemblies checked).
+- `CSharpFileTests`: `Replace` against `string.Replace` (8 cases, overlapping matches among them, and 3,000 random texts with shorter, equal, longer and empty replacements); replacing twice and writing on; empty and null text refused; null text writes nothing; a 1,200,000-character file grows the buffer and the next file starts clean; after the first file, writing a template and replacing three times allocates nothing. The same tests on the `StringBuilder` writer: every behavior test passes, the last one fails (11.9 MB for 20 files).
+- `SF.Tests` 160 passed with the database tests on (the generated code compiles and runs against SQL Server); `SF.App.Tests` 110 passed.
+
+Commit details
+
+```
+CSharpFile: its own char buffer instead of a StringBuilder
+
+The StringBuilder's reset after a split (a big file, or Replace in the
+SQL engine) allocated a new array of its whole capacity every time:
+about 11 MB per generation, mostly on the large object heap. The writer
+now keeps one contiguous char array that is never split; a reset is a
+length of zero and Replace works through a spare array. Generating the
+reference model allocates 63.7 MB instead of 74 MB; the generated code
+is byte-identical.
+
+Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>
+```
+
+### Allocations: line endings and interpolated lines (SF-189)
+
+Changes
+- SF-189: `IOUtils.ToCrlf` (every generated file goes through it before it is written, and the code preview) did `Replace("\r\n", "\n").Replace("\r", "\n").Replace("\n", "\r\n")`: two full copies of every file, which was CRLF already (1,839 of 1,839 files of the reference model). It now scans once (`IndexOfAny('\r', '\n')`) and returns the same string when every line break is CRLF; otherwise a second scan writes the converted text into one `string.Create` of the exact length. Same result for any text.
 - SF-189, inside `CSharpFile` only: an interpolated string handler (`CSharpFile.InterpolatedCode`, wrapping `StringBuilder.AppendInterpolatedStringHandler` over a reused buffer) and overloads of `Line` (with and without a comment), `LineIndented`, `LineNoEnding`, `Return`, `ReturnIndented`, `ReturnNoEnding`, `Append`, `AppendIndented`, `Comment`, `If`, `ElseIf`, `While`, `Switch` and `Case`. The generators' `$"..."` arguments (about 420 call sites) now format straight into the writer instead of becoming strings; the generators' code is unchanged. The semicolon rule is the same as `AddSemicolon`. An interpolated argument whose own text writes another one throws (`Start()` clears it).
 
 Verification

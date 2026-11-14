@@ -11,12 +11,12 @@ public static partial class CSharpFile
         var typeKind = type.Artifact.ToString();
         _b.AppendLine(token);
         _b.AppendLine("/************************************************");
-        _b.AppendLine($"This {typeKind} has been generated dynamically.");
+        _b.Append("This ").Append(typeKind).AppendLine(" has been generated dynamically.");
         _b.AppendLine("Any changes you make here will be overwritten.");
 
         if(type.IsPartial)
         {
-            _b.AppendLine($"To add your own code create a partial {typeKind} in");
+            _b.Append("To add your own code create a partial ").Append(typeKind).AppendLine(" in");
             _b.AppendLine("a separate file with the following declaration:");
             TypeDeclarationExample(type);
         }
@@ -29,7 +29,7 @@ public static partial class CSharpFile
         var typeKind = type.ToString();
         _b.AppendLine(token);
         _b.AppendLine("/************************************************");
-        _b.AppendLine($"This {typeKind} has been generated dynamically.");
+        _b.Append("This ").Append(typeKind).AppendLine(" has been generated dynamically.");
         _b.AppendLine("Any changes you make here will be overwritten.");
         _b.AppendLine("************************************************/");
         _b.AppendLine();

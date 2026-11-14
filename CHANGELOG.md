@@ -7,10 +7,11 @@ release on GitHub, with its downloads.
 
 ### What's new
 
-- **Code generation uses about half the memory.** Generating a large model (1,783 files) allocated 138 MB; it now
-  allocates 74 MB. Every file was copied twice on its way to disk to make its line endings CRLF, although they
-  already were, and the code writer no longer builds a string for each line it writes. The generated code is
-  exactly the same, byte for byte, so there is nothing to Sync.
+- **Code generation uses less than half the memory.** Generating a large model (1,783 files) allocated 138 MB; it
+  now allocates 64 MB. Every file was copied twice on its way to disk to make its line endings CRLF, although they
+  already were; the code writer no longer builds a string for each line it writes; and it keeps the file in one
+  buffer that it reuses without reallocating. The generated code is exactly the same, byte for byte, so there is
+  nothing to Sync.
 
 ### Downloads
 

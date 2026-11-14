@@ -1,6 +1,5 @@
 ﻿#region Usings
 using System.Collections.Generic;
-using System.Text;
 #endregion
 
 namespace SF.CodeGeneration;
@@ -28,7 +27,7 @@ public static partial class CSharpFile
         { InheritanceModifiers.None, InheritanceModifierConstants.None },
     };
 
-    private static readonly StringBuilder _b = new StringBuilder(100000);
+    private static readonly CodeBuffer _b = new CodeBuffer(100000);
 
     private static int _indentSize = 4;
     //how many blocks deep the next line is: its spaces are written straight into the file, no indent strings
@@ -60,7 +59,7 @@ public static partial class CSharpFile
     /// <summary>
     /// Writes the current indentation (the spaces of every open block).
     /// </summary>
-    private static StringBuilder AppendIndent()
+    private static CodeBuffer AppendIndent()
     {
         return _b.Append(' ', _indentLevel * _indentSize);
     }
@@ -68,7 +67,7 @@ public static partial class CSharpFile
     /// <summary>
     /// Writes one more level of indentation (a single statement under an if, foreach or while without braces).
     /// </summary>
-    private static StringBuilder AppendIndentStep()
+    private static CodeBuffer AppendIndentStep()
     {
         return _b.Append(' ', _indentSize);
     }
