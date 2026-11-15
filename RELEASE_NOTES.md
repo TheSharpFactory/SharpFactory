@@ -5,7 +5,7 @@ release gives them its version. Version rules: see [BACKLOG.md](BACKLOG.md).
 
 ---
 
-## Unreleased
+## 1.2.2.0 — 2026-11-14
 
 ### The C# writer is its own library (SF-193)
 
