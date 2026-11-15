@@ -118,12 +118,12 @@ public sealed class EngineUnitTests
     public void AModelBelongsToTheSolutionWhoseFolderHasIt()
     {
         var root = Path.GetFullPath(Path.Combine(Path.GetTempPath(), "sf-owner"));
-        var model = Path.Combine(root, "Cortex", "DataModels", "ModelContainer.edmj");
+        var model = Path.Combine(root, "Orion", "DataModels", "ModelContainer.edmj");
 
-        Assert.True(TargetSolutionFinder.IsModelInSolutionFolder(model, Path.Combine(root, "Cortex", "Cortex.sln")));
+        Assert.True(TargetSolutionFinder.IsModelInSolutionFolder(model, Path.Combine(root, "Orion", "Orion.sln")));
         Assert.False(TargetSolutionFinder.IsModelInSolutionFolder(model, Path.Combine(root, "Cheetah", "Cheetah.sln")));
         //a folder whose name only starts the same is another folder
-        Assert.False(TargetSolutionFinder.IsModelInSolutionFolder(model, Path.Combine(root, "Cort", "Cort.sln")));
+        Assert.False(TargetSolutionFinder.IsModelInSolutionFolder(model, Path.Combine(root, "Ori", "Ori.sln")));
         Assert.True(TargetSolutionFinder.IsSolutionFile("App.sln"));
         Assert.True(TargetSolutionFinder.IsSolutionFile("App.slnx"));
         Assert.False(TargetSolutionFinder.IsSolutionFile("App.csproj"));

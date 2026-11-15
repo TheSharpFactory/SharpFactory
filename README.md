@@ -69,6 +69,7 @@ byte-identical), `PLAN.md` the app's design, `BACKLOG.md` the open work, `RELEAS
 | `App/SF.Cli` | The command line (`sharpfactory`) |
 | `Dependencies/SF.Engine` | Building models, the generation order, Sync, the Sync target list, settings |
 | `Dependencies/SF.CodeGenerator`, `SF.CSharpGenerator` | The code generators |
+| `Dependencies/SF.CSharpWriter` | The C# writer (`CSharpFile`) the generators write through, one file at a time |
 | `Dependencies/SF.Db`, `SF.Utils`, `SF.Models` | The schema reader, the model and its `.edmj` file |
 | `Tools/` | Regression tools: `SF.GenCheck`, `SF.SchemaCheck` |
 | `Tests/` | Engine tests and headless UI tests |

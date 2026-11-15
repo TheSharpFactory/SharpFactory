@@ -1,4 +1,4 @@
-#region Usings
+﻿#region Usings
 using System;
 using System.Runtime.CompilerServices;
 using System.Text;
@@ -6,6 +6,8 @@ using System.Text;
 
 namespace SF.CodeGeneration;
 
+//the $"..." overloads: the same text as the string overloads of the same name, formatted straight into the file
+//without making a string
 public static partial class CSharpFile
 {
     /// <summary>
@@ -125,32 +127,32 @@ public static partial class CSharpFile
         _b.AppendLine();
     }
 
-    public static void Return(ref InterpolatedCode val)
+    public static void Return(ref InterpolatedCode expression)
     {
         AppendIndent().Append("return ");
         WritePending(true);
         _b.AppendLine();
     }
 
-    public static void ReturnNoEnding(ref InterpolatedCode val)
+    public static void ReturnNoEnding(ref InterpolatedCode expression)
     {
         AppendIndent().Append("return ");
         WritePending(false);
         _b.AppendLine();
     }
 
-    public static void ReturnIndented(ref InterpolatedCode val)
+    public static void ReturnIndented(ref InterpolatedCode expression)
     {
         AppendIndentStep();
-        Return(ref val);
+        Return(ref expression);
     }
 
-    public static void Append(ref InterpolatedCode val)
+    public static void Append(ref InterpolatedCode text)
     {
         WritePending(false);
     }
 
-    public static void AppendIndented(ref InterpolatedCode val)
+    public static void AppendIndented(ref InterpolatedCode text)
     {
         AppendIndent();
         WritePending(false);
@@ -186,7 +188,7 @@ public static partial class CSharpFile
         _b.AppendLine(")");
     }
 
-    public static void Switch(ref InterpolatedCode field)
+    public static void Switch(ref InterpolatedCode expression)
     {
         AppendIndent().Append("switch(");
         WritePending(false);
@@ -201,6 +203,88 @@ public static partial class CSharpFile
     }
     #endregion
 
+    #region Statements
+    public static void Throw(ref InterpolatedCode expression)
+    {
+        PendingStatement("throw ");
+    }
+
+    public static void YieldReturn(ref InterpolatedCode expression)
+    {
+        PendingStatement("yield return ");
+    }
+
+    public static void UsingDeclaration(ref InterpolatedCode declaration)
+    {
+        PendingStatement("using ");
+    }
+
+    public static void AwaitUsingDeclaration(ref InterpolatedCode declaration)
+    {
+        PendingStatement("await using ");
+    }
+
+    public static void GotoCase(ref InterpolatedCode value)
+    {
+        PendingStatement("goto case ");
+    }
+
+    public static void Goto(ref InterpolatedCode label)
+    {
+        PendingStatement("goto ");
+    }
+
+    public static void Using(ref InterpolatedCode resource)
+    {
+        PendingHeader("using(", ")");
+    }
+
+    public static void AwaitUsing(ref InterpolatedCode resource)
+    {
+        PendingHeader("await using(", ")");
+    }
+
+    public static void Lock(ref InterpolatedCode expression)
+    {
+        PendingHeader("lock(", ")");
+    }
+
+    public static void Catch(ref InterpolatedCode declaration)
+    {
+        PendingHeader("catch(", ")");
+    }
+
+    public static void Fixed(ref InterpolatedCode declaration)
+    {
+        PendingHeader("fixed(", ")");
+    }
+
+    public static void Label(ref InterpolatedCode label)
+    {
+        PendingHeader(string.Empty, ":");
+    }
+
+    /// <summary>
+    /// A statement that ends with the formatted argument: the keyword, the argument, the semicolon rule.
+    /// </summary>
+    private static void PendingStatement(string keyword)
+    {
+        AppendIndent().Append(keyword);
+        WritePending(true);
+        _b.AppendLine();
+    }
+
+    /// <summary>
+    /// A line with the formatted argument between an opening and a closing text: <c>lock(</c> ... <c>)</c>.
+    /// </summary>
+    private static void PendingHeader(string opening, string closing)
+    {
+        AppendIndent().Append(opening);
+        WritePending(false);
+        _b.AppendLine(closing);
+    }
+    #endregion
+
     /// <summary>
     /// Copies the formatted argument into the file; with <paramref name="semicolon"/>, ends it with ';' the way
     /// AddSemicolon does for a string (unless it ends in ';' or ',', and always when it is empty).
@@ -208,20 +292,8 @@ public static partial class CSharpFile
     private static void WritePending(bool semicolon)
     {
         _b.Append(_pending);
-        if(semicolon)
-        {
-            var length = _pending.Length;
-            if(length < 1)
-            {
-                _b.Append(';');
-            }
-            else
-            {
-                var lastChar = _pending[length - 1];
-                if(lastChar != ';' && lastChar != ',')
-                    _b.Append(';');
-            }
-        }
+        if(semicolon && (_pending.Length == 0 || NeedsSemicolon(_pending[_pending.Length - 1])))
+            _b.Append(';');
 
         _pending.Length = 0;
         _pendingInUse = false;

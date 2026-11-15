@@ -1,66 +1,167 @@
-﻿#region Usings
+#region Usings
 using System.Collections.Generic;
 #endregion
 
 namespace SF.CodeGeneration;
 
-public static partial class CSharpFile
+//the doc comments of the declarations, the generated-file header and the usings
+public static partial class CSharpFileDeclarations
 {
-    public static void Header(IDeclaration type, string token)
+    extension(CSharpFile)
     {
-        var typeKind = type.Artifact.ToString();
-        _b.AppendLine(token);
-        _b.AppendLine("/************************************************");
-        _b.Append("This ").Append(typeKind).AppendLine(" has been generated dynamically.");
-        _b.AppendLine("Any changes you make here will be overwritten.");
-
-        if(type.IsPartial)
+        #region Doc Comments
+        public static void PropXmlComment(PropertyDeclaration prop)
         {
-            _b.Append("To add your own code create a partial ").Append(typeKind).AppendLine(" in");
-            _b.AppendLine("a separate file with the following declaration:");
-            TypeDeclarationExample(type);
+            if(!(prop.Summary?.Count > 0))
+                return;
+
+            XmlSummaryLines(prop.Summary);
+
+            //a property documents its value; <returns> is for methods
+            CSharpFile.LineNoEnding("/// <value>");
+            CSharpFile.AppendIndented("/// ");
+            AppendTypeDescription(prop);
+            CSharpFile.LineNoEnding("/// </value>");
         }
 
-        _b.AppendLine("************************************************/");
-        _b.AppendLine();
+        public static void FieldXmlComment(FieldDeclaration field)
+        {
+            if(!(field.Summary?.Count > 0))
+                return;
+
+            XmlSummaryLines(field.Summary);
+        }
+
+        public static void MethodXmlComment(MethodDeclaration method)
+        {
+            if(!(method.Summary?.Count > 0))
+                return;
+
+            XmlSummaryLines(method.Summary);
+            XmlParams(method.Parameters);
+
+            //methods without parameters also get the <returns> comment
+            CSharpFile.LineNoEnding("/// <returns>");
+            CSharpFile.AppendIndented("/// ");
+            AppendTypeDescription(method);
+            CSharpFile.LineNoEnding("/// </returns>");
+        }
+
+        public static void ConstructorXmlComment(ConstructorDeclaration method)
+        {
+            if(!(method.Summary?.Count > 0))
+                return;
+
+            XmlSummaryLines(method.Summary);
+            XmlParams(method.Parameters);
+        }
+        #endregion
+
+        #region Header
+        public static void Header(IDeclaration type, string token)
+        {
+            var typeKind = type.Artifact.ToString();
+            HeaderStart(typeKind, token);
+            if(type.IsPartial)
+            {
+                CSharpFile.Append("To add your own code create a partial ");
+                CSharpFile.Append(typeKind);
+                CSharpFile.Append(" in");
+                CSharpFile.EmptyLine();
+                CSharpFile.Append("a separate file with the following declaration:");
+                CSharpFile.EmptyLine();
+                TypeDeclarationExample(type);
+            }
+
+            HeaderEnd();
+        }
+
+        public static void Header(ArtifactKind type, string token)
+        {
+            HeaderStart(type.ToString(), token);
+            HeaderEnd();
+        }
+        #endregion
+
+        #region Usings
+        public static void UsingStatements(List<UsingNamespace> usings)
+        {
+            if(usings == null || usings.Count < 1)
+                return;
+
+            var alreadyAdded = new HashSet<string>(usings.Count);
+            foreach(var ns in usings)
+            {
+                var usingId = $"{ns.Name}-{ns.Alias}";
+                if(alreadyAdded.Contains(usingId))
+                    continue;
+
+                alreadyAdded.Add(usingId);
+                if(!ns.AliasRequired)
+                    CSharpFile.UsingNamespace(ns.Name);
+                else
+                {
+                    //the alias comment goes on the same line, right after the ';'
+                    CSharpFile.Append("using ");
+                    CSharpFile.Append(ns.Alias);
+                    CSharpFile.Append(" = ");
+                    CSharpFile.Append(ns.Name);
+                    CSharpFile.Append(';');
+                    CSharpFile.Append(ns.AliasComment);
+                    CSharpFile.EmptyLine();
+                }
+            }
+
+            CSharpFile.EmptyLine();
+        }
+        #endregion
     }
-    public static void Header(ArtifactKind type, string token)
+
+    private static void HeaderStart(string typeKind, string token)
     {
-        var typeKind = type.ToString();
-        _b.AppendLine(token);
-        _b.AppendLine("/************************************************");
-        _b.Append("This ").Append(typeKind).AppendLine(" has been generated dynamically.");
-        _b.AppendLine("Any changes you make here will be overwritten.");
-        _b.AppendLine("************************************************/");
-        _b.AppendLine();
+        CSharpFile.Append(token);
+        CSharpFile.EmptyLine();
+        CSharpFile.Append("/************************************************");
+        CSharpFile.EmptyLine();
+        CSharpFile.Append("This ");
+        CSharpFile.Append(typeKind);
+        CSharpFile.Append(" has been generated dynamically.");
+        CSharpFile.EmptyLine();
+        CSharpFile.Append("Any changes you make here will be overwritten.");
+        CSharpFile.EmptyLine();
     }
+
+    private static void HeaderEnd()
+    {
+        CSharpFile.Append("************************************************/");
+        CSharpFile.EmptyLine();
+        CSharpFile.EmptyLine();
+    }
+
     private static void TypeDeclarationExample(IDeclaration type)
     {
-        _b.AppendLine();
-        OpenNamespace(type.Namespace);
-
-        AppendIndent();
-
-        _b.Append(_accessModifiers[type.AccessModifier]);
-
+        CSharpFile.EmptyLine();
+        CSharpFile.OpenNamespace(type.Namespace);
+        CSharpFile.AppendIndented(_accessModifiers[type.AccessModifier]);
         if(type.IsPartial)
-            _b.Append(" partial");
+            CSharpFile.Append(" partial");
 
-        _b.Append(' ').Append(DescribeKeyword(type.Artifact)).Append(' ');
+        CSharpFile.Append(' ');
+        CSharpFile.Append(DescribeKeyword(type.Artifact));
+        CSharpFile.Append(' ');
+        CSharpFile.Append(type.Name);
 
-        _b.Append(type.Name);
         //a generic type's other part needs its type parameters, or it declares another type
         if(type is IGenericDeclaration genericType)
             ComposeGenericParams(genericType);
 
-        _b.AppendLine();
-
-        OpenBlock();
-        CloseBlock();
-
-        CloseNamespace();
-        _b.AppendLine();
+        CSharpFile.EmptyLine();
+        CSharpFile.OpenBlock();
+        CSharpFile.CloseBlock();
+        CSharpFile.CloseNamespace();
+        CSharpFile.EmptyLine();
     }
+
     private static string DescribeKeyword(ArtifactKind kind)
     {
         switch(kind)
@@ -76,17 +177,5 @@ public static partial class CSharpFile
             default:
                 return kind.ToString().ToLowerInvariant();
         }
-    }
-    public static void Footer(List<string> footer = null)
-    {
-        if(!(footer?.Count > 0))
-            return;
-
-        _b.AppendLine("/************************************************");
-
-        foreach(var l in footer)
-            _b.AppendLine(l);
-
-        _b.AppendLine("************************************************/");
     }
 }

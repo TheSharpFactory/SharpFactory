@@ -5,4 +5,9 @@
     <EnforceCodeStyleInBuild>true</EnforceCodeStyleInBuild>
   </PropertyGroup>
 
+  <ItemGroup>
+    <!-- the C# writer (CSharpFile); this project's declaration methods are extension members of it -->
+    <ProjectReference Include="..\SF.CSharpWriter\SF.CSharpWriter.csproj" />
+  </ItemGroup>
+
 </Project>

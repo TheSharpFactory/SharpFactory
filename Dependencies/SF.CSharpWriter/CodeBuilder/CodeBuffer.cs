@@ -1,4 +1,4 @@
-#region Usings
+﻿#region Usings
 using System;
 using System.Text;
 #endregion
@@ -9,14 +9,12 @@ public static partial class CSharpFile
 {
     /// <summary>
     /// <para>The text of the file being written: one char array, doubled when it is full and never split.</para>
-    /// <para>CSharpFile reuses it for every file of a run. A StringBuilder did the same job, but its chunks made a
-    /// reset after a split (a big file, or Replace) allocate a new array of its whole capacity: about 11 MB per
-    /// generation of a large model, mostly on the large object heap. Here a reset is only a length of zero, and
-    /// Replace copies the text into a second array kept for it and writes the result back, so neither allocates
-    /// once the arrays are big enough.</para>
-    /// <para>Same results as the StringBuilder calls it replaces (Append of null writes nothing, Replace replaces every
-    /// match from left to right), except that AppendLine always ends the line with CRLF: generated files are CRLF on
-    /// every operating system, so they no longer need converting before they are written.</para>
+    /// <para>CSharpFile reuses it for every file it writes. Starting a new file only sets the length to zero, and
+    /// Replace copies the text into a second array kept for it and writes the result back, so neither allocates once
+    /// the arrays are big enough. (A StringBuilder grows in chunks, and clearing it after it has split allocates a
+    /// new array of its whole capacity, often on the large object heap.)</para>
+    /// <para>Append of null writes nothing and Replace replaces every match from left to right, as StringBuilder
+    /// does. AppendLine always ends the line with CRLF, on every operating system.</para>
     /// </summary>
     private sealed class CodeBuffer
     {
@@ -82,17 +80,6 @@ public static partial class CSharpFile
             EnsureCapacity(_length + repeatCount);
             _chars.AsSpan(_length, repeatCount).Fill(value);
             _length += repeatCount;
-            return this;
-        }
-
-        /// <summary>
-        /// The text of an object (a TypeInfo writes its type name); null writes nothing.
-        /// </summary>
-        public CodeBuffer Append(object value)
-        {
-            if(value != null)
-                Append(value.ToString());
-
             return this;
         }
 
@@ -185,6 +172,25 @@ public static partial class CSharpFile
         public override string ToString()
         {
             return new string(_chars, 0, _length);
+        }
+
+        /// <summary>
+        /// The text written so far, without copying it.
+        /// </summary>
+        public ReadOnlySpan<char> Text
+        {
+            get
+            {
+                return _chars.AsSpan(0, _length);
+            }
+        }
+
+        /// <summary>
+        /// Writes the text to a writer straight from the array: no string is made.
+        /// </summary>
+        public void WriteTo(System.IO.TextWriter writer)
+        {
+            writer.Write(_chars, 0, _length);
         }
 
         /// <summary>

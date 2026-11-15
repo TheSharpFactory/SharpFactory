@@ -5,6 +5,40 @@ release gives them its version. Version rules: see [BACKLOG.md](BACKLOG.md).
 
 ---
 
+## Unreleased
+
+### The C# writer is its own library (SF-193)
+
+Changes
+- SF-193: new project `Dependencies/SF.CSharpWriter` (in `SF.slnx`), the C# writer `CSharpFile`: string-in, independent of the model, one reused buffer, CRLF lines. It keeps the namespace `SF.CodeGeneration` and every method the generators call, with the same output.
+- `SF.CSharpGenerator` references it. Its 22 `CodeBuilder` files are gone; its declaration methods (`DeclareMethod`, `Constructor`, `ConstructorEmpty`, `OpenClass`/`OpenInterface`/`OpenEnum` from a declaration and their `WithNamespace` and close forms, `Property`, `OpenProperty` and the getter/setter blocks, `Field`, `EnumMember`, `Header`, `UsingStatements`, `CloseNamespace`, the doc comments) are C# 14 static extension members of `CSharpFile` in four files, written with the library's public methods. Call sites read `CSharpFile.DeclareMethod(method)` as before: no generator changed.
+- Tests: `CSharpFileTests` and `EngineUnitTests` used the reference solution's name as sample text (a namespace to replace, made-up folder paths); they use `Sample.Query`, `Sample.Repository.Common` and `Orion` now. The repository has no mention of it left.
+- One public method behaves differently: `CSharpFile.XmlSummary(string)` is the library's (no empty line before it, no `<para>`). No generator calls it; the declarations' doc comments keep their format.
+
+Verification
+- The reference model (1,790 files) and Coverage (174) generated with 1.2.1.9 and with this change: every file byte-identical.
+- `CSharpFileTests` (49) unchanged and passing; `SF.Tests` 162 passed with the database tests on.
+- `SF.App.Tests` 113 passed with the database tests on. The two parity tests had failed since 1.2.1.2 (on 1.2.1.9 too): their saved test database model was older than SF-147 and still had empty results for seven procedures that return their shape when called with NULLs. The model was updated; only those seven procedures changed.
+
+Commit details
+
+```
+Move the C# writer into its own library, SF.CSharpWriter
+
+CSharpFile now lives in Dependencies/SF.CSharpWriter, a string-in writer
+that knows nothing of the model. SF.CSharpGenerator references it and
+keeps its declaration methods (DeclareMethod, OpenClass, Header, ...) as
+C# 14 extension members of CSharpFile, so no generator call changed. The
+generated code is byte-identical.
+
+Two tests used a private solution's name as sample text; they use neutral
+names now.
+
+Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>
+```
+
+---
+
 ## 1.2.1.9 — 2026-11-14
 
 ### Writer fixes from the review (SF-192)

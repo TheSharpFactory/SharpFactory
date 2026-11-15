@@ -888,7 +888,7 @@ public sealed class CSharpFileTests
     [InlineData("aaa", "aa", "b", "ba")]
     [InlineData("aaaa", "aa", "b", "bb")]
     [InlineData("abab", "ab", "", "")]
-    [InlineData("using SF.Query;", "SF.Query", "Cortex.Query", "using Cortex.Query;")]
+    [InlineData("using SF.Query;", "SF.Query", "Sample.Query", "using Sample.Query;")]
     [InlineData("SF.Query.SF.Query", "SF.Query", "X", "X.X")]
     [InlineData("no match here", "SF.Query", "X", "no match here")]
     [InlineData("xSF.Queryx", "SF.Query", "SF.Query.Longer", "xSF.Query.Longerx")]
@@ -910,7 +910,7 @@ public sealed class CSharpFileTests
         var random = new Random(1114);
         var pieces = new[] { "a", "ab", "b", "SF.", "Query", " ", "\r\n" };
         var patterns = new[] { "a", "ab", "aa", "SF.Query", "b a", "Query\r\n" };
-        var replacements = new[] { "", "x", "ab", "Cortex.Query", "a much longer replacement" };
+        var replacements = new[] { "", "x", "ab", "Sample.Query", "a much longer replacement" };
         for(var i = 0; i < 3000; i++)
         {
             var text = new StringBuilder();
@@ -1004,7 +1004,7 @@ public sealed class CSharpFileTests
         var allocated = GC.GetAllocatedBytesForCurrentThread() - before;
 
         Assert.Equal(0, allocated);
-        Assert.Contains("using Cortex.Query;", CSharpFile.ToString(), StringComparison.Ordinal);
+        Assert.Contains("using Sample.Query;", CSharpFile.ToString(), StringComparison.Ordinal);
         Assert.DoesNotContain("SF.Query", CSharpFile.ToString(), StringComparison.Ordinal);
     }
 
@@ -1049,8 +1049,8 @@ public sealed class CSharpFileTests
     {
         CSharpFile.Start(4);
         CSharpFile.LineNoEnding(template);
-        CSharpFile.Replace("SF.Query", "Cortex.Query");
-        CSharpFile.Replace("SF.Repository.Common", "Cortex.Repository.Common");
+        CSharpFile.Replace("SF.Query", "Sample.Query");
+        CSharpFile.Replace("SF.Repository.Common", "Sample.Repository.Common");
         CSharpFile.Replace("System.Data.SqlClient", "Microsoft.Data.SqlClient");
     }
 

@@ -14,6 +14,7 @@
   <Folder Name="/Dependencies/">
     <Project Path="Dependencies/SF.CodeGenerator/SF.CodeGenerator.csproj" />
     <Project Path="Dependencies/SF.CSharpGenerator/SF.CSharpGenerator.csproj" />
+    <Project Path="Dependencies/SF.CSharpWriter/SF.CSharpWriter.csproj" />
     <Project Path="Dependencies/SF.Db/SF.Db.csproj" />
     <Project Path="Dependencies/SF.Engine/SF.Engine.csproj" />
     <Project Path="Dependencies/SF.Models/SF.Models.csproj" />

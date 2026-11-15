@@ -3,6 +3,21 @@
 What changed in each published release of The Sharp Factory, newest first. Each section is also the text of that
 release on GitHub, with its downloads.
 
+## Unreleased
+
+### What's new
+
+- **The code writer is its own library.** The part that writes the C# files is now a separate project,
+  `SF.CSharpWriter`, that takes text and knows nothing of your model; the generators write through it. The
+  generated code is exactly the same, byte for byte, so there is nothing to Sync.
+
+### Downloads
+
+| Download | What |
+|
+
+---
+
 ## 1.2.1.9 — 2026-11-14
 
 ### Fixes
