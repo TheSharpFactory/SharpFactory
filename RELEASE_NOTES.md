@@ -5,7 +5,7 @@ release gives them its version. Version rules: see [BACKLOG.md](BACKLOG.md).
 
 ---
 
-## Unreleased
+## 1.2.2.1 — 2026-11-15
 
 ### Date after a day, connection check, logging switch, master refused, long values refused, writer tests (SF-194, SF-198, SF-203, SF-204, SF-210, SF-211)
 
