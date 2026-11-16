@@ -122,7 +122,7 @@ internal sealed partial class SyncPage : UserControl
             return;
 
         var diff = _viewModel?.Diff;
-        var hasText = diff != null && !diff.HasMessage;
+        var hasText = diff != null;
         _background.Lines = hasText ? diff.Lines : new List<DiffLineViewModel>();
         _background.IsTinted = hasText && diff.IsTinted;
         _margin.Lines = _background.Lines;

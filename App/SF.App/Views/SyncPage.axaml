@@ -250,7 +250,6 @@
                     <ae:TextEditor Name="DiffEditor" IsReadOnly="True" FontSize="12.5" Padding="0,4,0,0" WordWrap="True"
                                    FontFamily="Cascadia Mono,Consolas,Menlo,DejaVu Sans Mono,monospace"
                                    HorizontalScrollBarVisibility="Disabled" VerticalScrollBarVisibility="Auto" />
-                    <TextBlock Classes="subtle" Margin="16" TextWrapping="Wrap" Text="{Binding Diff.Message}" IsVisible="{Binding Diff.HasMessage, FallbackValue=False}" />
                     <StackPanel Classes="emptyState" IsVisible="{Binding Diff, Converter={x:Static ObjectConverters.IsNull}}">
                       <PathIcon Data="{StaticResource IconDocument}" Width="28" Height="28" />
                       <TextBlock Text="Select a file to see its changes." />

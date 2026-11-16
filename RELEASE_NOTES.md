@@ -7,6 +7,34 @@ release gives them its version. Version rules: see [BACKLOG.md](BACKLOG.md).
 
 ## 1.2.2.2 — 2026-11-15
 
+### Review of the Sync page change (SF-217)
+
+Changes
+- A Sync that stops keeps its log (the reason is in it) and the list it started from; the page no longer checks again at once, which replaced that log with the check's. The Last Sync line says "Check again shows what is left to write" instead of "Nothing was written", which a failure while writing would not make true.
+- A check asked for again while the Sync page is left is not run in the background; the next visit checks.
+- `DiffViewModel.Message` is gone (only a Sync's report, which keeps no contents, set it). Plain dialogs grow up to 720 wide, as dialogs with a details box are.
+
+Verification
+- New `SyncFlowTests`: a read-only file stops a Sync (the line, the Sync's log with the reason, the list, Sync on again); a hand-written file at a generated path gives "Sync would stop" with Sync off; a log line from a cleared run is dropped; warning lines, the problems-only toggle and the copied text; `ReleaseNotes.Lines` (paragraph, heading, wrapped list item, link, cut); the code tab narrows the tree and Details gives the width back. `DatabaseParityTests` checks Create model is off with no object selected. With the re-check put back and the run check taken out of `UiProgressLog`, the two tests for them fail.
+- `sharpfactory sync --preview` writes nothing and ends with "Check Completed Successfully: nothing was written."
+- `SF.Tests` 163 passed, `SF.CSharpWriter.Tests` 242 passed, `SF.App.Tests` 120 passed, with the database tests on.
+
+Commit details
+
+```
+Keep a stopped Sync's log; tests for the Sync page change
+
+A Sync that stops keeps its log and the list it started from instead of
+checking again at once, and the line about it points to Check again. A
+check asked for after the page is left waits for the next visit. New
+tests cover a stopped Sync, files Sync will not replace, the log's
+problems, the release notes layout and the code tab's width.
+
+Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>
+```
+
+---
+
 ### Sync shows what it would change by itself; UI review fixes (SF-217 to SF-229)
 
 Changes

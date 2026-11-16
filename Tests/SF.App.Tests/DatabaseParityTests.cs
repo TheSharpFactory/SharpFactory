@@ -58,11 +58,15 @@ public sealed class DatabaseParityTests
             await wizard.NextCommand.ExecuteAsync(null);
             Assert.Null(wizard.Error);
             Assert.True(wizard.IsObjectsStep);
+            //a model needs at least one object: Create model waits for one
+            Assert.Equal(0, wizard.Chooser.SelectedCount);
+            Assert.False(wizard.CanGoNext);
             app.Screenshot("14-add-objects");
 
             //step 3: everything, as the reference was built
             wizard.Chooser.SelectAllCommand.Execute(null);
             Assert.Equal(wizard.Chooser.TotalCount, wizard.Chooser.SelectedCount);
+            Assert.True(wizard.CanGoNext);
             await wizard.NextCommand.ExecuteAsync(null);
             app.Pump();
 

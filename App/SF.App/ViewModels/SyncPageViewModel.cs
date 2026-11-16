@@ -948,7 +948,7 @@ internal sealed partial class SyncPageViewModel : PageViewModel
             _checkAgain = false;
             await CheckOnceAsync();
         }
-        while(_checkAgain && CanCheck);
+        while(_checkAgain && CanCheck && IsCurrentPage);
     }
 
     private async Task CheckOnceAsync()
@@ -1172,12 +1172,10 @@ internal sealed partial class SyncPageViewModel : PageViewModel
             IsRunning = false;
         }
 
-        //a Sync that stopped may have written part of it: what is left to write is worked out again
+        //a Sync that stopped keeps its log (the reason is in it) and the list it started from; Check again works out
+        //what is left to write
         if(!succeeded)
-        {
-            ClearReport();
-            await CheckAsync();
-        }
+            RaiseCanSync();
     }
 
     [RelayCommand]
@@ -1393,7 +1391,7 @@ internal sealed class LastSyncViewModel
         if(!report.Success)
         {
             Title = $"Last Sync at {time} stopped";
-            Text = report.ErrorMessage + " Nothing was written. The Log tab has the details.";
+            Text = report.ErrorMessage + " The Log tab has the details; Check again shows what is left to write.";
             return;
         }
 
@@ -1498,11 +1496,6 @@ internal sealed class DiffViewModel
     public string Header { get; set; }
 
     /// <summary>
-    /// Shown instead of the text (after a real Sync, which keeps no contents).
-    /// </summary>
-    public string Message { get; set; }
-
-    /// <summary>
     /// False for whole new or deleted files: every line is the same kind.
     /// </summary>
     public bool IsTinted { get; set; }
@@ -1523,14 +1516,6 @@ internal sealed class DiffViewModel
             }
 
             return 0;
-        }
-    }
-
-    public bool HasMessage
-    {
-        get
-        {
-            return Message != null;
         }
     }
 

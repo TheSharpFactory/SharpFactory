@@ -10,7 +10,7 @@
     <!-- a dialog with a details box (paths, release notes) opens at the full width instead of shrinking to its wrapped lines -->
     <Style Selector="Border.dialog">
       <Setter Property="MinWidth" Value="560" />
-      <Setter Property="MaxWidth" Value="560" />
+      <Setter Property="MaxWidth" Value="720" />
     </Style>
     <Style Selector="Border.dialog.withDetails">
       <Setter Property="MinWidth" Value="720" />
