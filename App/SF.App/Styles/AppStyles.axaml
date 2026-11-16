@@ -210,6 +210,32 @@
   </Style>
 
   <!-- log lines -->
+  <Style Selector="TextBlock.logWarning">
+    <Setter Property="Foreground" Value="{DynamicResource WarningText}" />
+  </Style>
+  <Style Selector="PathIcon.logWarningIcon">
+    <Setter Property="Foreground" Value="{DynamicResource WarningText}" />
+  </Style>
+  <Style Selector="PathIcon.lastSyncIcon">
+    <Setter Property="Foreground" Value="{DynamicResource ErrorText}" />
+  </Style>
+  <Style Selector="PathIcon.lastSyncIcon.ok">
+    <Setter Property="Foreground" Value="{DynamicResource SuccessText}" />
+  </Style>
+  <!-- the count next to a navigation entry (the files Sync would write) -->
+  <Style Selector="Border.navBadge">
+    <Setter Property="Background" Value="{DynamicResource PrimaryBackground}" />
+    <Setter Property="CornerRadius" Value="9" />
+    <Setter Property="Padding" Value="7,1" />
+    <Setter Property="MinWidth" Value="20" />
+    <Setter Property="VerticalAlignment" Value="Center" />
+  </Style>
+  <Style Selector="Border.navBadge TextBlock">
+    <Setter Property="Foreground" Value="White" />
+    <Setter Property="FontSize" Value="11.5" />
+    <Setter Property="FontWeight" Value="SemiBold" />
+    <Setter Property="HorizontalAlignment" Value="Center" />
+  </Style>
   <Style Selector="TextBlock.logError">
     <Setter Property="Foreground" Value="{DynamicResource ErrorText}" />
   </Style>

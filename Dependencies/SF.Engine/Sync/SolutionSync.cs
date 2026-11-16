@@ -98,7 +98,7 @@ public static class SolutionSync
             //only a preview gets here with such files: a real Sync stops before writing anything
             foreach(var unmarked in report.UnmarkedFiles)
                 log.Info($"Not a Sharp Factory file, Sync will stop: {unmarked}");
-            log.Info(request.Preview ? "Preview Completed Successfully!" : "Synchronization Completed Successfully!");
+            log.Info(request.Preview ? "Check Completed Successfully: nothing was written." : "Synchronization Completed Successfully!");
             report.Success = true;
         }
         catch(Exception ex)

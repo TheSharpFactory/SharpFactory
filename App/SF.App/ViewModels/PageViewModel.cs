@@ -52,6 +52,45 @@ internal sealed partial class NavItemViewModel : ViewModelBase
     [ObservableProperty]
     private bool _isEnabled = true;
 
+    /// <summary>
+    /// A short count or mark next to the title (the files Sync would write); null for none.
+    /// </summary>
+    [ObservableProperty]
+    [NotifyPropertyChangedFor(nameof(HasBadge))]
+    private string _badge;
+
+    [ObservableProperty]
+    private string _badgeTip;
+
+    public bool HasBadge
+    {
+        get
+        {
+            return !string.IsNullOrEmpty(Badge);
+        }
+    }
+
+    /// <summary>
+    /// Why the entry is off: its tooltip while there is no model file.
+    /// </summary>
+    public string Tip
+    {
+        get
+        {
+            return IsEnabled ? BadgeTip : "Open or create a model file first.";
+        }
+    }
+
+    partial void OnIsEnabledChanged(bool value)
+    {
+        OnPropertyChanged(nameof(Tip));
+    }
+
+    partial void OnBadgeTipChanged(string value)
+    {
+        OnPropertyChanged(nameof(Tip));
+    }
+
     public string Title { get; set; }
 
     /// <summary>

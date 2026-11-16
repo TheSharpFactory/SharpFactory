@@ -163,7 +163,7 @@ public sealed class AppReviewTests
             app.ViewModel.Navigate(app.ViewModel.Sync);
             app.ViewModel.Sync.TargetPath = Path.Combine(app.Folder, "App.slnx");
             Assert.True(app.ViewModel.Sync.IsBlockedBySyncedFlag);
-            Assert.False(app.ViewModel.Sync.CanRun);
+            Assert.False(app.ViewModel.Sync.CanSync);
             Assert.Contains("Second", app.ViewModel.Sync.SyncedBlockText);
         }
     }
@@ -257,7 +257,7 @@ public sealed class AppReviewTests
             page.NewSolutionFolder = app.Folder;
             page.NewSolutionName = "Filtered";
             page.UseNewSolutionCommand.Execute(null);
-            await page.PreviewCommand.ExecuteAsync(null);
+            await page.CheckAsync();
             app.Pump();
             Assert.True(page.Report.Success, page.Report.ErrorMessage);
 

@@ -3,6 +3,31 @@
 What changed in each published release of The Sharp Factory, newest first. Each section is also the text of that
 release on GitHub, with its downloads.
 
+## Unreleased
+
+### What's new
+
+- **Sync shows what it will change, by itself.** There is no Preview button any more: as soon as a solution is
+  chosen, the Sync page works out every file Sync would add, change or delete (writing nothing) and shows them with
+  their differences. It works it out again when you update the model or change a layer or a setting. The button says
+  how many files it will write ("Sync 165 files"), the Sync entry in the menu shows the same count, and after a Sync
+  the page says when it ran and what it wrote, with a Save button when the model file has unsaved changes.
+- **A round of UI polish.** The generated code on the Models page gets most of the width; the object checkboxes in
+  the New model wizard are drawn properly, and Create model waits for at least one object; disabled buttons and menu
+  entries say why; release notes in the update question are laid out; secondary text is easier to read; skipped
+  objects stand out in the logs, with a filter to show only them.
+
+### Downloads
+
+| Download | What |
+|---|---|
+| `TheSharpFactory-win-x64.zip`, `TheSharpFactory-win-arm64.zip` | The app for Windows |
+| `TheSharpFactory-osx-arm64.zip`, `TheSharpFactory-osx-x64.zip` | The app for macOS (Apple silicon, Intel) |
+| `TheSharpFactory-linux-x64.tar.gz` | The app for Linux |
+| `sharpfactory-cli-*` | The command line, `sharpfactory`, for the same systems |
+
+---
+
 ## 1.2.2.1 — 2026-11-15
 
 ### Fixes

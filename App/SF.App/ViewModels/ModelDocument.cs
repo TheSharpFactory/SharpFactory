@@ -71,6 +71,7 @@ internal sealed partial class ModelDocument : ViewModelBase
     {
         ChangeCount++;
         IsDirty = true;
+        OnPropertyChanged(nameof(ChangeCount));
     }
 
     partial void OnFilePathChanged(string value)

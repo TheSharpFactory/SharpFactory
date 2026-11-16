@@ -29,8 +29,8 @@
       <ScrollViewer Name="WizardBody" HorizontalScrollBarVisibility="Disabled" VerticalScrollBarVisibility="Auto" AllowAutoHide="False">
         <Panel Margin="24,20">
           <!-- 1. connection summary -->
-          <StackPanel Spacing="10" IsVisible="{Binding IsSummaryStep}" MaxWidth="520" HorizontalAlignment="Left">
-            <TextBlock Classes="subtle" TextWrapping="Wrap" Text="The model is read again from its database. Its layers and connection stay as they are." />
+          <StackPanel Spacing="10" IsVisible="{Binding IsSummaryStep}" MaxWidth="680" HorizontalAlignment="Left">
+            <TextBlock Classes="subtle" TextWrapping="Wrap" Text="Next connects to this database and reads the model's objects again, so you can choose which ones to keep. The model's layers and connection stay as they are." />
             <Grid ColumnDefinitions="160,*" RowDefinitions="Auto,Auto,Auto,Auto" Margin="0,8,0,0">
               <TextBlock Classes="subtle" Text="Model" />
               <TextBlock Grid.Column="1" Name="SummaryName" FontWeight="SemiBold" Text="{Binding Model.Name}" />

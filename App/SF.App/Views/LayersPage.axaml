@@ -13,7 +13,8 @@
         <Grid ColumnDefinitions="230,16,170,12,190,20,*">
           <StackPanel VerticalAlignment="Center" ToolTip.Tip="{Binding Description}">
             <TextBlock Text="{Binding Title}" FontWeight="SemiBold" TextTrimming="CharacterEllipsis" />
-            <TextBlock Classes="subtle" FontSize="11.5" Text="{Binding Description}" TextTrimming="CharacterEllipsis" />
+            <!-- up to two lines: the descriptions are short sentences, cut off they said nothing -->
+            <TextBlock Classes="subtle" FontSize="11.5" Text="{Binding Description}" TextWrapping="Wrap" MaxLines="2" TextTrimming="CharacterEllipsis" />
           </StackPanel>
           <TextBox Grid.Column="2" Text="{Binding Layer.Project}" VerticalAlignment="Center" />
           <TextBox Grid.Column="4" Text="{Binding Layer.Namespace}" VerticalAlignment="Center" />
@@ -27,7 +28,7 @@
   </UserControl.Resources>
 
   <ScrollViewer>
-    <StackPanel Margin="28,22" Spacing="16" MaxWidth="1100" HorizontalAlignment="Stretch">
+    <StackPanel Margin="28,22" Spacing="16" MaxWidth="1100" HorizontalAlignment="Left">
       <StackPanel>
         <TextBlock Classes="pageTitle" Text="Layers" />
         <TextBlock Classes="pageSubtitle" Text="The project and namespace of each generated layer. The result column includes the root namespace from Settings." />

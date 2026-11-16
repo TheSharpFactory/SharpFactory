@@ -23,10 +23,10 @@
                   <ItemsControl.ItemTemplate>
                     <DataTemplate x:DataType="vm:DocLink">
                       <HyperlinkButton Classes="docLink" NavigateUri="{Binding Uri}" HorizontalAlignment="Stretch" HorizontalContentAlignment="Stretch" ToolTip.Tip="{Binding Uri}">
-                        <Grid ColumnDefinitions="*,Auto">
+                        <StackPanel Orientation="Horizontal" Spacing="6">
                           <TextBlock Text="{Binding Text}" />
-                          <PathIcon Grid.Column="1" Classes="linkIcon" Data="{StaticResource IconLink}" Width="12" Height="12" />
-                        </Grid>
+                          <PathIcon Classes="linkIcon" Data="{StaticResource IconLink}" Width="12" Height="12" />
+                        </StackPanel>
                       </HyperlinkButton>
                     </DataTemplate>
                   </ItemsControl.ItemTemplate>

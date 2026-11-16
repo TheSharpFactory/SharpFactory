@@ -776,8 +776,9 @@ public sealed class UpdateTests
             app.PumpUntil(() => app.ViewModel.Dialog != null);
             Assert.Equal("An update is available", app.ViewModel.Dialog.Title);
             Assert.Equal("Version 9.0.0.0 is ready (you have 1.2.0.3). Update now downloads it, replaces this copy and restarts the app.", app.ViewModel.Dialog.Message);
-            Assert.Equal("What's new", app.ViewModel.Dialog.DetailsTitle);
+            Assert.Equal("Release notes", app.ViewModel.Dialog.DetailsTitle);
             Assert.Equal("Better things.", app.ViewModel.Dialog.Details);
+            Assert.Equal("Better things.", app.ViewModel.Dialog.DetailsLines[0].Text);
             app.ViewModel.Dialog.Cancel();
             app.PumpUntil(() => next.IsCompleted);
             Assert.Single(handler.Requests);

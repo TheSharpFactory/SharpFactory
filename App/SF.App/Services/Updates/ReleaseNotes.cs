@@ -46,6 +46,35 @@ internal static class ReleaseNotes
     }
 
     /// <summary>
+    /// The same text as Summarize, line by line, for the update question to lay out: headings, list items (without
+    /// their bullet) and paragraphs, cut the same way with a last "…" line.
+    /// </summary>
+    public static List<ReleaseNoteLine> Lines(string markdown, int maxLength)
+    {
+        var result = new List<ReleaseNoteLine>();
+        if(string.IsNullOrWhiteSpace(markdown))
+            return result;
+
+        var blocks = ReadBlocks(markdown);
+        var length = 0;
+        for(var i = 0; i < blocks.Count; i++)
+        {
+            var block = blocks[i];
+            if(i > 0 && length + block.Text.Length > maxLength)
+            {
+                result.Add(new ReleaseNoteLine { Text = "…" });
+                break;
+            }
+
+            length += block.Text.Length;
+            var text = block.IsListItem ? block.Text.Substring(2) : block.Text;
+            result.Add(new ReleaseNoteLine { Text = text, IsHeading = block.IsHeading, IsListItem = block.IsListItem });
+        }
+
+        return result;
+    }
+
+    /// <summary>
     /// A heading sits right on what it heads, and list items on each other; everything else has a blank line between.
     /// </summary>
     private static bool IsTight(NotesBlock previous, NotesBlock next)
@@ -117,5 +146,23 @@ internal static class ReleaseNotes
         public string Text { get; set; }
         public bool IsHeading { get; set; }
         public bool IsListItem { get; set; }
+    }
+}
+
+/// <summary>
+/// One line of the release text as the update question lays it out.
+/// </summary>
+internal sealed class ReleaseNoteLine
+{
+    public string Text { get; set; }
+    public bool IsHeading { get; set; }
+    public bool IsListItem { get; set; }
+
+    public bool IsParagraph
+    {
+        get
+        {
+            return !IsHeading && !IsListItem;
+        }
     }
 }

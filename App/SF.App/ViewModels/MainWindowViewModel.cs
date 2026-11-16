@@ -153,6 +153,22 @@ internal sealed partial class MainWindowViewModel : ViewModelBase
     }
 
     #region Navigation
+    /// <summary>
+    /// Shows a count or mark next to a page's entry in the navigation (null removes it).
+    /// </summary>
+    public void SetNavBadge(PageViewModel page, string badge, string tip)
+    {
+        foreach(var item in NavItems)
+        {
+            if(item.Page == page)
+            {
+                item.Badge = badge;
+                item.BadgeTip = tip;
+                return;
+            }
+        }
+    }
+
     public void Navigate(PageViewModel page)
     {
         foreach(var item in NavItems)

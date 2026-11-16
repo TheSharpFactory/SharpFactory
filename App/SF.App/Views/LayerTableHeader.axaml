@@ -7,6 +7,6 @@
     <TextBlock Text="LAYER" />
     <TextBlock Grid.Column="2" Text="PROJECT" />
     <TextBlock Grid.Column="4" Text="NAMESPACE" />
-    <TextBlock Grid.Column="6" Text="RESULT" />
+    <TextBlock Grid.Column="6" Text="GENERATED PROJECT, THEN NAMESPACE" />
   </Grid>
 </UserControl>

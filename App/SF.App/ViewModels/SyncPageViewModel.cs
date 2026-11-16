@@ -13,6 +13,8 @@ using SF.Models;
 using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
+using System.ComponentModel;
+using System.Globalization;
 using System.IO;
 using System.Threading.Tasks;
 #endregion
@@ -20,8 +22,10 @@ using System.Threading.Tasks;
 namespace SF.App.ViewModels;
 
 /// <summary>
-/// Sync: choose a target solution (synced before, near the model, browse, or new), preview what changes, then
-/// write it. A Sync into another solution than the model's own is confirmed first.
+/// Sync: choose a target solution (synced before, near the model, browse, or new). As soon as there is one, the page
+/// works out what Sync would change (a run that writes nothing) and shows it; it works it out again when the model or
+/// the target changes. Sync writes it; the page then keeps a line about that Sync. A Sync into another solution than
+/// the model's own is confirmed first.
 /// </summary>
 internal sealed partial class SyncPageViewModel : PageViewModel
 {
@@ -43,11 +47,29 @@ internal sealed partial class SyncPageViewModel : PageViewModel
     [ObservableProperty]
     private bool _isScanning;
 
+    /// <summary>
+    /// A Sync is writing: the rest of the app waits.
+    /// </summary>
     [ObservableProperty]
     private bool _isRunning;
 
+    /// <summary>
+    /// The page is working out what Sync would change: nothing is written, and the app stays usable.
+    /// </summary>
+    [ObservableProperty]
+    private bool _isChecking;
+
+    /// <summary>
+    /// What Sync would change now: the last check (or an empty report right after a Sync), never a Sync's own report.
+    /// </summary>
     [ObservableProperty]
     private SyncReport _report;
+
+    /// <summary>
+    /// The last Sync of this model file in this session, and when it ran.
+    /// </summary>
+    [ObservableProperty]
+    private LastSyncViewModel _lastSync;
 
     [ObservableProperty]
     private ChangeFilterOption _changeFilter;
@@ -73,29 +95,40 @@ internal sealed partial class SyncPageViewModel : PageViewModel
     [ObservableProperty]
     private string _targetError;
 
+    /// <summary>
+    /// Which run the Log tab shows: "Check at 21:16 (nothing written)" or "Sync at 21:15".
+    /// </summary>
+    [ObservableProperty]
+    private string _logTitle;
+
     public SyncPageViewModel(MainWindowViewModel shell) : base(shell)
     {
         _changeFilter = _changeFilters[0];
     }
 
     /// <summary>
-    /// What the changes list says when it has nothing to show; null when it has rows.
+    /// What the changes area says when there is no file to list; null when it lists files.
     /// </summary>
     public string ChangesEmptyText
     {
         get
         {
             if(Report == null)
-                return "Run Preview to see what Sync would add, change or delete. Nothing is written until you Sync.";
+                return IsChecking ? "Working out what Sync would change…" : "What Sync would change shows here.";
 
             if(!Report.Success)
-                return "Nothing to show: the run failed. The Log tab has the details.";
+                return "Nothing to show: the check failed. The Log tab has the details.";
 
             if(FileChanges.Count > 0)
                 return null;
 
             if(Report.FileChanges.Count == 0)
-                return Report.IsPreview ? "Nothing to change: the solution is up to date." : "Nothing changed: the solution was already up to date.";
+            {
+                if(Report.IsUpToDate)
+                    return "No files to list: Sync has nothing to write.";
+
+                return "No file changes: Sync only updates the solution and its projects.";
+            }
 
             return "No files of this kind.";
         }
@@ -106,6 +139,49 @@ internal sealed partial class SyncPageViewModel : PageViewModel
         get
         {
             return ChangesEmptyText != null;
+        }
+    }
+
+    /// <summary>
+    /// The file list and the difference: only when there are files to list, otherwise one line says why not.
+    /// </summary>
+    public bool HasPendingFiles
+    {
+        get
+        {
+            return Report != null && Report.Success && Report.FileChanges.Count > 0;
+        }
+    }
+
+    /// <summary>
+    /// The changes card takes the rest of the page when it lists files, or its log is shown; otherwise it is as tall as
+    /// its content.
+    /// </summary>
+    public bool FillsPage
+    {
+        get
+        {
+            return HasPendingFiles || IsLogTabSelected;
+        }
+    }
+
+    /// <summary>
+    /// The Log tab of the changes card is open.
+    /// </summary>
+    public bool IsLogTabSelected
+    {
+        get
+        {
+            return _isLogTabSelected;
+        }
+        set
+        {
+            if(_isLogTabSelected == value)
+                return;
+
+            _isLogTabSelected = value;
+            OnPropertyChanged();
+            OnPropertyChanged(nameof(FillsPage));
         }
     }
 
@@ -151,8 +227,10 @@ internal sealed partial class SyncPageViewModel : PageViewModel
             Shell.Document.Container.CommonSettings.TargetFramework = value.Value;
             OnPropertyChanged();
 
-            //the projects Sync creates change: a preview made before no longer says what Sync would do
+            //the projects Sync creates change: work out again what Sync would do
             ClearReport();
+            if(IsCurrentPage)
+                _ = CheckAsync();
         }
     }
 
@@ -198,11 +276,110 @@ internal sealed partial class SyncPageViewModel : PageViewModel
         }
     }
 
-    public bool CanRun
+    public bool HasTarget
     {
         get
         {
-            return !IsRunning && !string.IsNullOrWhiteSpace(TargetPath) && Shell.Document != null && !IsBlockedBySyncedFlag;
+            return !string.IsNullOrWhiteSpace(TargetPath);
+        }
+    }
+
+    /// <summary>
+    /// The page can work out what Sync would change: a target, a model, no Sync running and none of its models marked
+    /// as synced.
+    /// </summary>
+    public bool CanCheck
+    {
+        get
+        {
+            return !IsRunning && HasTarget && Shell.Document != null && !IsBlockedBySyncedFlag;
+        }
+    }
+
+    /// <summary>
+    /// Sync is on when the last check (for the model as it is now) found something to write. Before any check, or when
+    /// the check is out of date, Sync works it out itself.
+    /// </summary>
+    public bool CanSync
+    {
+        get
+        {
+            if(!CanCheck || IsChecking)
+                return false;
+
+            if(!IsReportCurrent)
+                return true;
+
+            return Report.Success && !Report.IsUpToDate && Report.UnmarkedFiles.Count == 0;
+        }
+    }
+
+    /// <summary>
+    /// Why Sync is off, for its tooltip; null when it is on.
+    /// </summary>
+    public string SyncDisabledReason
+    {
+        get
+        {
+            if(CanSync)
+                return null;
+
+            if(Shell.Document == null)
+                return "Open a model file first.";
+
+            if(!HasTarget)
+                return "Choose a solution first.";
+
+            if(IsBlockedBySyncedFlag)
+                return SyncedBlockText;
+
+            if(IsRunning)
+                return "Sync is running.";
+
+            if(IsChecking)
+                return "Working out what Sync would change…";
+
+            if(Report != null && !Report.Success)
+                return "The check failed: the Log tab has the details.";
+
+            if(Report != null && Report.UnmarkedFiles.Count > 0)
+                return "Files that Sharp Factory did not write sit at generated paths: move or rename them first.";
+
+            return "Nothing to write: the solution is up to date.";
+        }
+    }
+
+    /// <summary>
+    /// "Sync 165 files" when the count is known, otherwise "Sync".
+    /// </summary>
+    public string SyncButtonText
+    {
+        get
+        {
+            if(IsReportCurrent && Report.Success && Report.FileChanges.Count > 0)
+                return "Sync " + ModelTreeBuilder.Plural(Report.FileChanges.Count, "file");
+
+            return "Sync";
+        }
+    }
+
+    /// <summary>
+    /// The report says what Sync would do to the model as it is now, in the chosen target.
+    /// </summary>
+    private bool IsReportCurrent
+    {
+        get
+        {
+            return Report != null && Shell.Document != null && Shell.Document.ChangeCount == _reportChangeCount
+                && string.Equals(_reportTarget, TargetPath, StringComparison.OrdinalIgnoreCase);
+        }
+    }
+
+    private bool IsCurrentPage
+    {
+        get
+        {
+            return Shell.CurrentPage == this;
         }
     }
 
@@ -210,7 +387,7 @@ internal sealed partial class SyncPageViewModel : PageViewModel
     {
         get
         {
-            if(string.IsNullOrWhiteSpace(TargetPath))
+            if(!HasTarget)
                 return "Choose a solution";
 
             return File.Exists(TargetPath) ? TargetPath : $"{TargetPath} (new)";
@@ -221,10 +398,10 @@ internal sealed partial class SyncPageViewModel : PageViewModel
     {
         get
         {
-            if(string.IsNullOrWhiteSpace(TargetPath))
+            if(!HasTarget)
                 return "Choose a solution";
 
-            return File.Exists(TargetPath) ? Path.GetFileName(TargetPath) : $"{Path.GetFileName(TargetPath)} (new)";
+            return Path.GetFileName(TargetPath);
         }
     }
 
@@ -232,7 +409,26 @@ internal sealed partial class SyncPageViewModel : PageViewModel
     {
         get
         {
-            return string.IsNullOrWhiteSpace(TargetPath) ? null : Path.GetDirectoryName(TargetPath);
+            return HasTarget ? Path.GetDirectoryName(TargetPath) : null;
+        }
+    }
+
+    private string TargetFileName
+    {
+        get
+        {
+            return HasTarget ? Path.GetFileName(TargetPath) : "The solution";
+        }
+    }
+
+    /// <summary>
+    /// The model file has changes that are not saved: the line about the last Sync offers Save.
+    /// </summary>
+    public bool ShowSaveHint
+    {
+        get
+        {
+            return LastSync != null && LastSync.Succeeded && Shell.Document != null && Shell.Document.IsDirty;
         }
     }
 
@@ -240,10 +436,6 @@ internal sealed partial class SyncPageViewModel : PageViewModel
     {
         OnPropertyChanged(nameof(SelectedTargetFramework));
         RaiseSyncedBlock();
-
-        //the Layers or Settings page changed the model since the run: its report no longer says what Sync would do
-        if(Report != null && Shell.Document != null && Shell.Document.ChangeCount != _reportChangeCount)
-            ClearReport();
 
         //a model file saved for the first time since it was opened: a new solution goes next to it
         var modelFile = Shell.Document?.FilePath;
@@ -257,20 +449,46 @@ internal sealed partial class SyncPageViewModel : PageViewModel
         //next to it); the refresh button looks again
         if(_scannedDocument != Shell.Document || !string.Equals(_scannedPath, Shell.Document?.FilePath, StringComparison.OrdinalIgnoreCase))
             _ = RefreshTargetsAsync();
+
+        //the model changed since the last check (Update, Layers, Settings): the old list goes, and the page works out
+        //again what Sync would do
+        if(Report != null && !IsReportCurrent)
+            ClearReport();
+
+        if(CanCheck && !IsReportCurrent)
+            _ = CheckAsync();
     }
 
     private void RaiseSyncedBlock()
     {
         OnPropertyChanged(nameof(IsBlockedBySyncedFlag));
         OnPropertyChanged(nameof(SyncedBlockText));
-        OnPropertyChanged(nameof(CanRun));
+        RaiseCanSync();
+    }
+
+    private void RaiseCanSync()
+    {
+        OnPropertyChanged(nameof(CanCheck));
+        OnPropertyChanged(nameof(CanSync));
+        OnPropertyChanged(nameof(SyncDisabledReason));
+        OnPropertyChanged(nameof(SyncButtonText));
     }
 
     public override void OnDocumentChanged()
     {
+        if(_document != null)
+            _document.PropertyChanged -= OnDocumentPropertyChanged;
+
+        _document = Shell.Document;
+        if(_document != null)
+            _document.PropertyChanged += OnDocumentPropertyChanged;
+
         _found = null;
+        _reportTarget = null;
         Candidates.Clear();
         TargetPath = null;
+        LastSync = null;
+        LogTitle = null;
         ClearReport();
         Progress.Clear();
         var modelFile = Shell.Document?.FilePath;
@@ -279,6 +497,7 @@ internal sealed partial class SyncPageViewModel : PageViewModel
         OnPropertyChanged(nameof(HasCandidates));
         OnPropertyChanged(nameof(ShowNoCandidates));
         RaiseSyncedBlock();
+        UpdateNavBadge();
     }
 
     /// <summary>
@@ -287,6 +506,30 @@ internal sealed partial class SyncPageViewModel : PageViewModel
     public override void OnSelectedModelChanged()
     {
         RaiseSyncedBlock();
+    }
+
+    /// <summary>
+    /// The model changed (Update, Layers, Settings): the badge says so at once, and on this page the changes are worked
+    /// out again.
+    /// </summary>
+    private void OnDocumentPropertyChanged(object sender, PropertyChangedEventArgs e)
+    {
+        if(string.Equals(e.PropertyName, nameof(ModelDocument.IsDirty), StringComparison.Ordinal))
+            OnPropertyChanged(nameof(ShowSaveHint));
+
+        if(!string.Equals(e.PropertyName, nameof(ModelDocument.ChangeCount), StringComparison.Ordinal))
+            return;
+
+        RaiseSyncedBlock();
+        if(IsCurrentPage)
+        {
+            //the list says what Sync would do to the model as it was: it goes, and is worked out again
+            ClearReport();
+            if(CanCheck)
+                _ = CheckAsync();
+        }
+
+        UpdateNavBadge();
     }
 
     partial void OnSelectedCandidateChanged(SolutionCandidateViewModel value)
@@ -304,12 +547,14 @@ internal sealed partial class SyncPageViewModel : PageViewModel
         IsTargetPanelOpen = string.IsNullOrWhiteSpace(value);
         OnPropertyChanged(nameof(TargetBadge));
         OnPropertyChanged(nameof(HasTargetBadge));
+        OnPropertyChanged(nameof(HasTarget));
         TargetError = null;
         ClearReport();
-        OnPropertyChanged(nameof(CanRun));
         OnPropertyChanged(nameof(TargetDescription));
         OnPropertyChanged(nameof(TargetName));
         OnPropertyChanged(nameof(TargetFolder));
+        if(IsCurrentPage && CanCheck)
+            _ = CheckAsync();
     }
 
     partial void OnIsScanningChanged(bool value)
@@ -332,7 +577,19 @@ internal sealed partial class SyncPageViewModel : PageViewModel
     partial void OnIsRunningChanged(bool value)
     {
         Shell.IsBusy = value;
-        OnPropertyChanged(nameof(CanRun));
+        RaiseCanSync();
+    }
+
+    partial void OnIsCheckingChanged(bool value)
+    {
+        RaiseCanSync();
+        RaiseSummary();
+        RaiseChangesEmpty();
+    }
+
+    partial void OnLastSyncChanged(LastSyncViewModel value)
+    {
+        OnPropertyChanged(nameof(ShowSaveHint));
     }
 
     partial void OnChangeFilterChanged(ChangeFilterOption value)
@@ -350,17 +607,19 @@ internal sealed partial class SyncPageViewModel : PageViewModel
     partial void OnReportChanged(SyncReport value)
     {
         OnPropertyChanged(nameof(HasReport));
+        OnPropertyChanged(nameof(HasPendingFiles));
+        RaiseSummary();
+        RaiseCanSync();
+        UpdateNavBadge();
+    }
+
+    private void RaiseSummary()
+    {
+        OnPropertyChanged(nameof(IsSummaryInfo));
         OnPropertyChanged(nameof(SummaryTitle));
         OnPropertyChanged(nameof(SummaryRest));
         OnPropertyChanged(nameof(SummaryState));
-        OnPropertyChanged(nameof(AddedText));
-        OnPropertyChanged(nameof(ChangedText));
-        OnPropertyChanged(nameof(DeletedText));
-        OnPropertyChanged(nameof(UnchangedText));
-        OnPropertyChanged(nameof(HasAdded));
-        OnPropertyChanged(nameof(HasChanged));
-        OnPropertyChanged(nameof(HasDeleted));
-        OnPropertyChanged(nameof(ShowCounts));
+        OnPropertyChanged(nameof(HasSummary));
     }
 
     /// <summary>
@@ -370,7 +629,7 @@ internal sealed partial class SyncPageViewModel : PageViewModel
     {
         get
         {
-            if(string.IsNullOrWhiteSpace(TargetPath))
+            if(!HasTarget)
                 return null;
 
             if(!File.Exists(TargetPath))
@@ -406,19 +665,45 @@ internal sealed partial class SyncPageViewModel : PageViewModel
     }
 
     /// <summary>
-    /// preview, success or error: the colour of the summary bar.
+    /// The bar over the changes: while checking, and once there is a result.
+    /// </summary>
+    public bool HasSummary
+    {
+        get
+        {
+            return IsChecking || Report != null;
+        }
+    }
+
+    /// <summary>
+    /// checking, pending, uptodate or error: the colour and icon of the bar over the changes.
     /// </summary>
     public string SummaryState
     {
         get
         {
+            if(IsChecking)
+                return "checking";
+
             if(Report == null)
                 return null;
 
-            if(!Report.Success)
+            if(!Report.Success || Report.UnmarkedFiles.Count > 0)
                 return "error";
 
-            return Report.IsPreview ? "preview" : "success";
+            return Report.IsUpToDate ? "uptodate" : "pending";
+        }
+    }
+
+    /// <summary>
+    /// The bar is blue while checking and when there is something to write.
+    /// </summary>
+    public bool IsSummaryInfo
+    {
+        get
+        {
+            var state = SummaryState;
+            return string.Equals(state, "checking", StringComparison.Ordinal) || string.Equals(state, "pending", StringComparison.Ordinal);
         }
     }
 
@@ -426,16 +711,25 @@ internal sealed partial class SyncPageViewModel : PageViewModel
     {
         get
         {
+            if(IsChecking)
+                return "Working out what Sync would change…";
+
             if(Report == null)
                 return null;
 
             if(!Report.Success)
-                return "Sync stopped";
+                return "The check failed";
+
+            if(Report.UnmarkedFiles.Count > 0)
+                return "Sync would stop";
 
             if(Report.IsUpToDate)
-                return "Already up to date";
+                return "Up to date";
 
-            return Report.IsPreview ? "Preview" : "Synced";
+            if(Report.FileChanges.Count > 0)
+                return ModelTreeBuilder.Plural(Report.FileChanges.Count, "file") + " to write";
+
+            return "Projects to update";
         }
     }
 
@@ -443,91 +737,32 @@ internal sealed partial class SyncPageViewModel : PageViewModel
     {
         get
         {
+            if(IsChecking)
+                return "nothing is written";
+
             if(Report == null)
                 return null;
 
             if(!Report.Success)
                 return Report.ErrorMessage + " The Log tab has the details.";
 
+            if(Report.UnmarkedFiles.Count > 0)
+                return $"{ModelTreeBuilder.Plural(Report.UnmarkedFiles.Count, "file")} at generated paths were not written by Sharp Factory (the Log tab lists them): move or rename them, then check again";
+
             if(Report.IsUpToDate)
-                return "nothing to write";
+                return $"{TargetFileName} matches the model";
 
-            var projects = ModelTreeBuilder.Plural(Report.ProjectsCreated.Count, "new project");
-            var references = ModelTreeBuilder.Plural(Report.ReferencesAdded.Count, "reference");
-            if(Report.IsPreview && Report.UnmarkedFiles.Count > 0)
-                return $"Sync will stop: {ModelTreeBuilder.Plural(Report.UnmarkedFiles.Count, "file")} at generated paths not written by Sharp Factory (the Log tab lists them) · {projects} · {references}";
+            var parts = new List<string> { "into " + TargetFileName };
+            if(Report.ProjectsCreated.Count > 0)
+                parts.Add(ModelTreeBuilder.Plural(Report.ProjectsCreated.Count, "new project"));
 
-            if(Report.IsPreview)
-                return $"nothing is written until you Sync · {projects} · {references}";
+            if(Report.ReferencesAdded.Count > 0)
+                parts.Add(ModelTreeBuilder.Plural(Report.ReferencesAdded.Count, "project reference"));
 
-            return $"written into {Path.GetFileName(TargetPath)} · {projects} · {references}";
-        }
-    }
+            if(Report.UnchangedFileCount > 0)
+                parts.Add($"{Report.UnchangedFileCount} unchanged");
 
-    public bool ShowCounts
-    {
-        get
-        {
-            return Report != null && Report.Success && !Report.IsUpToDate;
-        }
-    }
-
-    public string AddedText
-    {
-        get
-        {
-            return Report == null ? null : $"+{Report.CountFiles(SyncFileChangeKind.Added)} added";
-        }
-    }
-
-    public string ChangedText
-    {
-        get
-        {
-            return Report == null ? null : $"~{Report.CountFiles(SyncFileChangeKind.Changed)} changed";
-        }
-    }
-
-    public string DeletedText
-    {
-        get
-        {
-            return Report == null ? null : $"−{Report.CountFiles(SyncFileChangeKind.Deleted)} deleted";
-        }
-    }
-
-    public string UnchangedText
-    {
-        get
-        {
-            return Report == null ? null : $"{Report.UnchangedFileCount} unchanged";
-        }
-    }
-
-    /// <summary>
-    /// The added, changed and deleted counts are coloured only when there are some: a zero count stays grey.
-    /// </summary>
-    public bool HasAdded
-    {
-        get
-        {
-            return Report != null && Report.CountFiles(SyncFileChangeKind.Added) > 0;
-        }
-    }
-
-    public bool HasChanged
-    {
-        get
-        {
-            return Report != null && Report.CountFiles(SyncFileChangeKind.Changed) > 0;
-        }
-    }
-
-    public bool HasDeleted
-    {
-        get
-        {
-            return Report != null && Report.CountFiles(SyncFileChangeKind.Deleted) > 0;
+            return string.Join(" · ", parts);
         }
     }
 
@@ -544,11 +779,16 @@ internal sealed partial class SyncPageViewModel : PageViewModel
     //the last scan's searches, for the open document: the list is rebuilt from them when the settings change
     private FindTargetsJob _found;
     private ModelDocument _scannedDocument;
+    private ModelDocument _document;
     private string _scannedPath;
     private int _reportChangeCount;
+    private string _reportTarget;
     private bool _fillingFileChanges;
     private SyncFileChange _diffFor;
     private DiffViewModel _diffShown;
+    private Task _checkLoop;
+    private bool _checkAgain;
+    private bool _isLogTabSelected;
 
     [RelayCommand]
     private async Task RefreshTargetsAsync()
@@ -681,15 +921,74 @@ internal sealed partial class SyncPageViewModel : PageViewModel
     }
 
     [RelayCommand]
-    private async Task PreviewAsync()
+    private Task Check()
     {
-        await RunAsync(true);
+        return CheckAsync();
+    }
+
+    /// <summary>
+    /// Works out what Sync would change, on a background thread; asked again while it runs, it runs once more after.
+    /// </summary>
+    public Task CheckAsync()
+    {
+        if(_checkLoop != null && !_checkLoop.IsCompleted)
+        {
+            _checkAgain = true;
+            return _checkLoop;
+        }
+
+        _checkLoop = CheckLoopAsync();
+        return _checkLoop;
+    }
+
+    private async Task CheckLoopAsync()
+    {
+        do
+        {
+            _checkAgain = false;
+            await CheckOnceAsync();
+        }
+        while(_checkAgain && CanCheck);
+    }
+
+    private async Task CheckOnceAsync()
+    {
+        if(!CanCheck)
+            return;
+
+        var document = Shell.Document;
+        var target = TargetPath;
+        var changeCount = document.ChangeCount;
+        Progress.Clear();
+        IsChecking = true;
+        Progress.IsRunning = true;
+        try
+        {
+            var request = new SyncRequest { ModelContainer = document.Container, SolutionPath = target, Preview = true };
+            var job = new SyncJob(request, new UiProgressLog(Progress));
+            await Task.Run(job.Run);
+
+            //the model, the file or the target changed meanwhile: this result is about something that is gone
+            if(Shell.Document != document || document.ChangeCount != changeCount || !string.Equals(TargetPath, target, StringComparison.OrdinalIgnoreCase))
+            {
+                _checkAgain = true;
+                return;
+            }
+
+            LogTitle = $"Check at {Now()} · nothing was written";
+            ShowReport(job.Report, changeCount, target);
+        }
+        finally
+        {
+            Progress.IsRunning = false;
+            IsChecking = false;
+        }
     }
 
     [RelayCommand]
     private async Task SyncAsync()
     {
-        await RunAsync(false);
+        await RunSyncAsync();
     }
 
     [RelayCommand]
@@ -710,6 +1009,55 @@ internal sealed partial class SyncPageViewModel : PageViewModel
     {
         OnPropertyChanged(nameof(ChangesEmptyText));
         OnPropertyChanged(nameof(HasChangesEmptyText));
+        OnPropertyChanged(nameof(HasPendingFiles));
+        OnPropertyChanged(nameof(FillsPage));
+    }
+
+    /// <summary>
+    /// Shows what Sync would change: the list, its filters (with counts) and the first file's difference.
+    /// </summary>
+    private void ShowReport(SyncReport report, int changeCount, string target)
+    {
+        _reportChangeCount = changeCount;
+        _reportTarget = target;
+        Report = report;
+
+        //a new filter object: its change handler fills the list (and selects the first file) once
+        ChangeFilters = ChangeFilterOption.For(report);
+        ChangeFilter = ChangeFilters[0];
+        RaiseChangesEmpty();
+        RaiseCanSync();
+        UpdateNavBadge();
+    }
+
+    /// <summary>
+    /// The Sync item of the navigation says how many files Sync would write, or that the model changed since the last
+    /// check (a dot), until the page has worked it out again.
+    /// </summary>
+    private void UpdateNavBadge()
+    {
+        var badge = (string)null;
+        var tip = (string)null;
+        if(Shell.Document != null && HasTarget && _reportTarget != null)
+        {
+            if(Shell.Document.ChangeCount != _reportChangeCount || !string.Equals(_reportTarget, TargetPath, StringComparison.OrdinalIgnoreCase))
+            {
+                badge = "•";
+                tip = "The model changed since the last check: open Sync to see what changes.";
+            }
+            else if(Report != null && Report.Success && Report.FileChanges.Count > 0)
+            {
+                badge = Report.FileChanges.Count.ToString(CultureInfo.InvariantCulture);
+                tip = ModelTreeBuilder.Plural(Report.FileChanges.Count, "file") + " to write";
+            }
+        }
+
+        Shell.SetNavBadge(this, badge, tip);
+    }
+
+    private static string Now()
+    {
+        return DateTime.Now.ToString("HH:mm", CultureInfo.CurrentCulture);
     }
 
     /// <summary>
@@ -731,14 +1079,14 @@ internal sealed partial class SyncPageViewModel : PageViewModel
         {
             if(!TargetSolutionFinder.IsSamePath(lastSynced, target))
             {
-                message = $"{modelName} was last synced into {Path.GetFileName(lastSynced)}. Sync it into {Path.GetFileName(target)} instead?";
-                details = $"Last synced into: {lastSynced}{Environment.NewLine}This Sync: {target}";
+                message = $"{modelName} was last synced into a different solution.";
+                details = $"Last synced into{Environment.NewLine}{lastSynced}{Environment.NewLine}{Environment.NewLine}This Sync{Environment.NewLine}{target}";
             }
         }
         else if(!TargetSolutionFinder.IsModelInSolutionFolder(modelFile, target))
         {
-            message = $"{Path.GetFileName(target)} is not in the folder of {modelName}. Sync into it anyway?";
-            details = $"Model file: {Path.GetFullPath(modelFile)}{Environment.NewLine}This Sync: {target}";
+            message = $"This solution is not in the folder of {modelName}.";
+            details = $"Model file{Environment.NewLine}{Path.GetFullPath(modelFile)}{Environment.NewLine}{Environment.NewLine}This Sync{Environment.NewLine}{target}";
         }
 
         if(message == null)
@@ -754,7 +1102,7 @@ internal sealed partial class SyncPageViewModel : PageViewModel
             Buttons = new List<DialogButton>
             {
                 new DialogButton { Text = "Cancel", Result = DialogResults.No },
-                new DialogButton { Text = "Sync", Result = DialogResults.Yes, IsPrimary = true },
+                new DialogButton { Text = "Sync into " + Path.GetFileName(target), Result = DialogResults.Yes, IsPrimary = true },
             },
         };
 
@@ -763,47 +1111,57 @@ internal sealed partial class SyncPageViewModel : PageViewModel
     }
 
     /// <summary>
-    /// Runs a preview or a Sync on a background thread and shows the report.
+    /// Writes the model's code into the target on a background thread. The page then keeps a line about it, and,
+    /// when it worked, the solution matches the model: nothing is left to write.
     /// </summary>
-    public async Task RunAsync(bool preview)
+    public async Task RunSyncAsync()
     {
-        if(!CanRun)
+        //a check still running finishes first: Sync goes on only when it found something to write
+        if(_checkLoop != null && !_checkLoop.IsCompleted)
+            await _checkLoop;
+
+        if(!CanSync)
             return;
 
-        if(!preview && !await ConfirmTargetAsync())
+        if(!await ConfirmTargetAsync())
             return;
 
-        ClearReport();
+        var document = Shell.Document;
+        var target = TargetPath;
+        var changeCount = document.ChangeCount;
         Progress.Clear();
         IsRunning = true;
         Progress.IsRunning = true;
-
+        var succeeded = false;
         try
         {
-            var request = new SyncRequest { ModelContainer = Shell.Document.Container, SolutionPath = TargetPath, Preview = preview };
+            var request = new SyncRequest { ModelContainer = document.Container, SolutionPath = target, Preview = false };
             var job = new SyncJob(request, new UiProgressLog(Progress));
             await Task.Run(job.Run);
 
-            Report = job.Report;
-            _reportChangeCount = Shell.Document.ChangeCount;
+            var report = job.Report;
+            LastSync = new LastSyncViewModel(report, Path.GetFileName(target), DateTime.Now);
+            LogTitle = $"Sync at {Now()}";
             OnPropertyChanged(nameof(TargetBadge));
             OnPropertyChanged(nameof(HasTargetBadge));
-            //a new filter object: its change handler fills the list (and selects the first file) once
-            ChangeFilters = ChangeFilterOption.For(job.Report);
-            ChangeFilter = ChangeFilters[0];
+            succeeded = report.Success;
 
-            if(job.Report.Success && !preview)
+            if(succeeded)
             {
-                if(!string.IsNullOrWhiteSpace(Shell.Document.FilePath))
+                //everything the model generates is in the solution now: nothing is left to write
+                var written = report.CountFiles(SyncFileChangeKind.Added) + report.CountFiles(SyncFileChangeKind.Changed);
+                ShowReport(new SyncReport { Success = true, IsPreview = true, SolutionPath = report.SolutionPath, UnchangedFileCount = report.UnchangedFileCount + written }, changeCount, target);
+
+                if(!string.IsNullOrWhiteSpace(document.FilePath))
                 {
-                    AppSettingsStore.RecordSyncTarget(Shell.Settings, Shell.Document.FilePath, TargetPath);
+                    AppSettingsStore.RecordSyncTarget(Shell.Settings, document.FilePath, target);
                     AppSettingsStore.Save(Shell.Settings);
 
                     //the list shows the new "Synced" date, and a solution this Sync created
                     RebuildCandidates();
                 }
 
-                Shell.StatusText = $"Synced to {Path.GetFileName(TargetPath)}";
+                Shell.StatusText = $"Synced to {Path.GetFileName(target)}";
                 OnPropertyChanged(nameof(TargetDescription));
                 OnPropertyChanged(nameof(TargetName));
             }
@@ -813,6 +1171,20 @@ internal sealed partial class SyncPageViewModel : PageViewModel
             Progress.IsRunning = false;
             IsRunning = false;
         }
+
+        //a Sync that stopped may have written part of it: what is left to write is worked out again
+        if(!succeeded)
+        {
+            ClearReport();
+            await CheckAsync();
+        }
+    }
+
+    [RelayCommand]
+    private async Task SaveModel()
+    {
+        await Shell.SaveDocumentAsync();
+        OnPropertyChanged(nameof(ShowSaveHint));
     }
 
     private void FillFileChanges()
@@ -880,13 +1252,6 @@ internal sealed partial class SyncPageViewModel : PageViewModel
         }
 
         var result = new DiffViewModel { Title = change.FileName, Folder = change.Folder, Letter = change.Letter };
-        if(!Report.IsPreview)
-        {
-            result.Message = "Sync keeps file contents for previews only. Run Preview to see the differences.";
-            Diff = result;
-            return;
-        }
-
         var oldText = change.Change.OldContent ?? "";
         var newText = change.Change.NewContent ?? "";
         var diff = InlineDiffBuilder.Diff(oldText, newText, false);
@@ -982,7 +1347,8 @@ internal sealed partial class SyncPageViewModel : PageViewModel
     }
 
     /// <summary>
-    /// One Sync or preview run.
+    /// One check or Sync. The generator writes through one shared buffer: the code preview of the Models page waits
+    /// for it, and it waits for that preview.
     /// </summary>
     private sealed class SyncJob
     {
@@ -999,9 +1365,71 @@ internal sealed partial class SyncPageViewModel : PageViewModel
 
         public void Run()
         {
-            Report = SolutionSync.Run(_request, _log);
+            lock(GenerationLock.Gate)
+            {
+                try
+                {
+                    Report = SolutionSync.Run(_request, _log);
+                }
+                catch(Exception ex)
+                {
+                    //the model can change while a check reads it (it is then thrown away); anything else is an answer too
+                    Report = new SyncReport { Success = false, IsPreview = _request.Preview, ErrorMessage = ex.Message };
+                }
+            }
         }
     }
+}
+
+/// <summary>
+/// The line about the last Sync: when, where, and what it wrote (or why it stopped).
+/// </summary>
+internal sealed class LastSyncViewModel
+{
+    public LastSyncViewModel(SyncReport report, string targetName, DateTime when)
+    {
+        Succeeded = report.Success;
+        var time = when.ToString("HH:mm", CultureInfo.CurrentCulture);
+        if(!report.Success)
+        {
+            Title = $"Last Sync at {time} stopped";
+            Text = report.ErrorMessage + " Nothing was written. The Log tab has the details.";
+            return;
+        }
+
+        var written = report.FileChanges.Count;
+        if(report.IsUpToDate)
+        {
+            Title = $"Last Sync at {time}";
+            Text = $"{targetName} was already up to date";
+            return;
+        }
+
+        var parts = new List<string>();
+        var added = report.CountFiles(SyncFileChangeKind.Added);
+        var changed = report.CountFiles(SyncFileChangeKind.Changed);
+        var deleted = report.CountFiles(SyncFileChangeKind.Deleted);
+        if(added > 0)
+            parts.Add($"{added} added");
+
+        if(changed > 0)
+            parts.Add($"{changed} changed");
+
+        if(deleted > 0)
+            parts.Add($"{deleted} deleted");
+
+        if(report.ProjectsCreated.Count > 0)
+            parts.Add(ModelTreeBuilder.Plural(report.ProjectsCreated.Count, "new project"));
+
+        Title = $"Last Sync at {time}";
+        Text = written > 0 ? $"wrote {ModelTreeBuilder.Plural(written, "file")} into {targetName}" : $"updated {targetName}";
+        if(parts.Count > 0)
+            Text += " (" + string.Join(", ", parts) + ")";
+    }
+
+    public bool Succeeded { get; }
+    public string Title { get; }
+    public string Text { get; }
 }
 
 internal sealed class TargetFrameworkOption

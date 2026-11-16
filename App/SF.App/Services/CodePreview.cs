@@ -20,11 +20,20 @@ internal sealed class CodeFileViewModel
 
 /// <summary>
 /// Generates, in memory, the files of one table, view, procedure or function, for the Models page's code
-/// preview. Nothing is written to disk. Uses the generator's shared state, so it must not run during a Sync.
+/// preview. Nothing is written to disk. Uses the generator's shared state: it takes turns with the Sync page's checks
+/// and Syncs (GenerationLock).
 /// </summary>
 internal static class CodePreview
 {
     public static List<CodeFileViewModel> ForObject(ModelContainer container, Model model, Schema schema, object item)
+    {
+        lock(GenerationLock.Gate)
+        {
+            return Generate(container, model, schema, item);
+        }
+    }
+
+    private static List<CodeFileViewModel> Generate(ModelContainer container, Model model, Schema schema, object item)
     {
         //the generation uses a copy when the model has a sql_variant column: find the same objects in it
         var filtered = SqlVariantFilter.Apply(container, NullProgressLog.Instance);

@@ -26,6 +26,19 @@ internal sealed partial class DialogViewModel : ViewModelBase
     /// </summary>
     public string DetailsTitle { get; set; }
 
+    /// <summary>
+    /// The details laid out line by line (headings, list items, paragraphs), shown instead of Details when set.
+    /// </summary>
+    public List<SF.App.Services.Updates.ReleaseNoteLine> DetailsLines { get; set; }
+
+    public bool HasDetailsLines
+    {
+        get
+        {
+            return DetailsLines != null && DetailsLines.Count > 0;
+        }
+    }
+
     public bool HasDetails
     {
         get

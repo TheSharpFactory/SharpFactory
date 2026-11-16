@@ -44,7 +44,7 @@ public sealed class UiReviewFixesTests
     }
 
     [AvaloniaFact]
-    public void AZeroCountOnSyncStaysGrey()
+    public void TheChangesSayHowManyFilesSyncWouldWrite()
     {
         using(var app = new AppHarness())
         {
@@ -56,24 +56,15 @@ public sealed class UiReviewFixesTests
             page.Report = PreviewWithOneAddedFile();
             app.Pump();
 
-            Assert.True(page.HasAdded);
-            Assert.False(page.HasChanged);
-            Assert.False(page.HasDeleted);
+            //the counts are in the title and the filters, without signs on zeros
+            Assert.Equal("1 file to write", page.SummaryTitle);
+            Assert.True(page.HasPendingFiles);
+            Assert.True(page.IsSummaryInfo);
 
-            //one added file: that count is green, the zero counts are plain pills
-            var added = app.Find<Border>("AddedCount");
-            var changed = app.Find<Border>("ChangedCount");
-            var deleted = app.Find<Border>("DeletedCount");
-            Assert.Equal(Resource("InsertedBackground"), BackgroundOf(added));
-            Assert.Equal(Resource("SuccessText"), ForegroundOf(added));
-            Assert.Equal(Resource("BadgeBackground"), BackgroundOf(changed));
-            Assert.Equal(Resource("BadgeBackground"), BackgroundOf(deleted));
-            Assert.NotEqual(Resource("ErrorText"), ForegroundOf(deleted));
-            Assert.Equal("−0 deleted", ((TextBlock)deleted.Child).Text);
-
-            //no report: nothing is coloured
+            //no report: no list, no bar
             page.Report = null;
-            Assert.False(page.HasAdded);
+            Assert.False(page.HasPendingFiles);
+            Assert.False(page.HasSummary);
         }
     }
 
@@ -173,6 +164,9 @@ public sealed class UiReviewFixesTests
             app.ViewModel.Navigate(app.ViewModel.Sync);
             var page = app.ViewModel.Sync;
             app.PumpUntil(() => !page.IsScanning);
+            //the changes show only with a target; its own check ends first, then the report is the test's
+            page.UseNewSolutionCommand.Execute(null);
+            app.PumpUntil(() => !page.IsChecking);
             page.Report = PreviewWithOneAddedFile();
             page.ChangeFilters = ChangeFilterOption.For(page.Report);
             page.ChangeFilter = page.ChangeFilters[0];
@@ -220,7 +214,7 @@ public sealed class UiReviewFixesTests
                         titles.Add(title.Text);
                 }
 
-                Assert.Equal(new[] { "LAYER", "PROJECT", "NAMESPACE", "RESULT" }, titles);
+                Assert.Equal(new[] { "LAYER", "PROJECT", "NAMESPACE", "GENERATED PROJECT, THEN NAMESPACE" }, titles);
             }
         }
     }

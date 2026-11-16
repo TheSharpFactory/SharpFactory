@@ -314,9 +314,11 @@ internal sealed partial class UpdatesViewModel : ViewModelBase
         {
             Title = "An update is available",
             Message = $"Version {release.Version} is ready (you have {CurrentVersion}). Update now downloads it, replaces this copy and restarts the app.",
-            //the release text in its own box under the question, scrolled when it is long
-            DetailsTitle = "What's new",
+            //the release text in its own box under the question, laid out, and scrolled when it is long; its own
+            //headings ("What's new", "Fixes") head it, so the box's title is not one of them
+            DetailsTitle = "Release notes",
             Details = ReleaseNotes.Summarize(release.Notes, _notesLength),
+            DetailsLines = ReleaseNotes.Lines(release.Notes, _notesLength),
             Buttons = new List<DialogButton>
             {
                 new DialogButton { Text = "Later", Result = DialogResults.No },

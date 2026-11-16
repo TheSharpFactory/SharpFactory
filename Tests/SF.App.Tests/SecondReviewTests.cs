@@ -28,7 +28,7 @@ public sealed class SecondReviewTests
         page.NewSolutionFolder = app.Folder;
         page.NewSolutionName = name;
         page.UseNewSolutionCommand.Execute(null);
-        await page.PreviewCommand.ExecuteAsync(null);
+        await page.CheckAsync();
         app.Pump();
         Assert.True(page.Report.Success, page.Report.ErrorMessage);
     }

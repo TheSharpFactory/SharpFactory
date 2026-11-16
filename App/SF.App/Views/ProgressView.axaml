@@ -39,7 +39,7 @@
             <DataTemplate x:DataType="vm:LogEntryViewModel">
               <Grid ColumnDefinitions="Auto,*">
                 <TextBlock Classes="mono logTime" Text="{Binding Time}" Margin="0,0,14,0" />
-                <TextBlock Grid.Column="1" Classes="mono" Classes.logError="{Binding IsError}" Text="{Binding Text}" TextWrapping="Wrap" />
+                <TextBlock Grid.Column="1" Classes="mono" Classes.logError="{Binding IsError}" Classes.logWarning="{Binding IsWarning}" Text="{Binding Text}" TextWrapping="Wrap" />
               </Grid>
             </DataTemplate>
           </ListBox.ItemTemplate>

@@ -55,8 +55,8 @@
               </StackPanel>
               <Border Grid.Row="4" Classes="step number" VerticalAlignment="Top"><TextBlock Text="3" HorizontalAlignment="Center" VerticalAlignment="Center" FontSize="12.5" /></Border>
               <StackPanel Grid.Row="4" Grid.Column="2" Spacing="2">
-                <TextBlock FontWeight="SemiBold" Text="Preview, then Sync" />
-                <TextBlock Classes="subtle" TextWrapping="Wrap" Text="On Sync, pick your .sln or .slnx (or a new one), check every file that would change, then write them in one click." />
+                <TextBlock FontWeight="SemiBold" Text="Sync into your solution" />
+                <TextBlock Classes="subtle" TextWrapping="Wrap" Text="On Sync, pick your .sln or .slnx (or a new one). The page shows every file Sync would change; Sync writes them in one click." />
               </StackPanel>
           </Grid>
           <Button Name="GettingStartedGuide" Command="{Binding OpenDocumentationCommand}" HorizontalAlignment="Left">
@@ -78,7 +78,8 @@
                       <PathIcon Data="{StaticResource IconDocument}" Width="18" Height="18" Foreground="{DynamicResource SystemAccentColor}" VerticalAlignment="Center" />
                       <StackPanel Grid.Column="1" Margin="12,0,12,0">
                         <TextBlock Text="{Binding Name}" FontWeight="SemiBold" />
-                        <TextBlock Classes="subtle" FontSize="12" Text="{Binding Folder}" TextTrimming="PathSegmentEllipsis" />
+                        <!-- the end of the path names the folder: cut at the start when it is long -->
+                        <TextBlock Classes="subtle" FontSize="12" Text="{Binding Folder}" TextTrimming="LeadingCharacterEllipsis" />
                       </StackPanel>
                       <TextBlock Grid.Column="2" Classes="subtle" FontSize="12" Text="{Binding When}" VerticalAlignment="Center" />
                     </Grid>

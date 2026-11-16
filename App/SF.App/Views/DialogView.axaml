@@ -1,6 +1,7 @@
 <UserControl xmlns="https://github.com/avaloniaui"
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
              xmlns:vm="using:SF.App.ViewModels"
+             xmlns:up="using:SF.App.Services.Updates"
              x:Class="SF.App.Views.DialogView"
              x:ClassModifier="internal"
              x:DataType="vm:DialogViewModel">
@@ -8,13 +9,15 @@
   <UserControl.Styles>
     <!-- a dialog with a details box (paths, release notes) opens at the full width instead of shrinking to its wrapped lines -->
     <Style Selector="Border.dialog">
-      <Setter Property="MinWidth" Value="520" />
+      <Setter Property="MinWidth" Value="560" />
+      <Setter Property="MaxWidth" Value="560" />
     </Style>
     <Style Selector="Border.dialog.withDetails">
       <Setter Property="MinWidth" Value="720" />
+      <Setter Property="MaxWidth" Value="720" />
     </Style>
   </UserControl.Styles>
-  <Border Name="DialogCard" Classes="card dialog" Classes.withDetails="{Binding HasDetails}" MaxWidth="760" BoxShadow="0 8 32 0 #40000000">
+  <Border Name="DialogCard" Classes="card dialog" Classes.withDetails="{Binding HasDetails}" BoxShadow="0 8 32 0 #40000000">
     <DockPanel>
       <StackPanel DockPanel.Dock="Top" Orientation="Horizontal" Spacing="10" Margin="0,0,0,16">
         <!-- red for an error, amber for a warning -->
@@ -43,7 +46,24 @@
             <TextBlock Text="{Binding DetailsTitle}" FontWeight="SemiBold" Foreground="{DynamicResource SubtleText}" IsVisible="{Binding DetailsTitle, Converter={x:Static StringConverters.IsNotNullOrEmpty}}" />
             <Border Background="{DynamicResource RailBackground}" BorderBrush="{DynamicResource CardBorder}" BorderThickness="1" CornerRadius="6">
               <ScrollViewer Name="DialogDetailsScroll" MaxHeight="320" HorizontalScrollBarVisibility="Disabled" VerticalScrollBarVisibility="Auto" AllowAutoHide="False">
-                <SelectableTextBlock Text="{Binding Details}" TextWrapping="Wrap" LineHeight="21" Margin="14,10,22,10" />
+                <Panel>
+                  <SelectableTextBlock Text="{Binding Details}" TextWrapping="Wrap" LineHeight="21" Margin="14,10,22,10" IsVisible="{Binding !HasDetailsLines}" />
+                  <!-- release notes: headings, then their items with a hanging bullet, in the softer text colour -->
+                  <ItemsControl Name="DialogDetailsLines" ItemsSource="{Binding DetailsLines}" Margin="16,8,22,12" IsVisible="{Binding HasDetailsLines}">
+                    <ItemsControl.ItemTemplate>
+                      <DataTemplate x:DataType="up:ReleaseNoteLine">
+                        <Panel>
+                          <TextBlock Text="{Binding Text}" FontWeight="SemiBold" Margin="0,10,0,4" IsVisible="{Binding IsHeading}" />
+                          <Grid ColumnDefinitions="18,*" Margin="0,2" IsVisible="{Binding IsListItem}">
+                            <TextBlock Text="•" Foreground="{DynamicResource SubtleText}" />
+                            <TextBlock Grid.Column="1" Text="{Binding Text}" TextWrapping="Wrap" LineHeight="20" Foreground="{DynamicResource LogText}" />
+                          </Grid>
+                          <TextBlock Text="{Binding Text}" TextWrapping="Wrap" LineHeight="20" Margin="0,4" Foreground="{DynamicResource LogText}" IsVisible="{Binding IsParagraph}" />
+                        </Panel>
+                      </DataTemplate>
+                    </ItemsControl.ItemTemplate>
+                  </ItemsControl>
+                </Panel>
               </ScrollViewer>
             </Border>
           </StackPanel>

@@ -5,6 +5,42 @@ release gives them its version. Version rules: see [BACKLOG.md](BACKLOG.md).
 
 ---
 
+## Unreleased
+
+### Sync shows what it would change by itself; UI review fixes (SF-217 to SF-229)
+
+Changes
+- SF-217 (user, 2026-11-15: "I chose A, always show changes"): the Sync page has no Preview button. `SyncPageViewModel.CheckAsync` runs a preview on a background thread when the page is shown with a target, when the target changes, and when the model's `ChangeCount` changes while the page is shown (`ModelDocument` now raises it); a check asked for while one runs runs once more after it, and a result for a model, file or target that changed meanwhile is thrown away. `Report` is always the current check; after a successful Sync it is an empty report (the solution matches the model), and `LastSync` keeps the Sync's line. `CanSync` needs a current check with something to write; "Sync N files" names the count. The Sync entry of the navigation gets a `Badge` (the count, or a dot when the model changed since the last check). `GenerationLock.Gate` makes a check or Sync and the Models page's code preview take turns: both write through the writer's static buffer and swap `CodeGenUtils.FileWriter` and `IOUtils.CreateFolders`.
+- SF-218 to SF-229, from three judges' review: the code tab narrows the tree to 38% while it is open (a splitter drag keeps the user's width); the chooser's checkboxes use the theme's height and Next is off with nothing selected; the Sync card is hidden without a target and shrinks to one line when there is nothing to write; disabled Sync and menu entries have tooltips (`ShowOnDisabled`); `ReleaseNotes.Lines` lays out the update question's notes; `SubtleText` #A0A8B2 to #B3BAC3; Layers descriptions wrap to two lines; Update step 1 "Review"; log lines starting "Skipped", "Not supported" or "Not a Sharp Factory file" are warnings (amber, a problems-only toggle), the Sync log is titled with its run, and `UiProgressLog` drops a line whose run was cleared since; Settings and Layers align left; "Open folder" links and Documentation icons match the other links; dialogs are 560 or 720 wide; the other-solution question is shorter and its button names the target; long paths keep their end (`LeadingCharacterEllipsis`).
+- The engine's last line of a run that writes nothing is "Check Completed Successfully: nothing was written." (it was "Preview Completed Successfully!"); the command line's `--preview` prints it too.
+
+Verification
+- Judges: round 1 means 7.2, 6.9, 6.8 (7.0); round 2 means 7.8, 7.4, 7.5 (7.6), and all three signed off.
+- `ParityTests` drives the flow: a target starts a check ("174 files to write", "Sync 174 files", the menu badge 174), Sync writes the solution and leaves "Up to date", a Last Sync line, Sync off and no badge; a setting change gives the dot, then a new check with 165 changed files and the Save hint. New `M8` test (SF-204) and the chooser, dialog and log changes are covered in the UI tests.
+- `SF.Tests` 163 passed, `SF.CSharpWriter.Tests` 242 passed, `SF.App.Tests` 114 passed, with the database tests on. `BigModelTimings` failed once inside a full run (its search step, under load) and passes on its own.
+
+Commit details
+
+```
+Sync shows what it would change by itself; UI review fixes
+
+The Sync page no longer has a Preview button: as soon as a solution is
+chosen it works out what Sync would change (writing nothing) and works
+it out again when the model or the target changes. The button names the
+count, the menu shows it, and after a Sync a line says what it wrote,
+with Save when the model file has unsaved changes. The check and the
+code preview take turns on the generator's shared buffer.
+
+Also from the UI review: the generated code gets most of the width, the
+New model wizard's checkboxes are drawn properly, disabled controls say
+why, release notes are laid out, secondary text is lighter, skipped
+objects stand out in the logs, and pages, links and dialogs line up.
+
+Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>
+```
+
+---
+
 ## 1.2.2.1 — 2026-11-15
 
 ### Date after a day, connection check, logging switch, master refused, long values refused, writer tests (SF-194, SF-198, SF-203, SF-204, SF-210, SF-211)

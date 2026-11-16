@@ -15,7 +15,8 @@ It runs on **Windows, macOS and Linux**, as a desktop app and from the command l
 - **Layers** and **Settings**: the project names and namespaces of the generated code.
 - **Sync**: generate everything into a solution. Pick one that is open in Visual Studio, Rider or VS Code, one
   you synced to before, one next to the model file, any `.sln`/`.slnx`, or a new solution (`.slnx` by default).
-  **Preview** shows every file Sync would add, change or delete, with a diff, before anything is written.
+  As soon as a solution is chosen, the page shows every file Sync would add, change or delete, with a diff, and
+  works it out again when the model changes; **Sync N files** writes them.
 
 Sync creates the projects (in the dependencies solution folder), adds the references between them, writes only
 the files whose content changed, and removes generated files the model no longer produces. Files you add to the

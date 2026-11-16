@@ -10,7 +10,7 @@
   <Grid RowDefinitions="Auto,Auto,*" Margin="28,22,28,20">
     <StackPanel Margin="0,0,0,14">
       <TextBlock Classes="pageTitle" Text="Sync" />
-      <TextBlock Classes="pageSubtitle" Text="Generate every model's code into a solution. Preview shows what would change; nothing is written until you Sync." />
+      <TextBlock Classes="pageSubtitle" Text="Generate every model's code into a solution. What Sync would change shows below as soon as a solution is chosen." />
     </StackPanel>
 
     <!-- 1. Sync into: the target, and the chooser under it -->
@@ -33,11 +33,10 @@
               <StackPanel Orientation="Horizontal" Spacing="6"><PathIcon Data="{StaticResource IconChevronDown}" Width="12" Height="12" /><TextBlock Text="Change target" /></StackPanel>
             </ToggleButton>
             <Border Width="1" Height="24" Margin="4,0" Background="{DynamicResource CardBorder}" />
-            <Button Classes="action" Name="PreviewButton" Command="{Binding PreviewCommand}" IsEnabled="{Binding CanRun}">
-              <StackPanel Orientation="Horizontal" Spacing="6"><PathIcon Data="{StaticResource IconEye}" /><TextBlock Text="Preview" /></StackPanel>
-            </Button>
-            <Button Classes="action accent" Name="SyncButton" Command="{Binding SyncCommand}" IsEnabled="{Binding CanRun}">
-              <StackPanel Orientation="Horizontal" Spacing="6"><PathIcon Data="{StaticResource IconSync}" /><TextBlock Text="Sync" /></StackPanel>
+            <!-- the count comes from the check; when Sync is off, its tooltip says why -->
+            <Button Classes="action accent" Name="SyncButton" Command="{Binding SyncCommand}" IsEnabled="{Binding CanSync}"
+                    ToolTip.Tip="{Binding SyncDisabledReason}" ToolTip.ShowOnDisabled="True">
+              <StackPanel Orientation="Horizontal" Spacing="6"><PathIcon Data="{StaticResource IconSync}" /><TextBlock Name="SyncButtonText" Text="{Binding SyncButtonText}" /></StackPanel>
             </Button>
           </StackPanel>
         </Grid>
@@ -48,15 +47,30 @@
         </StackPanel>
         <TextBlock Classes="error" Margin="16,0,16,12" Text="{Binding SyncedBlockText}" TextWrapping="Wrap" IsVisible="{Binding IsBlockedBySyncedFlag}" />
 
+        <!-- the last Sync: when, and what it wrote; Save when the model file has changes that are not saved -->
+        <Border Name="LastSyncBar" BorderBrush="{DynamicResource CardBorder}" BorderThickness="0,1,0,0" Padding="16,9" IsVisible="{Binding LastSync, Converter={x:Static ObjectConverters.IsNotNull}}">
+          <Grid ColumnDefinitions="Auto,*,Auto">
+            <PathIcon Width="14" Height="14" Margin="0,0,10,0" VerticalAlignment="Center" Classes="lastSyncIcon"
+                      Classes.ok="{Binding LastSync.Succeeded, FallbackValue=False}"
+                      Data="{Binding LastSync.Succeeded, FallbackValue=False, Converter={x:Static views:LastSyncIconConverter.Instance}}" />
+            <TextBlock Grid.Column="1" VerticalAlignment="Center" TextTrimming="CharacterEllipsis" ToolTip.Tip="{Binding LastSync.Text}">
+              <Run Text="{Binding LastSync.Title}" FontWeight="SemiBold" /><Run Text="  " /><Run Text="{Binding LastSync.Text}" Foreground="{DynamicResource SubtleText}" />
+            </TextBlock>
+            <StackPanel Grid.Column="2" Orientation="Horizontal" Spacing="10" IsVisible="{Binding ShowSaveHint}" Margin="12,0,0,0">
+              <TextBlock Classes="subtle" FontSize="12" VerticalAlignment="Center" Text="The model file has unsaved changes" />
+              <Button Name="SaveAfterSyncButton" Command="{Binding SaveModelCommand}">
+                <StackPanel Orientation="Horizontal" Spacing="6"><PathIcon Data="{StaticResource IconSave}" Width="14" Height="14" /><TextBlock Text="Save" /></StackPanel>
+              </Button>
+            </StackPanel>
+          </Grid>
+        </Border>
+
         <!-- the chooser (locked during a run: the framework choice edits the model the run reads) -->
         <Border BorderBrush="{DynamicResource CardBorder}" BorderThickness="0,1,0,0" Padding="16,14" IsVisible="{Binding IsTargetPanelOpen}" IsEnabled="{Binding !IsRunning}">
           <Grid ColumnDefinitions="56*,24,44*">
             <StackPanel Spacing="8">
               <Grid ColumnDefinitions="*,Auto">
-                <StackPanel VerticalAlignment="Center">
-                  <TextBlock Name="CandidatesTitle" FontWeight="SemiBold" Text="{Binding CandidatesTitle}" />
-                  <TextBlock Classes="subtle" FontSize="12" Text="Synced before first, then near the model file." TextTrimming="CharacterEllipsis" />
-                </StackPanel>
+                <TextBlock Name="CandidatesTitle" FontWeight="SemiBold" Text="{Binding CandidatesTitle}" VerticalAlignment="Center" />
                 <StackPanel Grid.Column="1" Orientation="Horizontal" Spacing="6">
                   <Button Name="RefreshTargetsButton" Command="{Binding RefreshTargetsCommand}" ToolTip.Tip="Look for open solutions again" IsEnabled="{Binding !IsScanning}">
                     <PathIcon Data="{StaticResource IconRefresh}" Width="14" Height="14" />
@@ -66,6 +80,7 @@
                   </Button>
                 </StackPanel>
               </Grid>
+              <TextBlock Classes="subtle" FontSize="12" Margin="0,-4,0,0" Text="Solutions this model was synced to come first, then the ones near the model file." TextWrapping="Wrap" />
               <StackPanel Name="ScanningPanel" Spacing="6" IsVisible="{Binding IsScanning}">
                 <ProgressBar IsIndeterminate="True" Height="2" />
                 <TextBlock Classes="subtle" FontSize="12" Text="Looking for open solutions and the ones this model was synced to…" TextWrapping="Wrap" />
@@ -95,7 +110,7 @@
               <TextBlock FontWeight="SemiBold" Text="Or a new solution" />
               <Grid ColumnDefinitions="*,8,Auto">
                 <Border Classes="pathBox" ToolTip.Tip="{Binding NewSolutionFolder}">
-                  <TextBlock Name="NewSolutionFolderText" Text="{Binding NewSolutionFolder, FallbackValue='Choose a folder'}" TextTrimming="PathSegmentEllipsis" VerticalAlignment="Center" />
+                  <TextBlock Name="NewSolutionFolderText" Text="{Binding NewSolutionFolder, FallbackValue='Choose a folder'}" TextTrimming="LeadingCharacterEllipsis" VerticalAlignment="Center" />
                 </Border>
                 <Button Grid.Column="2" Command="{Binding ChooseNewSolutionFolderCommand}">
                   <StackPanel Orientation="Horizontal" Spacing="6"><PathIcon Data="{StaticResource IconFolder}" Width="14" Height="14" /><TextBlock Text="Choose…" /></StackPanel>
@@ -124,41 +139,40 @@
       </StackPanel>
     </Border>
 
-    <!-- 2. the review -->
-    <Border Grid.Row="2" Classes="card" Padding="0" ClipToBounds="True">
+    <!-- 2. what Sync would change: worked out as soon as there is a target -->
+    <Border Grid.Row="2" Classes="card" Padding="0" ClipToBounds="True" IsVisible="{Binding HasTarget}"
+            VerticalAlignment="{Binding FillsPage, Converter={x:Static views:StretchWhenConverter.Instance}}">
       <Grid RowDefinitions="Auto,Auto,*">
-        <!-- running -->
+        <!-- a Sync is writing -->
         <StackPanel Spacing="6" Margin="16,12" IsVisible="{Binding IsRunning}">
           <TextBlock FontWeight="SemiBold" Text="{Binding Progress.CurrentStep, FallbackValue='Starting…'}" TextTrimming="CharacterEllipsis" />
           <ProgressBar IsIndeterminate="True" Height="3" />
         </StackPanel>
 
-        <!-- the outcome: one compact bar -->
-        <Border Grid.Row="1" Classes="summaryBar"
-                Classes.preview="{Binding SummaryState, Converter={x:Static views:EqualsConverter.Instance}, ConverterParameter=preview}"
-                Classes.success="{Binding SummaryState, Converter={x:Static views:EqualsConverter.Instance}, ConverterParameter=success}"
+        <!-- what Sync would change: one compact bar -->
+        <Border Grid.Row="1" Name="SummaryBar" Classes="summaryBar"
+                Classes.preview="{Binding IsSummaryInfo}"
+                Classes.success="{Binding SummaryState, Converter={x:Static views:EqualsConverter.Instance}, ConverterParameter=uptodate}"
                 Classes.failure="{Binding SummaryState, Converter={x:Static views:EqualsConverter.Instance}, ConverterParameter=error}"
-                IsVisible="{Binding HasReport}">
-          <Grid ColumnDefinitions="Auto,*,Auto">
+                IsVisible="{Binding HasSummary}">
+          <Grid ColumnDefinitions="Auto,*,Auto" RowDefinitions="Auto,Auto">
             <PathIcon Classes="summaryIcon" Width="16" Height="16" Margin="0,0,10,0"
                       Data="{Binding SummaryState, Converter={x:Static views:SummaryIconConverter.Instance}}" />
-            <StackPanel Grid.Column="1" Orientation="Horizontal" Spacing="8" VerticalAlignment="Center">
-              <TextBlock Name="SummaryTitle" FontWeight="SemiBold" Text="{Binding SummaryTitle}" />
-              <TextBlock Classes="subtle" Text="{Binding SummaryRest}" TextTrimming="CharacterEllipsis" />
-            </StackPanel>
-            <StackPanel Grid.Column="2" Orientation="Horizontal" Spacing="6" IsVisible="{Binding ShowCounts}">
-              <!-- a zero count stays grey -->
-              <Border Name="AddedCount" Classes="pill" Classes.added="{Binding HasAdded}"><TextBlock Text="{Binding AddedText}" /></Border>
-              <Border Name="ChangedCount" Classes="pill" Classes.changed="{Binding HasChanged}"><TextBlock Text="{Binding ChangedText}" /></Border>
-              <Border Name="DeletedCount" Classes="pill" Classes.deleted="{Binding HasDeleted}"><TextBlock Text="{Binding DeletedText}" /></Border>
-              <Border Classes="pill"><TextBlock Text="{Binding UnchangedText}" /></Border>
-            </StackPanel>
+            <TextBlock Grid.Column="1" VerticalAlignment="Center" TextTrimming="CharacterEllipsis" ToolTip.Tip="{Binding SummaryRest}">
+              <Run Text="{Binding SummaryTitle}" FontWeight="SemiBold" /><Run Text="   " /><Run Text="{Binding SummaryRest}" Foreground="{DynamicResource SubtleText}" />
+            </TextBlock>
+            <Button Grid.Column="2" Name="CheckAgainButton" Classes="toolbar" Command="{Binding CheckCommand}" IsVisible="{Binding !IsChecking}" IsEnabled="{Binding CanCheck}"
+                    ToolTip.Tip="Work out again what Sync would change (after editing files in the solution)">
+              <StackPanel Orientation="Horizontal" Spacing="6"><PathIcon Data="{StaticResource IconRefresh}" Width="13" Height="13" /><TextBlock Text="Check again" FontSize="12" /></StackPanel>
+            </Button>
+            <ProgressBar Grid.Row="1" Grid.ColumnSpan="3" IsIndeterminate="True" Height="2" Margin="0,8,0,0" IsVisible="{Binding IsChecking}" />
           </Grid>
         </Border>
 
-        <TabControl Grid.Row="2" Classes="review" Margin="12,0,12,12">
+        <TabControl Grid.Row="2" Classes="review" Margin="12,0,12,12" SelectedIndex="{Binding IsLogTabSelected, Converter={x:Static views:TabIndexConverter.Instance}}">
           <TabItem Header="Changes">
-            <Grid Name="ChangesGrid" Margin="0,8,0,0">
+            <Panel>
+            <Grid Name="ChangesGrid" Margin="0,8,0,0" IsVisible="{Binding HasPendingFiles}">
               <Grid.ColumnDefinitions>
                 <ColumnDefinition Width="360" MinWidth="240" />
                 <ColumnDefinition Width="Auto" />
@@ -204,8 +218,8 @@
                       </ListBox.ItemTemplate>
                     </ListBox>
                     <StackPanel Classes="emptyState" Margin="16" IsVisible="{Binding HasChangesEmptyText}">
-                      <PathIcon Data="{StaticResource IconSync}" Width="28" Height="28" />
-                      <TextBlock Name="ChangesEmptyText" Text="{Binding ChangesEmptyText}" />
+                      <PathIcon Data="{StaticResource IconSearch}" Width="28" Height="28" />
+                      <TextBlock Text="{Binding ChangesEmptyText}" />
                     </StackPanel>
                   </Panel>
                 </Border>
@@ -245,32 +259,41 @@
                 </DockPanel>
               </Border>
             </Grid>
+            <!-- nothing to list: one short line instead of two empty panes (the bar above already says why) -->
+            <TextBlock Name="ChangesEmptyText" Classes="subtle" Margin="4,12,4,4" Text="{Binding ChangesEmptyText}" TextWrapping="Wrap" IsVisible="{Binding !HasPendingFiles}" />
+            </Panel>
           </TabItem>
           <TabItem Header="Log">
             <Border BorderBrush="{DynamicResource CardBorder}" BorderThickness="1" CornerRadius="8" Margin="0,8,0,0" ClipToBounds="True" Background="{DynamicResource CodeBackground}">
               <DockPanel>
                 <Border DockPanel.Dock="Top" Classes="logHead" IsVisible="{Binding !!Progress.Entries.Count}">
-                  <Grid ColumnDefinitions="*,Auto">
-                    <TextBlock Classes="subtle" FontSize="12" VerticalAlignment="Center" Text="{Binding Progress.LineCountText}" />
-                    <Button Grid.Column="1" Name="CopySyncLog" Classes="toolbar copyLog" Click="OnCopyLogClick" ToolTip.Tip="Copy the whole log, with the times">
+                  <Grid ColumnDefinitions="*,Auto,Auto">
+                    <TextBlock VerticalAlignment="Center" TextTrimming="CharacterEllipsis">
+                      <Run Name="LogTitle" Text="{Binding LogTitle}" FontWeight="SemiBold" FontSize="12" /><Run Text="   " /><Run Text="{Binding Progress.LineCountText}" Foreground="{DynamicResource SubtleText}" FontSize="12" />
+                    </TextBlock>
+                    <ToggleButton Grid.Column="1" Name="ProblemsOnlyToggle" Classes="toolbar" Margin="0,0,6,0" IsChecked="{Binding Progress.ShowProblemsOnly}" IsVisible="{Binding Progress.HasProblems}"
+                                  ToolTip.Tip="Show only the lines about skipped objects and errors">
+                      <StackPanel Orientation="Horizontal" Spacing="6"><PathIcon Data="{StaticResource IconWarning}" Width="13" Height="13" Classes="logWarningIcon" /><TextBlock Text="{Binding Progress.ProblemCountText}" FontSize="12" /></StackPanel>
+                    </ToggleButton>
+                    <Button Grid.Column="2" Name="CopySyncLog" Classes="toolbar copyLog" Click="OnCopyLogClick" ToolTip.Tip="Copy the whole log, with the times">
                       <StackPanel Orientation="Horizontal" Spacing="6"><PathIcon Data="{StaticResource IconCopy}" Width="13" Height="13" /><TextBlock Name="CopySyncLogLabel" Text="Copy" FontSize="12" /></StackPanel>
                     </Button>
                   </Grid>
                 </Border>
                 <Panel>
-                <ListBox Name="SyncLog" Classes="log" ItemsSource="{Binding Progress.Entries}" Padding="0,6">
+                <ListBox Name="SyncLog" Classes="log" ItemsSource="{Binding Progress.ShownEntries}" Padding="0,6">
                   <ListBox.ItemTemplate>
                     <DataTemplate x:DataType="vm:LogEntryViewModel">
                       <Grid ColumnDefinitions="Auto,*">
                         <TextBlock Classes="mono logTime" Text="{Binding Time}" Margin="0,0,14,0" />
-                        <TextBlock Grid.Column="1" Classes="mono" Classes.logError="{Binding IsError}" Text="{Binding Text}" TextWrapping="Wrap" />
+                        <TextBlock Grid.Column="1" Classes="mono" Classes.logError="{Binding IsError}" Classes.logWarning="{Binding IsWarning}" Text="{Binding Text}" TextWrapping="Wrap" />
                       </Grid>
                     </DataTemplate>
                   </ListBox.ItemTemplate>
                 </ListBox>
                 <StackPanel Classes="emptyState" IsVisible="{Binding !Progress.Entries.Count}">
                   <PathIcon Data="{StaticResource IconDocument}" Width="28" Height="28" />
-                  <TextBlock Text="The log of the last Preview or Sync shows here." />
+                  <TextBlock Text="The log of the last check or Sync shows here." />
                 </StackPanel>
                 </Panel>
               </DockPanel>

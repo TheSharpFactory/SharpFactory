@@ -56,6 +56,34 @@ Current version: see [VERSION](VERSION). History: [RELEASE_NOTES.md](RELEASE_NOT
 
 ---
 
+## UI review (2026-11-15)
+
+Three judges graded every screen (round 1: 7.0 of 10), a designer proposed Sync flows, and the user chose "always
+show changes" and asked for all 12 fixes (user, 2026-11-15: "fix all 12 and I chose A"). Round 2: 7.8, 7.4 and 7.5,
+all three signed off.
+
+| # | ID | Item | Status |
+|---|----|------|--------|
+| A | SF-217 | Sync shows what it would change by itself: no Preview button. A check (a run that writes nothing) runs when the page has a target, and again when the model or the target changes; "174 files to write" with the list and diff, a "Sync 174 files" button, a "Last Sync at 21:52 wrote 174 files" line with Save when the model file has unsaved changes, "Up to date" as one line, Check again, and a count (or a dot) on the Sync entry of the menu. The check and the Models code preview take turns on the generator's shared buffer (`GenerationLock`). | Done (unreleased) |
+| 1 | SF-218 | Models: the Generated code tab gives the code most of the width (the tree gives up width past 38% while it is open). | Done (unreleased) |
+| 2 | SF-219 | New model wizard: the object checkboxes were drawn below their rows and cut off; Create model was on with nothing selected. | Done (unreleased) |
+| 3 | SF-220 | Sync empty states: no zero-count filters and empty panes before a target or when there is nothing to write; no signs on zero counts. | Done (unreleased) |
+| 4 | SF-221 | Disabled Sync and menu entries say why (tooltips). | Done (unreleased) |
+| 5 | SF-222 | Update question: release notes laid out (headings, hanging bullets), box titled "Release notes". | Done (unreleased) |
+| 6 | SF-223 | Secondary text lighter (about 8:1); the tree's schema tags no longer dimmed. | Done (unreleased) |
+| 7 | SF-224 | Layers: descriptions wrap to two lines; the result column says it shows the project, then the namespace. | Done (unreleased) |
+| 8 | SF-225 | Update wizard step 1 is "Review" and says what Next does. | Done (unreleased) |
+| 9 | SF-226 | Logs: "Skipped" lines amber, a "N problems" toggle, the run named in the Sync log's title; a line from a run that already ended no longer lands in the next run's log. | Done (unreleased) |
+| 10 | SF-227 | Consistency: Settings and Layers start at the same left edge as the other pages, one link style, two dialog widths. | Done (unreleased) |
+| 11 | SF-228 | "Sync into another solution?": a short message, each path once, and the button names the target. | Done (unreleased) |
+| 12 | SF-229 | Home and the new-solution folder show the end of a long path. | Done (unreleased) |
+
+Left for later (the judges' polish list): Settings repeats the Layers names table; Documentation sections have no
+descriptions; the update download state shows disabled buttons; long paths in dialog boxes break mid-name; the
+"Add a model" and "New model file" wizards differ in steps and defaults.
+
+---
+
 ## Code review 2 (2026-11-15)
 
 The second review of the whole app except the website, on 2026-11-15. `#` is the number in that review's list. 1–5

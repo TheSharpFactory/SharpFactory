@@ -396,7 +396,7 @@ public sealed class ParityTests
             app.ViewModel.Sync.TargetPath = Path.Combine(app.Folder, "App.slnx");
 
             Assert.True(app.ViewModel.Sync.IsBlockedBySyncedFlag);
-            Assert.False(app.ViewModel.Sync.CanRun);
+            Assert.False(app.ViewModel.Sync.CanSync);
         }
     }
     #endregion
@@ -483,28 +483,43 @@ public sealed class ParityTests
             Assert.False(page.IsTargetPanelOpen);
             var solution = Path.Combine(app.Folder, "SFTest.slnx");
             Assert.Equal(solution, page.TargetPath);
-            Assert.True(page.CanRun);
+            Assert.True(page.CanCheck);
             Assert.Equal(".NET 10", page.SelectedTargetFramework.Name);
 
-            await page.PreviewCommand.ExecuteAsync(null);
+            //a target: the page works out what Sync would change by itself (the check started with the target)
+            await page.CheckAsync();
             app.Pump();
             Assert.True(page.Report.Success, page.Report.ErrorMessage);
             Assert.True(page.Report.IsPreview);
             Assert.False(File.Exists(solution));
-            Assert.Equal("Preview", page.SummaryTitle);
+            var pending = page.Report.FileChanges.Count;
+            Assert.Equal($"{pending} files to write", page.SummaryTitle);
+            Assert.Equal($"Sync {pending} files", page.SyncButtonText);
+            Assert.True(page.CanSync);
             Assert.NotEmpty(page.FileChanges);
             Assert.NotEmpty(page.Progress.Entries);
+            Assert.StartsWith("Check at ", page.LogTitle);
+            Assert.Equal(pending.ToString(), app.ViewModel.NavItems[1].Badge);
 
             page.SelectedFileChange = page.FileChanges[0];
             Assert.NotEmpty(page.Diff.Lines);
-            app.Screenshot("06-sync-preview");
+            app.Screenshot("06-sync-pending");
 
             await page.SyncCommand.ExecuteAsync(null);
             app.Pump();
-            Assert.True(page.Report.Success, page.Report.ErrorMessage);
             Assert.True(File.Exists(solution));
-            Assert.Equal("Synced", page.SummaryTitle);
             Assert.Single(app.ViewModel.Settings.SyncTargets);
+
+            //after Sync: a line about it, and nothing left to write
+            Assert.NotNull(page.LastSync);
+            Assert.True(page.LastSync.Succeeded);
+            Assert.Contains($"wrote {pending} files into SFTest.slnx", page.LastSync.Text);
+            Assert.True(page.Report.IsUpToDate);
+            Assert.Equal("Up to date", page.SummaryTitle);
+            Assert.False(page.CanSync);
+            Assert.Equal("Sync", page.SyncButtonText);
+            Assert.Null(app.ViewModel.NavItems[1].Badge);
+            Assert.StartsWith("Sync at ", page.LogTitle);
 
             //the solution synced to is in the list, first
             await page.RefreshTargetsCommand.ExecuteAsync(null);
@@ -521,18 +536,25 @@ public sealed class ParityTests
 
             Assert.True(listed);
 
-            await page.SyncCommand.ExecuteAsync(null);
+            //nothing to write: Sync is off, and a check again finds the same
+            await page.CheckAsync();
             Assert.True(page.Report.IsUpToDate);
+            Assert.False(page.CanSync);
+            app.Pump();
             app.Screenshot("07-sync-done");
 
-            //a setting that changes every file: the preview shows changed files with their changed lines
+            //a setting that changes every file: the page shows the changed files with their changed lines at once
             app.ViewModel.Document.Container.CommonSettings.IndentSize = 2;
-            await page.PreviewCommand.ExecuteAsync(null);
+            app.ViewModel.Document.MarkDirty();
+            Assert.Equal("•", app.ViewModel.NavItems[1].Badge);
+            await page.CheckAsync();
             app.Pump();
             Assert.True(page.Report.Success, page.Report.ErrorMessage);
             Assert.NotEmpty(page.FileChanges);
             Assert.Equal("M", page.FileChanges[0].Letter);
             Assert.True(page.Diff.IsTinted);
+            Assert.True(page.CanSync);
+            Assert.True(page.ShowSaveHint);
             app.Screenshot("07b-sync-changed");
 
             app.FindAll<TabControl>()[0].SelectedIndex = 1;

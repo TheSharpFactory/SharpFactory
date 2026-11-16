@@ -95,15 +95,19 @@ public sealed class PolishTests
             app.ViewModel.OpenFile(app.CopyFixture());
             var page = app.ViewModel.Models;
             app.Pump();
-            app.Find<Grid>("ModelsGrid").ColumnDefinitions[0].Width = new GridLength(620);
             page.SelectedNode = ParityTests.FindNode(page, "Shipment");
             app.Pump();
             app.FindAll<TabControl>()[0].SelectedIndex = 1;
             app.Pump();
+            app.Screenshot("42-models-code-tabs");
+
+            //a tree widened by hand while the code is open: the tabs that do not fit fade out at the edge
+            app.Find<Grid>("ModelsGrid").ColumnDefinitions[0].Width = new GridLength(620);
+            app.Pump();
 
             Assert.False(app.Find<Border>("TabsMoreLeft").IsVisible);
             Assert.True(app.Find<Border>("TabsMoreRight").IsVisible);
-            app.Screenshot("42-models-code-tabs");
+            app.Screenshot("42b-models-code-tabs-narrow");
 
             //choosing the last file brings its tab into view (SF-115)
             page.SelectedCodeFile = page.CodeFiles[page.CodeFiles.Count - 1];
@@ -150,7 +154,7 @@ public sealed class PolishTests
             app.ViewModel.Navigate(app.ViewModel.Sync);
             var page = app.ViewModel.Sync;
             page.UseNewSolutionCommand.Execute(null);
-            await page.PreviewCommand.ExecuteAsync(null);
+            await page.CheckAsync();
             app.Pump();
             Assert.True(page.Report.Success, page.Report.ErrorMessage);
 

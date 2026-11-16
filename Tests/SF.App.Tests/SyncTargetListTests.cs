@@ -48,9 +48,11 @@ public sealed class SyncTargetListTests
             Assert.Same(listed, page.SelectedCandidate);
             Assert.StartsWith("Synced", page.TargetBadge, StringComparison.Ordinal);
 
-            //rebuilding the list is no new target: the report of the Sync stays
+            //rebuilding the list is no new target: the line about the Sync stays, and nothing is left to write
+            Assert.NotNull(page.LastSync);
+            Assert.StartsWith("Last Sync at ", page.LastSync.Title, StringComparison.Ordinal);
             Assert.NotNull(page.Report);
-            Assert.Equal("Synced", page.SummaryTitle);
+            Assert.Equal("Up to date", page.SummaryTitle);
         }
     }
 
@@ -129,7 +131,8 @@ public sealed class SyncTargetListTests
             var cancelled = page.SyncCommand.ExecuteAsync(null);
             app.PumpUntil(() => app.ViewModel.Dialog != null);
             Assert.Equal("Sync into another solution?", app.ViewModel.Dialog.Title);
-            Assert.Equal("Coverage.edmj was last synced into Own.slnx. Sync it into Other.slnx instead?", app.ViewModel.Dialog.Message);
+            Assert.Equal("Coverage.edmj was last synced into a different solution.", app.ViewModel.Dialog.Message);
+            Assert.Equal("Sync into Other.slnx", app.ViewModel.Dialog.Buttons[1].Text);
             Assert.Contains(own, app.ViewModel.Dialog.Details, StringComparison.OrdinalIgnoreCase);
             Assert.Contains(other, app.ViewModel.Dialog.Details, StringComparison.OrdinalIgnoreCase);
             app.Screenshot("sync-other-solution-question");
@@ -148,7 +151,7 @@ public sealed class SyncTargetListTests
 
             //a preview never asks
             page.TargetPath = own;
-            await page.PreviewCommand.ExecuteAsync(null);
+            await page.CheckAsync();
             Assert.Null(app.ViewModel.Dialog);
         }
     }
@@ -172,7 +175,8 @@ public sealed class SyncTargetListTests
             var run = page.SyncCommand.ExecuteAsync(null);
             app.PumpUntil(() => app.ViewModel.Dialog != null);
             Assert.Equal("Sync into another solution?", app.ViewModel.Dialog.Title);
-            Assert.Equal("Sibling.slnx is not in the folder of Coverage.edmj. Sync into it anyway?", app.ViewModel.Dialog.Message);
+            Assert.Equal("This solution is not in the folder of Coverage.edmj.", app.ViewModel.Dialog.Message);
+            Assert.Equal("Sync into Sibling.slnx", app.ViewModel.Dialog.Buttons[1].Text);
             Assert.Contains(file, app.ViewModel.Dialog.Details, StringComparison.OrdinalIgnoreCase);
             app.ViewModel.Dialog.Cancel();
             app.PumpUntil(() => run.IsCompleted);

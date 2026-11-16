@@ -77,7 +77,7 @@
                     <Run Text="{Binding TitleBefore}" /><Run Text="{Binding TitleMatch}" FontWeight="SemiBold" Foreground="{DynamicResource SearchMatchText}" Background="{DynamicResource SearchMatchBackground}" /><Run Text="{Binding TitleAfter}" />
                   </TextBlock>
                   <TextBlock Classes="subtle" FontSize="12" Text="{Binding ShownDetail}" VerticalAlignment="Center" />
-                  <TextBlock Classes="subtle" FontSize="12" Text="{Binding Note}" VerticalAlignment="Center" Opacity="0.75"
+                  <TextBlock Classes="subtle" FontSize="12" Text="{Binding Note}" VerticalAlignment="Center"
                              IsVisible="{Binding Note, Converter={x:Static ObjectConverters.IsNotNull}}" />
                 </StackPanel>
               </TreeDataTemplate>
@@ -92,7 +92,7 @@
       <Border Grid.Column="2" Classes="card" Padding="0">
         <Panel>
           <TextBlock Classes="subtle" Text="Select a table, view, procedure, function or column to see its details." Margin="24" IsVisible="{Binding Details, Converter={x:Static ObjectConverters.IsNull}}" />
-          <TabControl Name="DetailsTabs" Margin="8,4" IsVisible="{Binding Details, Converter={x:Static ObjectConverters.IsNotNull}}">
+          <TabControl Name="DetailsTabs" Margin="8,4" IsVisible="{Binding Details, Converter={x:Static ObjectConverters.IsNotNull}}" SelectionChanged="OnDetailsTabChanged">
             <TabItem Header="Details">
               <ScrollViewer>
                 <StackPanel Margin="12" Spacing="18" DataContext="{Binding Details}" x:DataType="vm:DetailsViewModel">

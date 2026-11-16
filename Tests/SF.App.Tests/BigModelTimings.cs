@@ -64,7 +64,7 @@ public sealed class BigModelTimings
 
             var sync = app.ViewModel.Sync;
             sync.UseNewSolutionCommand.Execute(null);
-            await sync.PreviewCommand.ExecuteAsync(null);
+            await sync.CheckAsync();
             app.Pump();
             Assert.True(sync.Report.Success, sync.Report.ErrorMessage);
             Record(times, $"preview ({sync.Report.FileChanges.Count} files)", watch, 15000);

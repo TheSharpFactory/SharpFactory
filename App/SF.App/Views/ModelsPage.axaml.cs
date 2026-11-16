@@ -16,9 +16,15 @@ namespace SF.App.Views;
 
 internal sealed partial class ModelsPage : UserControl
 {
+    //the code takes at most this share of the width for the tree while the Generated code tab is open
+    private const double _treeShareWithCode = 0.38;
+
     private ModelsPageViewModel _viewModel;
     private TextMate.Installation _textMate;
     private RegistryOptions _registry;
+
+    //the tree's width before the Generated code tab narrowed it; null when it did not
+    private double? _treeWidthBeforeCode;
 
     public ModelsPage()
     {
@@ -66,7 +72,44 @@ internal sealed partial class ModelsPage : UserControl
 
     private void OnSplitterDragCompleted(object sender, VectorEventArgs e)
     {
+        //a width the user chose stays, on either tab
+        _treeWidthBeforeCode = null;
         PaneWidths.Remember(this.FindControl<Grid>("ModelsGrid"), PaneWidths.ModelsTree, _viewModel?.Shell.Settings);
+    }
+
+    /// <summary>
+    /// Code needs the width: while the Generated code tab is open the tree gives up its width past a share of the page,
+    /// and gets it back on Details. A drag of the splitter keeps whatever the user chose.
+    /// </summary>
+    private void OnDetailsTabChanged(object sender, SelectionChangedEventArgs e)
+    {
+        //the tab control picks its first tab while the page loads, before its names can be looked up
+        if(VisualRoot == null)
+            return;
+
+        var tabs = sender as TabControl;
+        var grid = this.FindControl<Grid>("ModelsGrid");
+        if(tabs == null || grid == null || !ReferenceEquals(e.Source, tabs) || grid.ColumnDefinitions.Count == 0)
+            return;
+
+        var column = grid.ColumnDefinitions[0];
+        if(tabs.SelectedIndex == 1)
+        {
+            var limit = Math.Max(column.MinWidth, grid.Bounds.Width * _treeShareWithCode);
+            if(grid.Bounds.Width > 0 && column.ActualWidth > limit)
+            {
+                _treeWidthBeforeCode = column.ActualWidth;
+                column.Width = new GridLength(limit);
+            }
+
+            return;
+        }
+
+        if(_treeWidthBeforeCode.HasValue)
+        {
+            column.Width = new GridLength(_treeWidthBeforeCode.Value);
+            _treeWidthBeforeCode = null;
+        }
     }
 
     /// <summary>

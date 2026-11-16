@@ -142,12 +142,36 @@ internal abstract partial class ModelWizardViewModel : ViewModelBase
         }
     }
 
+    /// <summary>
+    /// Next is off while the wizard works, and on the objects step while nothing is selected (a model needs at least one
+    /// object).
+    /// </summary>
     public bool CanGoNext
     {
         get
         {
-            return !IsWorking && Step != WizardStep.Progress;
+            if(IsWorking || Step == WizardStep.Progress)
+                return false;
+
+            return Step != WizardStep.Objects || Chooser == null || Chooser.SelectedCount > 0;
         }
+    }
+
+    partial void OnChooserChanged(ObjectChooserViewModel oldValue, ObjectChooserViewModel newValue)
+    {
+        if(oldValue != null)
+            oldValue.PropertyChanged -= OnChooserPropertyChanged;
+
+        if(newValue != null)
+            newValue.PropertyChanged += OnChooserPropertyChanged;
+
+        RaiseNavigation();
+    }
+
+    private void OnChooserPropertyChanged(object sender, System.ComponentModel.PropertyChangedEventArgs e)
+    {
+        if(string.Equals(e.PropertyName, nameof(ObjectChooserViewModel.SelectedCount), StringComparison.Ordinal))
+            RaiseNavigation();
     }
 
     public string NextText
@@ -689,7 +713,7 @@ internal sealed class UpdateModelWizardViewModel : ModelWizardViewModel
     {
         _container = container;
         Model = model;
-        AddStep(WizardStep.Summary, "Connect");
+        AddStep(WizardStep.Summary, "Review");
         AddStep(WizardStep.Objects, "Choose objects");
         AddStep(WizardStep.Progress, "Build");
         Step = WizardStep.Summary;
@@ -767,7 +791,7 @@ internal sealed class UpdateModelWizardViewModel : ModelWizardViewModel
 
         Shell.ReplaceModel(Model, updated);
         Progress.Succeed($"Model {updated.Name} updated: {ModelsPageViewModel.Describe(updated)}. {Chooser.ChangeText}");
-        Shell.StatusText = $"Updated model {updated.Name}";
+        Shell.StatusText = $"Updated model {updated.Name}: the Sync page shows what this changes in the solution";
     }
 }
 
