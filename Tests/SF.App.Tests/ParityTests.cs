@@ -243,6 +243,30 @@ public sealed class ParityTests
             app.Screenshot("12-add-connection-errors");
         }
     }
+
+    [AvaloniaFact]
+    public async Task M8_TheMasterDatabaseIsRefusedAtItsField()
+    {
+        using(var app = new AppHarness())
+        {
+            app.ViewModel.OpenFile(app.CopyFixture());
+            app.ViewModel.StartAddModel();
+            var wizard = Assert.IsType<AddModelWizardViewModel>(app.ViewModel.Overlay);
+
+            wizard.ModelName = "Other";
+            wizard.Server = "localhost";
+            wizard.IntegratedSecurity = true;
+            wizard.SelectedDatabase = "Master";
+            await wizard.NextCommand.ExecuteAsync(null);
+
+            //refused before anything connects: the wizard stays on the connection step, with the error at the field
+            Assert.Equal(ModelValidation.DatabaseIsMaster, wizard.DatabaseError);
+            Assert.True(wizard.IsConnectionStep);
+            Assert.Null(wizard.Error);
+            app.Pump();
+            Assert.True(app.Find<TextBlock>("DatabaseError").IsVisible);
+        }
+    }
     #endregion
 
     #region Delete (D)

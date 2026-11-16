@@ -2,9 +2,7 @@
 using System;
 using System.Collections.Generic;
 using System.Data;
-using System.Diagnostics;
 using System.Text;
-using System.Threading;
 using Microsoft.Data.SqlClient;
 using SF.Common.Logging;
 using SF.Models;
@@ -14,56 +12,6 @@ namespace SF.Db;
 
 public static class SqlConnector
 {
-    #region Connection probe
-    private sealed class ConnectionProbe
-    {
-        private readonly SqlConnection _connection;
-        private readonly SqlCommand _command;
-        // We'll use a Stopwatch here for simplicity. A comparison to a stored DateTime.Now value could also be used
-        private readonly Stopwatch _stopwatch = new Stopwatch();
-
-        public bool ConnectSuccess { get; set; }
-
-        /// <summary>
-        /// Why the connection failed (the SQL Server message); null when it worked or is still trying.
-        /// </summary>
-        public string Error { get; set; }
-
-        public ConnectionProbe(SqlConnection connection, SqlCommand command)
-        {
-            _connection = connection;
-            _command = command;
-        }
-
-        public void Run()
-        {
-            try
-            {
-                _stopwatch.Start();
-                _connection.Open();
-                var date = _command.ExecuteScalar();
-                ConnectSuccess = true;
-            }
-            catch(Exception ex)
-            {
-                //a failed connection is an answer, not a crash: keep the reason for the caller and the log
-                Error = ex.Message;
-                LogManager.WriteErrorLog(ex, "Unable to connect to the database", $"Server: {_connection.DataSource}, database: {_connection.Database}");
-            }
-            finally
-            {
-                //both always exist: the probe is created with them
-                _command.Cancel();
-                _command.Dispose();
-
-                if(_connection.State != ConnectionState.Closed)
-                    _connection.Close();
-                _connection.Dispose();
-            }
-        }
-    }
-    #endregion
-
     //INFORMATION_SCHEMA VIEWS  https://msdn.microsoft.com/en-us/library/ms186778.aspx
     //Schema Restrictions: https://msdn.microsoft.com/en-us/library/cc716722(v=vs.110).aspx
     //Schema Collections: https://msdn.microsoft.com/en-us/library/ms254969.aspx
@@ -75,31 +23,39 @@ public static class SqlConnector
     }
 
     /// <summary>
-    /// True when the server answers within two seconds. Otherwise <paramref name="error"/> says why (SQL Server's
-    /// message, or that it did not answer in time).
+    /// True when the server accepts the connection and answers a query. Otherwise <paramref name="error"/> says why
+    /// (SQL Server's message: a wrong password, an unknown server, no answer within the connection timeout, which is
+    /// SqlClient's 15 seconds as for every other query here). It waits for the server: callers run it on a background
+    /// thread.
     /// </summary>
     public static bool ValidateConnectionInfo(ConnectionInfo conInfo, out string error)
     {
         if(string.IsNullOrWhiteSpace(conInfo.Database))
             conInfo.Database = "master";
-        var con = new SqlConnection(GenerateConnectionString(conInfo));
-        var cmd = new SqlCommand("SELECT GETDATE();", con);
-
-        // Try to open the connection, if anything goes wrong, make sure we set connectSuccess = false
-        var probe = new ConnectionProbe(con, cmd);
-        var t = new Thread(probe.Run)
-        {
-            // Make sure it's marked as a background thread so it'll get cleaned up automatically
-            IsBackground = true
-        };
-        t.Start();
-        t.Join(2000);
 
         error = null;
-        if(!probe.ConnectSuccess)
-            error = probe.Error ?? $"{conInfo.Server} did not answer within 2 seconds.";
-
-        return probe.ConnectSuccess;
+        var con = new SqlConnection(GenerateConnectionString(conInfo));
+        var cmd = new SqlCommand("SELECT GETDATE();", con);
+        try
+        {
+            con.Open();
+            cmd.ExecuteScalar();
+            return true;
+        }
+        catch(Exception ex)
+        {
+            //a failed connection is an answer, not a crash: keep the reason for the caller and the log
+            error = ex.Message;
+            LogManager.WriteErrorLog(ex, "Unable to connect to the database", $"Server: {con.DataSource}, database: {con.Database}");
+            return false;
+        }
+        finally
+        {
+            cmd.Dispose();
+            if(con.State != ConnectionState.Closed)
+                con.Close();
+            con.Dispose();
+        }
     }
 
     public static DataTable GetDatabases(ConnectionInfo conInfo)

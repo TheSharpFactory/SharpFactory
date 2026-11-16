@@ -3,6 +3,35 @@
 What changed in each published release of The Sharp Factory, newest first. Each section is also the text of that
 release on GitHub, with its downloads.
 
+## Unreleased
+
+### Fixes
+
+- **Dates after a day.** The "date greater than" filter left out values at exactly midnight of the next day, and on a
+  `date` column the whole next day. Sync your solutions to get the fix: only the SQL engine's `DatabaseSelect.cs`
+  changes.
+- **Slower servers can connect.** The Add and Update wizards gave a server 2 seconds to answer; they now wait as long
+  as the connection's timeout (15 seconds), so remote and cloud servers no longer show as unreachable.
+- **Logging needs a logger.** Turning on `Database.LogEnabled` in the generated code without setting
+  `Database.Logger` first now throws right there, with a message that says so, instead of every query failing later.
+  Sync to get it.
+- **The master database is refused.** A model whose database is `master` is not saved, and the Add wizard says so:
+  master belongs to the server, and no code should be generated from it.
+- **Values longer than their column are refused.** A text or binary value longer than its column (or a function's
+  parameter) was cut to fit without a word, so only part of it was saved, or a filter compared only part of it. The
+  generated code now throws before anything is sent to the database, and names the property. Sync to get it.
+
+### Downloads
+
+| Download | What |
+|---|---|
+| `TheSharpFactory-win-x64.zip`, `TheSharpFactory-win-arm64.zip` | The app for Windows |
+| `TheSharpFactory-osx-arm64.zip`, `TheSharpFactory-osx-x64.zip` | The app for macOS (Apple silicon, Intel) |
+| `TheSharpFactory-linux-x64.tar.gz` | The app for Linux |
+| `sharpfactory-cli-*` | The command line, `sharpfactory`, for the same systems |
+
+---
+
 ## 1.2.2.0 — 2026-11-14
 
 ### What's new

@@ -525,6 +525,7 @@ internal sealed partial class AddModelWizardViewModel : ModelWizardViewModel
                 ServerError = problem;
                 return true;
             case ModelValidation.DatabaseRequired:
+            case ModelValidation.DatabaseIsMaster:
                 DatabaseError = problem;
                 return true;
             case ModelValidation.UserRequired:

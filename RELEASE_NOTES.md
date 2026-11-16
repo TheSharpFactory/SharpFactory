@@ -5,6 +5,52 @@ release gives them its version. Version rules: see [BACKLOG.md](BACKLOG.md).
 
 ---
 
+## Unreleased
+
+### Date after a day, connection check, logging switch, master refused, long values refused, writer tests (SF-194, SF-198, SF-203, SF-204, SF-210, SF-211)
+
+Changes
+- SF-194: `DateGreaterThan` is `({column} >= DATEADD(dd, 1, CAST({param} AS DATE)))`. It was `({column} >= CAST({param} AS DATE)) AND ({column} > DATEADD(dd, 1, CAST({param} AS DATE)))`, which left out a value at exactly midnight of the next day (on a `date` column, the whole next day). Only that condition's SQL changes; `WriteDateRange`, now used only by `DateEquals` and `DateNotEquals`, lost its operator parameter (both passed `<`). In a generated solution only `SQLEngine/DatabaseSelect.cs` changes (user, 2026-11-15: "do it fix this one", an exception to "the SQL does not change").
+- Date comparison tests: `Fixtures/PagingRunner` (run by `GeneratedPagingTests`) inserts three `Coverage.AllTypes` rows (the 14th at 23:59:59, the 15th at midnight, the 16th at 08:00) and checks all six date comparisons on a `date` and a `datetime2` column, 18 cases, including the midnight edges.
+- SF-203: the connection check opens the connection and runs its query on the caller's thread (every caller is already on a background thread), with SqlClient's connect timeout, 15 seconds, as every other query of the reader. It gave the server 2 seconds on a thread of its own, which kept running and logged an error later; that thread and the `ConnectionProbe` class are gone.
+- SF-198: the generated `Database.LogEnabled` is a full property: turning it on while `Database.Logger` is null throws `InvalidOperationException` there (user, 2026-11-15: "validate inside the LogEnabled property and throw there"). Before, every query threw `NullReferenceException` from `SqlExecute`. Only `SQLEngine/Database.cs` changes in a generated solution.
+- SF-204: a model on the master database is refused: `ModelUtils.Save` (the app's Save and the command line's update) throws "Model X uses the master database..." and writes nothing, and `ModelValidation.ValidateDbInfo` gives `DatabaseIsMaster`, shown under the wizard's database field (user, 2026-11-15: "master should be rejected as a database when saving the model"). Connecting to master to list a server's databases, before one is chosen, stays as it is: master is never in that list.
+- SF-211: a value longer than its `varchar`, `nvarchar`, `binary` or `varbinary` column throws `ArgumentException` ("The value for X is N characters long, but its column holds at most M. Nothing was sent to the database.") while the parameters are built, before a connection is opened. The parameter takes the column's size, and SqlClient cut a longer value to it without a word: inserts and updates saved part of it, filters compared part of it (user, 2026-11-15: "throw as early as possible so as to not reach the sql server"). The SQL text and the parameters do not change. Not checked: `(max)` columns, `char`/`nchar` (their parameters are sized by the value, so SQL Server reports its own error) and `text`/`ntext`. A function's parameters take their sizes from the model in the generated function code, so the function call checks them the same way (`Parameters.CheckSizes`) before it runs. In a generated solution only `SQLEngine/Database.cs` and `SQLEngine/DatabaseFunction.cs` change.
+- SF-210: the C# writer's own tests are in the repository: `Tests/SF.CSharpWriter.Tests` (242 tests: every public method, the written files compiled with Roslyn, allocations, `Save`/`WriteTo`, a real file written again), in `SF.slnx`, CI and TESTING.md. Its sample file is Newtonsoft.Json's `JsonPosition.cs` (MIT) with its license header.
+
+Verification
+- `GeneratedPagingTests` also turns logging on without a Logger (it throws, logging stays off), then with one (the page's one SELECT is logged).
+- `GeneratedPagingTests` inserts 51 characters into `varchar(50)` and `nvarchar(50)` and 51 bytes into `varbinary(50)`, and filters by 51 characters: each throws, and with logging on no statement reaches the database; a 50-character filter runs. With the check taken out, the 51-character insert succeeds and SQL Server holds its first 50 characters. An update setting 51 characters and a call of `Coverage.FullName` with a 51-character `nvarchar(50)` parameter throw too (the function test fails with the function check taken out); 50 characters run.
+- Comparisons on SQL Server: `GeneratedPagingTests` inserts three rows (low, middle, high) and checks Equals, NotEquals, GreaterThan, LessThan, GreaterThanOrEquals and LessThanOrEquals against the middle value on every type that has them: int (not null, the identity), int?, long, long?, short?, byte?, decimal (decimal, numeric, money, smallmoney), double? and DateTime on date, datetime, datetime2 (100 nanoseconds apart) and smalldatetime columns; and Equals and NotEquals on real, datetimeoffset, time, bit, uniqueidentifier, char, nchar, varchar, nvarchar (a non-ASCII value) and the (max) types. With GreaterThan written as `>=` it fails ("int, greater than: 2 rows, expected 1").
+- New `ParityTests.M8_TheMasterDatabaseIsRefusedAtItsField`: "Master" in the Add wizard shows the error under the database field and stays on the connection step; it fails without the wizard's `DatabaseIsMaster` case.
+- New `EngineUnitTests.AModelOnTheMasterDatabaseIsNeitherAcceptedNorSaved`: " Master " fails validation; saving a model on master throws and creates no file; another database saves.
+- With the old operator put back, `GeneratedPagingTests` fails ("date after the 14th, date column: 1 rows, expected 2"); with the fix all 18 date cases pass on SQL Server.
+- Coverage (174 files) and the reference model (1,790 files) generated with 1.2.2.0 and with this change: only `SQLEngine/DatabaseSelect.cs` (the date lines) and `SQLEngine/Database.cs` (`LogEnabled`) differ.
+- SchemaCheck against a server that does not answer reports SQL Server's timeout message.
+- `SF.CSharpWriter.Tests` 242 passed; `SF.Tests` 163 passed and `SF.App.Tests` 114 passed with the database tests on.
+
+Commit details
+
+```
+Fix DateGreaterThan at midnight; refuse master and too-long values
+
+DateGreaterThan left out a value at exactly midnight of the next day
+(the whole next day on a date column): it is now one condition, on or
+after the start of the next day. Every date comparison, and Equals,
+NotEquals, GreaterThan, LessThan and their or-equal forms on every type
+that has them, are tested on SQL Server. The connection check waits for
+SqlClient's connect timeout instead of giving the server 2 seconds.
+Turning on LogEnabled without a Logger throws there, and a model on the
+master database is not saved. A value longer than its column or
+function parameter throws before anything is sent, instead of SqlClient
+cutting it to the parameter's size without a word. The C# writer's 242
+tests are in the repository and run in CI.
+
+Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>
+```
+
+---
+
 ## 1.2.2.0 — 2026-11-14
 
 ### The C# writer is its own library (SF-193)

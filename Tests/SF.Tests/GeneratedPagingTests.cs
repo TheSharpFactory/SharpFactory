@@ -75,6 +75,11 @@ public sealed class GeneratedPagingTests
             Assert.Contains("PASS navigation properties from a collection initializer", output, StringComparison.Ordinal);
             Assert.Contains("PASS update from GetChanges", output, StringComparison.Ordinal);
             Assert.Contains("PASS update from CreateChange", output, StringComparison.Ordinal);
+            Assert.Contains("PASS date comparisons, date column", output, StringComparison.Ordinal);
+            Assert.Contains("PASS date comparisons, datetime2 column", output, StringComparison.Ordinal);
+            Assert.Contains("PASS logging", output, StringComparison.Ordinal);
+            Assert.Contains("PASS values longer than the column", output, StringComparison.Ordinal);
+            Assert.Contains("PASS comparisons on every type", output, StringComparison.Ordinal);
             Assert.Contains("ALL PASSED", output, StringComparison.Ordinal);
         }
     }

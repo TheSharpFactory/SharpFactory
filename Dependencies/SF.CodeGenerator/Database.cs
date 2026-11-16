@@ -27,7 +27,27 @@ public static partial class Database
         DisposeCommand,
     }
     private static readonly Dictionary<int, string> _conStrings = new Dictionary<int, string>();
-    public static bool LogEnabled { get; set; } = false;
+    private static bool _logEnabled;
+
+    /// <summary>
+    /// Writes every statement to Logger before it runs. Set Logger first: turning logging on without one throws
+    /// here, instead of every query failing later.
+    /// </summary>
+    public static bool LogEnabled
+    {
+        get
+        {
+            return _logEnabled;
+        }
+        set
+        {
+            if(value && Logger == null)
+                throw new InvalidOperationException("Set Database.Logger before turning LogEnabled on: there is nothing to write the statements to.");
+
+            _logEnabled = value;
+        }
+    }
+
     public static Action<string, string> Logger { get; set; } = null;
 
     internal static readonly int ReturnParamId = -1000000;
@@ -559,7 +579,11 @@ public static partial class Database
                     if(prop.Size.HasValue)
                     {
                         if(prop.Size.Value > -1)
+                        {
+                            if(filter.Value is string text && text.Length > prop.Size.Value)
+                                ThrowTooLong(filter.PropertyName, text.Length, prop.Size.Value, "characters");
                             return prop.Size;
+                        }
                     }
 
                     size = prop.SqlType == SqlDbType.VarChar ? 8000 : 4000;
@@ -577,7 +601,11 @@ public static partial class Database
                     if(prop.Size.HasValue)
                     {
                         if(prop.Size.Value > -1)
+                        {
+                            if(filter.Value is byte[] bytes && bytes.Length > prop.Size.Value)
+                                ThrowTooLong(filter.PropertyName, bytes.Length, prop.Size.Value, "bytes");
                             return prop.Size;
+                        }
                     }
 
                     size = 8000;
@@ -589,6 +617,40 @@ public static partial class Database
                     return null;
             }
         }
+
+        /// <summary>
+        /// Throws when a text or binary parameter's value is longer than the size the parameter was given (a function's
+        /// parameters take their sizes from the model): SqlClient would cut it without a word.
+        /// </summary>
+        internal static void CheckSizes(SqlParameter[] param)
+        {
+            if(param == null)
+                return;
+
+            for(var i = 0; i < param.Length; i++)
+            {
+                var p = param[i];
+                if(p.Size < 1)
+                    continue;
+
+                if(p.Value is string text && text.Length > p.Size)
+                    ThrowTooLong(p.ParameterName, text.Length, p.Size, "characters");
+
+                if(p.Value is byte[] bytes && bytes.Length > p.Size)
+                    ThrowTooLong(p.ParameterName, bytes.Length, p.Size, "bytes");
+            }
+        }
+
+        /// <summary>
+        /// A value longer than its column or parameter: SqlClient would cut it to the parameter's size without a word
+        /// (the column's size), so an insert or an update would save part of it and a filter would compare part of it.
+        /// Thrown before anything is sent to the database.
+        /// </summary>
+        private static void ThrowTooLong(string name, int length, int size, string unit)
+        {
+            throw new ArgumentException($"The value for {name} is {length} {unit} long, but {name} holds at most {size}. Nothing was sent to the database.");
+        }
+
         private static SqlDbType GetSqlDbTypeForParam(FilterConditions condition, PropertyInfo prop)
         {//in some cases the SqlDbType is different than the columns
             switch(condition)

@@ -1,0 +1,30 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <!-- the C# writer (Dependencies/SF.CSharpWriter) on its own: every public method, the files it writes compiled
+       with Roslyn, allocations, output, and real files written again -->
+  <PropertyGroup>
+    <TargetFramework>net10.0</TargetFramework>
+    <EnforceCodeStyleInBuild>true</EnforceCodeStyleInBuild>
+    <OutputType>Exe</OutputType>
+    <IsPackable>false</IsPackable>
+    <RootNamespace>SF.CSharpWriter.Tests</RootNamespace>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Microsoft.NET.Test.Sdk" Version="18.11.0" />
+    <PackageReference Include="xunit.v3" Version="3.2.2" />
+    <PackageReference Include="xunit.runner.visualstudio" Version="4.0.1" />
+    <!-- compiles the written files: proof that they are valid C# -->
+    <PackageReference Include="Microsoft.CodeAnalysis.CSharp" Version="4.14.0" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\..\Dependencies\SF.CSharpWriter\SF.CSharpWriter.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <!-- real files from public repositories, written again with CSharpFile by ReproductionTests -->
+    <None Include="Samples\**" CopyToOutputDirectory="PreserveNewest" />
+  </ItemGroup>
+
+</Project>

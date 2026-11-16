@@ -11,9 +11,30 @@ namespace SF.Utils;
 
 public static class ModelUtils
 {
+    /// <summary>
+    /// Saves the model file. A model that reads the master database is refused: master belongs to the server, not to
+    /// an application, and no code is generated from it.
+    /// </summary>
     public static void Save(ModelContainer modelContainer, string edmjFile)
     {
+        if(modelContainer?.Models != null)
+        {
+            foreach(var model in modelContainer.Models)
+            {
+                if(model != null && UsesMasterDatabase(model.ConInfo))
+                    throw new InvalidOperationException($"Model {model.Name} uses the master database. Choose the application's database for it. The file was not saved.");
+            }
+        }
+
         IOUtils.SaveFile(edmjFile, JsonUtils.Serialize(modelContainer));
+    }
+
+    /// <summary>
+    /// True when the connection's database is master (any case, spaces around it ignored).
+    /// </summary>
+    public static bool UsesMasterDatabase(ConnectionInfo conInfo)
+    {
+        return conInfo?.Database != null && string.Equals(conInfo.Database.Trim(), "master", StringComparison.OrdinalIgnoreCase);
     }
 
     /// <summary>

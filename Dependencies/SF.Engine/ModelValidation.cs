@@ -1,5 +1,6 @@
 #region Usings
 using SF.Models;
+using SF.Utils;
 using System;
 using System.Collections.Generic;
 using System.IO;
@@ -17,6 +18,7 @@ public static class ModelValidation
     public const string ModelNameIsRootNamespace = "The model name cannot be the same as the root namespace.";
     public const string ServerRequired = "Database server is required.";
     public const string DatabaseRequired = "Database name is required.";
+    public const string DatabaseIsMaster = "The master database cannot be used: choose the application's database.";
     public const string DatabaseNameNotSupported = "The database name has characters that are not supported: use only letters, digits, '_' and spaces.";
     public const string UserRequired = "User is required.";
     public const string PasswordRequired = "Password is required.";
@@ -40,6 +42,8 @@ public static class ModelValidation
 
         if(string.IsNullOrWhiteSpace(conInfo.Database))
             result.Add(DatabaseRequired);
+        else if(ModelUtils.UsesMasterDatabase(conInfo))
+            result.Add(DatabaseIsMaster);
         else if(!NameRules.IsSupportedObjectName(conInfo.Database))
             result.Add(DatabaseNameNotSupported);
 

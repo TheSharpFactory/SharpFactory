@@ -22,6 +22,7 @@
   </Folder>
   <Folder Name="/Tests/">
     <Project Path="Tests/SF.App.Tests/SF.App.Tests.csproj" />
+    <Project Path="Tests/SF.CSharpWriter.Tests/SF.CSharpWriter.Tests.csproj" />
     <Project Path="Tests/SF.Tests/SF.Tests.csproj" />
   </Folder>
   <Folder Name="/Tools/">

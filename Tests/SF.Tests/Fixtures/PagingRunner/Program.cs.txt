@@ -21,6 +21,10 @@ internal static class Program
     private const string _country = "ZZ";
     private const int _regionCount = 25;
     private const int _storesPerRegion = 2;
+    //the rows the too-long checks would insert if a value got through: deleted with the others
+    private const long _tooLongMarker = -4242;
+    //the three rows of the comparison checks: low, middle and high values in every column that is compared
+    private const string _compareMarker = "sf-compare";
 
     private static int Main()
     {
@@ -107,6 +111,237 @@ internal static class Program
 
         await regions.UpdateAsync(RegionUpdate(code).BeginUpdateValues().Set(RegionProperty.CreateChange((int)RegionProp.Name, "Named " + code)).EndUpdateValues());
         CheckName("update from CreateChange", (await regions.ByPKAsync(_country, code)).Name, "Named " + code);
+
+        //every date comparison, on a date column (every value is midnight) and on a datetime2 column
+        CheckDateFilters(container, "date column", AllTypeProperty.DateCol);
+        CheckDateFilters(container, "datetime2 column", AllTypeProperty.DateTime2Col);
+
+        //logging: turned on without a Logger it throws right there; with one, every statement goes to it
+        var threw = false;
+        try
+        {
+            Database.LogEnabled = true;
+        }
+        catch(InvalidOperationException)
+        {
+            threw = true;
+        }
+
+        if(!threw || Database.LogEnabled)
+            throw new InvalidOperationException("logging without a Logger: LogEnabled was turned on");
+
+        Database.Logger = LogStatement;
+        Database.LogEnabled = true;
+        regions.ToList(RegionPage(1, false));
+        Database.LogEnabled = false;
+        if(_logged.Count != 1 || !_logged[0].StartsWith("SELECT", StringComparison.Ordinal))
+            throw new InvalidOperationException($"logging with a Logger: {_logged.Count} statements logged, expected 1 SELECT");
+
+        Console.WriteLine("PASS logging");
+
+        //a value longer than its column is refused before anything is sent (SqlClient would cut it to the column's size)
+        var allTypes = container.TestDb.Coverage.AllType;
+        _logged.Clear();
+        Database.LogEnabled = true;
+        CheckTooLong("too long, varchar insert", TryCreate(container, new AllType { BigIntCol = _tooLongMarker, NVarCharCol = "x", VarCharCol = new string('x', 51) }), "VarCharCol");
+        CheckTooLong("too long, nvarchar insert", TryCreate(container, new AllType { BigIntCol = _tooLongMarker, NVarCharCol = new string('x', 51) }), "NVarCharCol");
+        CheckTooLong("too long, varbinary insert", TryCreate(container, new AllType { BigIntCol = _tooLongMarker, NVarCharCol = "x", VarBinaryCol = new byte[51] }), "VarBinaryCol");
+        CheckTooLong("too long, filter", TryRead(container, new Query<AllTypeProperty>().BeginPredicate().Where(AllTypeProperty.VarCharCol).Equals(new string('x', 51)).EndPredicate()), "VarCharCol");
+        CheckTooLong("too long, update", TryUpdate(container, CompareRows().EndPredicate().BeginUpdateValues().Set(AllTypeProperty.VarCharCol, new string('x', 51)).EndUpdateValues()), "VarCharCol");
+        CheckTooLong("too long, function parameter", TryFullName(container, new FullName_Request { First = new string('x', 51), Last = "y" }), "@First");
+        Database.LogEnabled = false;
+        if(_logged.Count != 0)
+            throw new InvalidOperationException($"too long: {_logged.Count} statements reached the database, expected none");
+
+        //exactly the column's size is fine: the read runs and finds nothing
+        CheckCount("as long as the column, filter", allTypes.ToList(new Query<AllTypeProperty>().BeginPredicate().Where(AllTypeProperty.VarCharCol).Equals(new string('x', 50)).EndPredicate()), 0);
+        if(!string.Equals(container.TestDb.Coverage.Functions.FullName(new FullName_Request { First = new string('x', 50), Last = "y" }), new string('x', 50) + " y", StringComparison.Ordinal))
+            throw new InvalidOperationException("as long as the parameter, function: wrong result");
+
+        Console.WriteLine("PASS values longer than the column");
+
+        CheckComparisons(container);
+    }
+
+    /// <summary>
+    /// Equals, NotEquals, GreaterThan, LessThan, GreaterThanOrEquals and LessThanOrEquals against the middle row's value
+    /// on every type that has them (the whole numbers, decimal, double and DateTime, nullable or not), and Equals and
+    /// NotEquals on the other types that SQL Server compares. Expected: 1, 2, 1, 1, 2 and 2 of the three rows.
+    /// </summary>
+    private static void CheckComparisons(RepositoryContainer container)
+    {
+        var rows = container.TestDb.Coverage.AllType.ToList(CompareRows().EndPredicate().BeginSorting().OrderBy(AllTypeProperty.BigIntCol).EndSorting());
+        CheckCount("comparison rows", rows, 3);
+        var id = rows[1].Id;
+
+        CheckSix(container, "int", CompareRows().Where(AllTypeProperty.Id).Equals(id), CompareRows().Where(AllTypeProperty.Id).NotEquals(id), CompareRows().Where(AllTypeProperty.Id).GreaterThan(id), CompareRows().Where(AllTypeProperty.Id).LessThan(id), CompareRows().Where(AllTypeProperty.Id).GreaterThanOrEquals(id), CompareRows().Where(AllTypeProperty.Id).LessThanOrEquals(id));
+        CheckSix(container, "int?", CompareRows().Where(AllTypeProperty.IntNull).Equals(20), CompareRows().Where(AllTypeProperty.IntNull).NotEquals(20), CompareRows().Where(AllTypeProperty.IntNull).GreaterThan(20), CompareRows().Where(AllTypeProperty.IntNull).LessThan(20), CompareRows().Where(AllTypeProperty.IntNull).GreaterThanOrEquals(20), CompareRows().Where(AllTypeProperty.IntNull).LessThanOrEquals(20));
+        CheckSix(container, "long", CompareRows().Where(AllTypeProperty.BigIntCol).Equals(102), CompareRows().Where(AllTypeProperty.BigIntCol).NotEquals(102), CompareRows().Where(AllTypeProperty.BigIntCol).GreaterThan(102), CompareRows().Where(AllTypeProperty.BigIntCol).LessThan(102), CompareRows().Where(AllTypeProperty.BigIntCol).GreaterThanOrEquals(102), CompareRows().Where(AllTypeProperty.BigIntCol).LessThanOrEquals(102));
+        CheckSix(container, "long?", CompareRows().Where(AllTypeProperty.BigIntNull).Equals(2), CompareRows().Where(AllTypeProperty.BigIntNull).NotEquals(2), CompareRows().Where(AllTypeProperty.BigIntNull).GreaterThan(2), CompareRows().Where(AllTypeProperty.BigIntNull).LessThan(2), CompareRows().Where(AllTypeProperty.BigIntNull).GreaterThanOrEquals(2), CompareRows().Where(AllTypeProperty.BigIntNull).LessThanOrEquals(2));
+        CheckSix(container, "short?", CompareRows().Where(AllTypeProperty.SmallIntCol).Equals(20), CompareRows().Where(AllTypeProperty.SmallIntCol).NotEquals(20), CompareRows().Where(AllTypeProperty.SmallIntCol).GreaterThan(20), CompareRows().Where(AllTypeProperty.SmallIntCol).LessThan(20), CompareRows().Where(AllTypeProperty.SmallIntCol).GreaterThanOrEquals(20), CompareRows().Where(AllTypeProperty.SmallIntCol).LessThanOrEquals(20));
+        CheckSix(container, "byte?", CompareRows().Where(AllTypeProperty.TinyIntCol).Equals(20), CompareRows().Where(AllTypeProperty.TinyIntCol).NotEquals(20), CompareRows().Where(AllTypeProperty.TinyIntCol).GreaterThan(20), CompareRows().Where(AllTypeProperty.TinyIntCol).LessThan(20), CompareRows().Where(AllTypeProperty.TinyIntCol).GreaterThanOrEquals(20), CompareRows().Where(AllTypeProperty.TinyIntCol).LessThanOrEquals(20));
+        CheckSix(container, "decimal", CompareRows().Where(AllTypeProperty.DecimalCol).Equals(2.5m), CompareRows().Where(AllTypeProperty.DecimalCol).NotEquals(2.5m), CompareRows().Where(AllTypeProperty.DecimalCol).GreaterThan(2.5m), CompareRows().Where(AllTypeProperty.DecimalCol).LessThan(2.5m), CompareRows().Where(AllTypeProperty.DecimalCol).GreaterThanOrEquals(2.5m), CompareRows().Where(AllTypeProperty.DecimalCol).LessThanOrEquals(2.5m));
+        CheckSix(container, "decimal? numeric", CompareRows().Where(AllTypeProperty.NumericCol).Equals(2.5m), CompareRows().Where(AllTypeProperty.NumericCol).NotEquals(2.5m), CompareRows().Where(AllTypeProperty.NumericCol).GreaterThan(2.5m), CompareRows().Where(AllTypeProperty.NumericCol).LessThan(2.5m), CompareRows().Where(AllTypeProperty.NumericCol).GreaterThanOrEquals(2.5m), CompareRows().Where(AllTypeProperty.NumericCol).LessThanOrEquals(2.5m));
+        CheckSix(container, "decimal? money", CompareRows().Where(AllTypeProperty.MoneyCol).Equals(2.5m), CompareRows().Where(AllTypeProperty.MoneyCol).NotEquals(2.5m), CompareRows().Where(AllTypeProperty.MoneyCol).GreaterThan(2.5m), CompareRows().Where(AllTypeProperty.MoneyCol).LessThan(2.5m), CompareRows().Where(AllTypeProperty.MoneyCol).GreaterThanOrEquals(2.5m), CompareRows().Where(AllTypeProperty.MoneyCol).LessThanOrEquals(2.5m));
+        CheckSix(container, "decimal? smallmoney", CompareRows().Where(AllTypeProperty.SmallMoneyCol).Equals(2.5m), CompareRows().Where(AllTypeProperty.SmallMoneyCol).NotEquals(2.5m), CompareRows().Where(AllTypeProperty.SmallMoneyCol).GreaterThan(2.5m), CompareRows().Where(AllTypeProperty.SmallMoneyCol).LessThan(2.5m), CompareRows().Where(AllTypeProperty.SmallMoneyCol).GreaterThanOrEquals(2.5m), CompareRows().Where(AllTypeProperty.SmallMoneyCol).LessThanOrEquals(2.5m));
+        CheckSix(container, "double?", CompareRows().Where(AllTypeProperty.FloatCol).Equals(2.5), CompareRows().Where(AllTypeProperty.FloatCol).NotEquals(2.5), CompareRows().Where(AllTypeProperty.FloatCol).GreaterThan(2.5), CompareRows().Where(AllTypeProperty.FloatCol).LessThan(2.5), CompareRows().Where(AllTypeProperty.FloatCol).GreaterThanOrEquals(2.5), CompareRows().Where(AllTypeProperty.FloatCol).LessThanOrEquals(2.5));
+
+        var day = new DateTime(2026, 1, 2);
+        CheckSix(container, "DateTime? date", CompareRows().Where(AllTypeProperty.DateCol).Equals(day), CompareRows().Where(AllTypeProperty.DateCol).NotEquals(day), CompareRows().Where(AllTypeProperty.DateCol).GreaterThan(day), CompareRows().Where(AllTypeProperty.DateCol).LessThan(day), CompareRows().Where(AllTypeProperty.DateCol).GreaterThanOrEquals(day), CompareRows().Where(AllTypeProperty.DateCol).LessThanOrEquals(day));
+        var second = new DateTime(2026, 1, 2, 10, 0, 1);
+        CheckSix(container, "DateTime datetime", CompareRows().Where(AllTypeProperty.DateTimeCol).Equals(second), CompareRows().Where(AllTypeProperty.DateTimeCol).NotEquals(second), CompareRows().Where(AllTypeProperty.DateTimeCol).GreaterThan(second), CompareRows().Where(AllTypeProperty.DateTimeCol).LessThan(second), CompareRows().Where(AllTypeProperty.DateTimeCol).GreaterThanOrEquals(second), CompareRows().Where(AllTypeProperty.DateTimeCol).LessThanOrEquals(second));
+        //100 nanoseconds apart: datetime2(7)'s full precision
+        var tick = new DateTime(2026, 1, 2, 10, 0, 0).AddTicks(2);
+        CheckSix(container, "DateTime? datetime2", CompareRows().Where(AllTypeProperty.DateTime2Col).Equals(tick), CompareRows().Where(AllTypeProperty.DateTime2Col).NotEquals(tick), CompareRows().Where(AllTypeProperty.DateTime2Col).GreaterThan(tick), CompareRows().Where(AllTypeProperty.DateTime2Col).LessThan(tick), CompareRows().Where(AllTypeProperty.DateTime2Col).GreaterThanOrEquals(tick), CompareRows().Where(AllTypeProperty.DateTime2Col).LessThanOrEquals(tick));
+        var minute = new DateTime(2026, 1, 2, 10, 1, 0);
+        CheckSix(container, "DateTime? smalldatetime", CompareRows().Where(AllTypeProperty.SmallDateTimeCol).Equals(minute), CompareRows().Where(AllTypeProperty.SmallDateTimeCol).NotEquals(minute), CompareRows().Where(AllTypeProperty.SmallDateTimeCol).GreaterThan(minute), CompareRows().Where(AllTypeProperty.SmallDateTimeCol).LessThan(minute), CompareRows().Where(AllTypeProperty.SmallDateTimeCol).GreaterThanOrEquals(minute), CompareRows().Where(AllTypeProperty.SmallDateTimeCol).LessThanOrEquals(minute));
+
+        //Equals and NotEquals only
+        CheckTwo(container, "float? real", CompareRows().Where(AllTypeProperty.RealCol).Equals(2.5f), CompareRows().Where(AllTypeProperty.RealCol).NotEquals(2.5f));
+        var offset = new DateTimeOffset(2026, 1, 2, 10, 0, 0, TimeSpan.FromHours(2));
+        CheckTwo(container, "DateTimeOffset?", CompareRows().Where(AllTypeProperty.DateTimeOffsetCol).Equals(offset), CompareRows().Where(AllTypeProperty.DateTimeOffsetCol).NotEquals(offset));
+        var time = new TimeSpan(10, 0, 0).Add(TimeSpan.FromTicks(2));
+        CheckTwo(container, "TimeSpan? time", CompareRows().Where(AllTypeProperty.TimeCol).Equals(time), CompareRows().Where(AllTypeProperty.TimeCol).NotEquals(time));
+        CheckTwo(container, "bool", CompareRows().Where(AllTypeProperty.BitCol).Equals(true), CompareRows().Where(AllTypeProperty.BitCol).NotEquals(true));
+        var guid = new Guid("00000000-0000-0000-0000-000000000002");
+        CheckTwo(container, "Guid", CompareRows().Where(AllTypeProperty.GuidCol).Equals(guid), CompareRows().Where(AllTypeProperty.GuidCol).NotEquals(guid));
+        CheckTwo(container, "string char", CompareRows().Where(AllTypeProperty.CharCol).Equals("b"), CompareRows().Where(AllTypeProperty.CharCol).NotEquals("b"));
+        CheckTwo(container, "string nchar", CompareRows().Where(AllTypeProperty.NCharCol).Equals("b"), CompareRows().Where(AllTypeProperty.NCharCol).NotEquals("b"));
+        CheckTwo(container, "string varchar", CompareRows().Where(AllTypeProperty.VarCharCol).Equals("cmp-b"), CompareRows().Where(AllTypeProperty.VarCharCol).NotEquals("cmp-b"));
+        CheckTwo(container, "string nvarchar", CompareRows().Where(AllTypeProperty.NVarCharCol).Equals("cmp-\u00e9-b"), CompareRows().Where(AllTypeProperty.NVarCharCol).NotEquals("cmp-\u00e9-b"));
+        CheckTwo(container, "string varchar(max)", CompareRows().Where(AllTypeProperty.VarCharMaxCol).Equals("cmp-b"), CompareRows().Where(AllTypeProperty.VarCharMaxCol).NotEquals("cmp-b"));
+        CheckTwo(container, "string nvarchar(max)", CompareRows().Where(AllTypeProperty.NVarCharMaxCol).Equals("cmp-\u00e9-b"), CompareRows().Where(AllTypeProperty.NVarCharMaxCol).NotEquals("cmp-\u00e9-b"));
+
+        Console.WriteLine("PASS comparisons on every type");
+    }
+
+    private static PredicateBuilder<AllTypeProperty> CompareRows()
+    {
+        return new Query<AllTypeProperty>().BeginPredicate().Where(AllTypeProperty.SysNameCol).Equals(_compareMarker);
+    }
+
+    private static void CheckSix(RepositoryContainer container, string type, PredicateBuilder<AllTypeProperty> equal, PredicateBuilder<AllTypeProperty> notEqual, PredicateBuilder<AllTypeProperty> greater, PredicateBuilder<AllTypeProperty> less, PredicateBuilder<AllTypeProperty> greaterOrEqual, PredicateBuilder<AllTypeProperty> lessOrEqual)
+    {
+        CheckTwo(container, type, equal, notEqual);
+        var allTypes = container.TestDb.Coverage.AllType;
+        CheckCount($"{type}, greater than", allTypes.ToList(greater.EndPredicate()), 1);
+        CheckCount($"{type}, less than", allTypes.ToList(less.EndPredicate()), 1);
+        CheckCount($"{type}, greater than or equals", allTypes.ToList(greaterOrEqual.EndPredicate()), 2);
+        CheckCount($"{type}, less than or equals", allTypes.ToList(lessOrEqual.EndPredicate()), 2);
+    }
+
+    private static void CheckTwo(RepositoryContainer container, string type, PredicateBuilder<AllTypeProperty> equal, PredicateBuilder<AllTypeProperty> notEqual)
+    {
+        var allTypes = container.TestDb.Coverage.AllType;
+        CheckCount($"{type}, equals", allTypes.ToList(equal.EndPredicate()), 1);
+        CheckCount($"{type}, not equals", allTypes.ToList(notEqual.EndPredicate()), 2);
+    }
+
+    private static ArgumentException TryUpdate(RepositoryContainer container, Query<AllTypeProperty> query)
+    {
+        try
+        {
+            container.TestDb.Coverage.AllType.Update(query);
+        }
+        catch(ArgumentException ex)
+        {
+            return ex;
+        }
+
+        return null;
+    }
+
+    private static ArgumentException TryFullName(RepositoryContainer container, FullName_Request request)
+    {
+        try
+        {
+            container.TestDb.Coverage.Functions.FullName(request);
+        }
+        catch(ArgumentException ex)
+        {
+            return ex;
+        }
+
+        return null;
+    }
+
+    private static ArgumentException TryCreate(RepositoryContainer container, AllType row)
+    {
+        try
+        {
+            container.TestDb.Coverage.AllType.Create(row);
+        }
+        catch(ArgumentException ex)
+        {
+            return ex;
+        }
+
+        return null;
+    }
+
+    private static ArgumentException TryRead(RepositoryContainer container, Query<AllTypeProperty> query)
+    {
+        try
+        {
+            container.TestDb.Coverage.AllType.ToList(query);
+        }
+        catch(ArgumentException ex)
+        {
+            return ex;
+        }
+
+        return null;
+    }
+
+    private static void CheckTooLong(string name, ArgumentException error, string column)
+    {
+        if(error == null || !error.Message.Contains("The value for " + column + " is", StringComparison.Ordinal) ||!error.Message.Contains("Nothing was sent to the database", StringComparison.Ordinal))
+            throw new InvalidOperationException($"{name}: expected the error for a value longer than {column}, got {(error == null ? "no error" : error.Message)}");
+    }
+
+    private static readonly List<string> _logged = new List<string>();
+
+    private static void LogStatement(string table, string query)
+    {
+        _logged.Add(query);
+    }
+
+    /// <summary>
+    /// The rows: the 14th at 23:59:59, the 15th at midnight, the 16th at 08:00 (a date column holds only the days). The
+    /// filter values are at 15:30: only their day counts.
+    /// </summary>
+    private static void CheckDateFilters(RepositoryContainer container, string column, Prop<AllTypeProperty, DateTime?> prop)
+    {
+        var allTypes = container.TestDb.Coverage.AllType;
+        var the14th = new DateTime(2026, 11, 14, 15, 30, 0);
+        var the15th = new DateTime(2026, 11, 15, 15, 30, 0);
+        var the16th = new DateTime(2026, 11, 16, 15, 30, 0);
+
+        CheckCount($"date equals the 15th, {column}", allTypes.ToList(DateRows().Where(prop).EqualsDate(the15th).EndPredicate()), 1);
+        CheckCount($"date not equal to the 15th, {column}", allTypes.ToList(DateRows().Where(prop).NotEqualsDate(the15th).EndPredicate()), 2);
+        CheckCount($"date after the 15th, {column}", allTypes.ToList(DateRows().Where(prop).GreaterThanDate(the15th).EndPredicate()), 1);
+        //the 15th at midnight is after the 14th
+        CheckCount($"date after the 14th, {column}", allTypes.ToList(DateRows().Where(prop).GreaterThanDate(the14th).EndPredicate()), 2);
+        CheckCount($"date on or after the 15th, {column}", allTypes.ToList(DateRows().Where(prop).GreaterThanOrEqualsDate(the15th).EndPredicate()), 2);
+        CheckCount($"date before the 15th, {column}", allTypes.ToList(DateRows().Where(prop).LessThanDate(the15th).EndPredicate()), 1);
+        CheckCount($"date before the 16th, {column}", allTypes.ToList(DateRows().Where(prop).LessThanDate(the16th).EndPredicate()), 2);
+        CheckCount($"date on or before the 15th, {column}", allTypes.ToList(DateRows().Where(prop).LessThanOrEqualsDate(the15th).EndPredicate()), 2);
+        //the 14th at 23:59:59 is on the 14th; the 15th at midnight is not
+        CheckCount($"date on or before the 14th, {column}", allTypes.ToList(DateRows().Where(prop).LessThanOrEqualsDate(the14th).EndPredicate()), 1);
+
+        Console.WriteLine($"PASS date comparisons, {column}");
+    }
+
+    private static PredicateBuilder<AllTypeProperty> DateRows()
+    {
+        return new Query<AllTypeProperty>().BeginPredicate().Where(AllTypeProperty.VarCharCol).Equals(_country);
+    }
+
+    private static void CheckCount(string name, List<AllType> rows, int expected)
+    {
+        var count = rows == null ? 0 : rows.Count;
+        if(count != expected)
+            throw new InvalidOperationException($"{name}: {count} rows, expected {expected}");
     }
 
     private static Query<RegionProperty> RegionUpdate(string code)
@@ -194,12 +429,26 @@ internal static class Program
                 sql.Append($"INSERT INTO Coverage.Store (CountryCode, RegionCode, Name) VALUES ('{_country}', '{code}', N'Paging {code} store {s}');");
         }
 
+        //the 14th late in the day, the 15th at midnight, the 16th: for the date filters
+        sql.Append($"INSERT INTO Coverage.AllTypes (BigIntCol, VarCharCol, DateCol, DateTime2Col) VALUES (1, '{_country}', '2026-11-14', '2026-11-14T23:59:59'), (2, '{_country}', '2026-11-15', '2026-11-15T00:00:00'), (3, '{_country}', '2026-11-16', '2026-11-16T08:00:00');");
+        //the comparison rows: low, middle and high
+        for(var i = 1; i <= 3; i++)
+        {
+            var letter = (char)('a' + i - 1);
+            var amount = (1.25m * i).ToString(System.Globalization.CultureInfo.InvariantCulture);
+            var real = (0.5 + i).ToString(System.Globalization.CultureInfo.InvariantCulture);
+            sql.Append("INSERT INTO Coverage.AllTypes (BigIntCol, BigIntNull, IntNull, SmallIntCol, TinyIntCol, DecimalCol, NumericCol, MoneyCol, SmallMoneyCol, FloatCol, RealCol, DateCol, DateTimeCol, DateTime2Col, SmallDateTimeCol, DateTimeOffsetCol, TimeCol, BitCol, GuidCol, CharCol, NCharCol, VarCharCol, NVarCharCol, VarCharMaxCol, NVarCharMaxCol, SysNameCol) VALUES (");
+            sql.Append($"{100 + i}, {i}, {10 * i}, {10 * i}, {10 * i}, {amount}, {amount}, {amount}, {amount}, {real}, {real}, ");
+            sql.Append($"'2026-01-0{i}', '2026-01-02T10:00:0{i - 1}', '2026-01-02T10:00:00.000000{i}', '2026-01-02T10:0{i - 1}:00', '2026-01-02T10:00:00+0{i}:00', '10:00:00.000000{i}', {(i == 2 ? 1 : 0)}, '00000000-0000-0000-0000-00000000000{i}', ");
+            sql.Append($"'{letter}', N'{letter}', 'cmp-{letter}', N'cmp-\u00e9-{letter}', 'cmp-{letter}', N'cmp-\u00e9-{letter}', N'{_compareMarker}');");
+        }
+
         Execute(connectionString, sql.ToString());
     }
 
     private static void DeleteTestRows(string connectionString)
     {
-        Execute(connectionString, $"DELETE FROM Coverage.Store WHERE CountryCode = '{_country}'; DELETE FROM Coverage.Region WHERE CountryCode = '{_country}';");
+        Execute(connectionString, $"DELETE FROM Coverage.Store WHERE CountryCode = '{_country}'; DELETE FROM Coverage.Region WHERE CountryCode = '{_country}'; DELETE FROM Coverage.AllTypes WHERE VarCharCol = '{_country}' OR BigIntCol = {_tooLongMarker} OR SysNameCol = N'{_compareMarker}';");
     }
 
     private static void Execute(string connectionString, string sql)

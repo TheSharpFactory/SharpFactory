@@ -296,9 +296,9 @@ public static partial class Database
         }
 
         /// <summary>
-        /// ({column} >= CAST({param} AS DATE)) AND ({column} {lastOp} DATEADD(dd, 1, CAST({param} AS DATE)))
+        /// ({column} >= CAST({param} AS DATE)) AND ({column} &lt; DATEADD(dd, 1, CAST({param} AS DATE))): the parameter's day
         /// </summary>
-        private static void WriteDateRange(ref SqlText w, string colAlias, string lastOp, PropertyInfo prop, string paramSuffix, int paramOrdinal)
+        private static void WriteDateRange(ref SqlText w, string colAlias, PropertyInfo prop, string paramSuffix, int paramOrdinal)
         {
             w.Append('(');
             w.Append(colAlias);
@@ -308,7 +308,7 @@ public static partial class Database
             w.Append(_and);
             w.Append('(');
             w.Append(colAlias);
-            w.Append(lastOp);
+            w.Append(_less);
             WriteNextDay(ref w, prop, paramSuffix, paramOrdinal);
             w.Append(')');
         }
@@ -442,19 +442,22 @@ public static partial class Database
 
                 case FilterConditions.DateEquals://this is the comparisson for DATE part only. it is a  little convoluted but it respects indexes. EF DOES NOT SUPPORT THIS! NOT EVEN COMPARING DATE part!:http://stackoverflow.com/questions/1843395/compare-two-datetime-only-by-date-not-time-in-sql-server-2008
                     w.Append('(');
-                    WriteDateRange(ref w, colAlias, _less, prop, paramSuffix, paramOrdinal);
+                    WriteDateRange(ref w, colAlias, prop, paramSuffix, paramOrdinal);
                     w.Append(')');
                     return;
 
                 case FilterConditions.DateNotEquals:
                     w.Append("(NOT(");
-                    WriteDateRange(ref w, colAlias, _less, prop, paramSuffix, paramOrdinal);
+                    WriteDateRange(ref w, colAlias, prop, paramSuffix, paramOrdinal);
                     w.Append("))");
                     return;
 
                 case FilterConditions.DateGreaterThan:
+                    //on or after the start of the next day: a value at exactly that midnight is on a later day too
                     w.Append('(');
-                    WriteDateRange(ref w, colAlias, _greater, prop, paramSuffix, paramOrdinal);
+                    w.Append(colAlias);
+                    w.Append(_greaterEquals);
+                    WriteNextDay(ref w, prop, paramSuffix, paramOrdinal);
                     w.Append(')');
                     return;
 

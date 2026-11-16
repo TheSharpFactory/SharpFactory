@@ -281,6 +281,38 @@ public sealed class EngineUnitTests
     }
 
     [Fact]
+    public void AModelOnTheMasterDatabaseIsNeitherAcceptedNorSaved()
+    {
+        var container = Fixtures.LoadCoverage();
+        var conInfo = new ConnectionInfo { Server = "localhost", Database = " Master ", DisableIntegratedSecurity = false };
+        Assert.Contains(ModelValidation.DatabaseIsMaster, ModelValidation.ValidateDbInfo(container, "Other", conInfo, true));
+
+        using(var folder = new TestFolder())
+        {
+            var file = folder.Combine("Model.edmj");
+            container.Models[0].ConInfo.Database = "master";
+            var error = (InvalidOperationException)null;
+            try
+            {
+                ModelUtils.Save(container, file);
+            }
+            catch(InvalidOperationException ex)
+            {
+                error = ex;
+            }
+
+            Assert.NotNull(error);
+            Assert.Contains("master", error.Message, StringComparison.Ordinal);
+            Assert.False(File.Exists(file));
+
+            //any other database saves
+            container.Models[0].ConInfo.Database = "Sales";
+            ModelUtils.Save(container, file);
+            Assert.True(File.Exists(file));
+        }
+    }
+
+    [Fact]
     public void ValidationRulesMatchTheOldApp()
     {
         var container = Fixtures.LoadCoverage();

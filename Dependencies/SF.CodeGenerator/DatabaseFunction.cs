@@ -28,6 +28,7 @@ public static partial class Database
         internal static void Execute(int modelId, int funcId, bool isScalar, SqlParameter[] param, Action<SqlDataReader> materializer)
         {
             var entityInfo = RepoLookup.Functions[funcId];
+            Parameters.CheckSizes(param);
             var query = _select;
 
             if(isScalar)
@@ -40,6 +41,7 @@ public static partial class Database
         internal static Task<bool> ExecuteAsync(int modelId, int funcId, bool isScalar, SqlParameter[] param, Action<SqlDataReader> materializer)
         {
             var entityInfo = RepoLookup.Functions[funcId];
+            Parameters.CheckSizes(param);
             var query = _select;
 
             if(isScalar)
