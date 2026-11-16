@@ -101,7 +101,7 @@ public sealed class GeneratedPagingTests
         project.AppendLine("    <Compile Include=\"Program.cs\" />");
         project.AppendLine("  </ItemGroup>");
         project.AppendLine("  <ItemGroup>");
-        project.AppendLine("    <PackageReference Include=\"Microsoft.Data.SqlClient\" Version=\"7.1.1\" />");
+        project.AppendLine("    <PackageReference Include=\"Microsoft.Data.SqlClient\" Version=\"7.1.2\" />");
         project.AppendLine("    <PackageReference Include=\"Microsoft.SqlServer.Types\" Version=\"170.1000.7\" />");
         //SqlClient's own Pkcs dependency has known vulnerabilities: the fixed version
         project.AppendLine("    <PackageReference Include=\"System.Security.Cryptography.Pkcs\" Version=\"10.0.14\" />");

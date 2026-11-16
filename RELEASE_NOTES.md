@@ -5,6 +5,32 @@ release gives them its version. Version rules: see [BACKLOG.md](BACKLOG.md).
 
 ---
 
+## Unreleased
+
+### Microsoft.Data.SqlClient 7.1.2 (SF-230)
+
+Changes
+- `Microsoft.Data.SqlClient` 7.1.1 → 7.1.2 in the app's `SF.Db` project and in the Repository project Sync creates
+  (`ProjectFileTemplate`). `GeneratedPagingTests` builds the generated code against 7.1.2 and `SolutionSyncTests`
+  expects it in a new Repository project. The `System.Security.Cryptography.Pkcs` 10.0.14 pin stays.
+
+Verification
+- Restore resolves `Microsoft.Data.SqlClient` 7.1.2 and `System.Security.Cryptography.Pkcs` 10.0.14 for `SF.Db`.
+- `SF.Tests` 163 passed, `SF.CSharpWriter.Tests` 242 passed, `SF.App.Tests` 120 passed, with the database tests on.
+
+Commit details
+
+```
+Use Microsoft.Data.SqlClient 7.1.2
+
+The app and the Repository project Sync creates use SqlClient 7.1.2
+instead of 7.1.1; the tests that expect the version follow.
+
+Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>
+```
+
+---
+
 ## 1.2.2.2 — 2026-11-15
 
 ### Review of the Sync page change (SF-217)

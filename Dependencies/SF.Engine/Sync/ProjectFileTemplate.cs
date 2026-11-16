@@ -32,7 +32,7 @@ public static class ProjectFileTemplate
         if(addSqlClient)
         {
             b.Append("  <ItemGroup>").Append(_newLine);
-            b.Append("    <PackageReference Include=\"Microsoft.Data.SqlClient\" Version=\"7.1.1\" />").Append(_newLine);
+            b.Append("    <PackageReference Include=\"Microsoft.Data.SqlClient\" Version=\"7.1.2\" />").Append(_newLine);
             b.Append("  </ItemGroup>").Append(_newLine);
             b.Append(_newLine);
         }

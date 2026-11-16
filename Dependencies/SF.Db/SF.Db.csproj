@@ -7,7 +7,7 @@
   </PropertyGroup>
 
   <ItemGroup>
-      <PackageReference Include="Microsoft.Data.SqlClient" Version="7.1.1"  />
+      <PackageReference Include="Microsoft.Data.SqlClient" Version="7.1.2"  />
       <!-- patched version of a package Microsoft.Data.SqlClient brings in (GHSA-846f-f764-76mx in 9.0.x) -->
       <PackageReference Include="System.Security.Cryptography.Pkcs" Version="10.0.14" />
   </ItemGroup>

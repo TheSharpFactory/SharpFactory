@@ -57,7 +57,7 @@ public sealed class SolutionSyncTests
             {
                 var text = File.ReadAllText(folder.Combine("DataAccess", project, project + ".csproj"));
                 if(project == "SFTest.Repository")
-                    Assert.Contains("<PackageReference Include=\"Microsoft.Data.SqlClient\" Version=\"7.1.1\" />", text);
+                    Assert.Contains("<PackageReference Include=\"Microsoft.Data.SqlClient\" Version=\"7.1.2\" />", text);
                 else
                     Assert.DoesNotContain("PackageReference", text);
             }

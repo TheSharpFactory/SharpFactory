@@ -3,6 +3,25 @@
 What changed in each published release of The Sharp Factory, newest first. Each section is also the text of that
 release on GitHub, with its downloads.
 
+## Unreleased
+
+### Changes
+
+- **Microsoft.Data.SqlClient 7.1.2.** The app, the command line and the Repository project Sync creates use
+  `Microsoft.Data.SqlClient` 7.1.2 (was 7.1.1). Projects Sync created before keep the version they have: change it
+  in the Repository project's file if you want the new one.
+
+### Downloads
+
+| Download | What |
+|---|---|
+| `TheSharpFactory-win-x64.zip`, `TheSharpFactory-win-arm64.zip` | The app for Windows |
+| `TheSharpFactory-osx-arm64.zip`, `TheSharpFactory-osx-x64.zip` | The app for macOS (Apple silicon, Intel) |
+| `TheSharpFactory-linux-x64.tar.gz` | The app for Linux |
+| `sharpfactory-cli-*` | The command line, `sharpfactory`, for the same systems |
+
+---
+
 ## 1.2.2.2 — 2026-11-15
 
 ### What's new
