@@ -16,7 +16,8 @@ Changes
   "KeyNotFoundException: The given key '1' was not present in the dictionary". Found while writing the website's
   Troubleshooting page. The public surface and the SQL sent do not change.
 - `GeneratedPagingTests` (its runner, `Fixtures/PagingRunner`): a query before the runner registers its connection
-  string must throw that message.
+  string must throw that message. The check runs inside the runner's `try`, so a failure prints `FAIL` like the
+  other checks (from the code review).
 
 Verification
 - SF.Tests 164 passed, none skipped (with the test database variables set, so `PagedReadsWorkOnSqlServer` ran the new

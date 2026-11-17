@@ -30,10 +30,10 @@ internal static class Program
     {
         //in the environment, not on the command line, so a password does not show in the process list
         var connectionString = Environment.GetEnvironmentVariable("SF_PAGING_CONNECTION");
-        CheckUnregisteredModel();
-        Database.RegisterModelConnectionString(RepoLookup.ModelId.TestDb, connectionString);
         try
         {
+            CheckUnregisteredModel();
+            Database.RegisterModelConnectionString(RepoLookup.ModelId.TestDb, connectionString);
             DeleteTestRows(connectionString);
             InsertTestRows(connectionString);
             RunAsync().GetAwaiter().GetResult();
