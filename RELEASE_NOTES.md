@@ -5,7 +5,7 @@ release gives them its version. Version rules: see [BACKLOG.md](BACKLOG.md).
 
 ---
 
-## Unreleased
+## 1.2.2.5 — 2026-11-17
 
 ### A clear error when no connection string is registered (SF-232)
 
