@@ -5,7 +5,7 @@ release gives them its version. Version rules: see [BACKLOG.md](BACKLOG.md).
 
 ---
 
-## Unreleased
+## 1.2.2.4 — 2026-11-17
 
 ### Navigation properties two or more levels deep (SF-231)
 
