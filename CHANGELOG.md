@@ -3,6 +3,33 @@
 What changed in each published release of The Sharp Factory, newest first. Each section is also the text of that
 release on GitHub, with its downloads.
 
+## Unreleased
+
+### Fixes
+
+- **Navigation properties two or more levels deep.** These now load correctly in the generated code (regenerate with
+  Sync to get the fix):
+  - With `First`, `FirstOrDefault`, `Single` or `Top`, a query with a second level such as
+    `.Append(CustomerNavProperty.Orders).Then(OrderNavProperty.Lines)` failed in SQL Server with "The ORDER BY clause
+    is invalid in … subqueries".
+  - With paging, the second level skipped rows (an order came back without its lines).
+  - A query with a `Where` and three levels failed with "The multi-part identifier … could not be bound".
+  - With paging, a to-many property under a to-one property (a page of customers with
+    `.Append(CustomerNavProperty.City).Then(CityNavProperty.Customers)`) loaded its rows twice.
+
+  Queries with one level, or without `Top`, `First`, `Single` or paging, send the same SQL as before.
+
+### Downloads
+
+| Download | What |
+|---|---|
+| `TheSharpFactory-win-x64.zip`, `TheSharpFactory-win-arm64.zip` | The app for Windows |
+| `TheSharpFactory-osx-arm64.zip`, `TheSharpFactory-osx-x64.zip` | The app for macOS (Apple silicon, Intel) |
+| `TheSharpFactory-linux-x64.tar.gz` | The app for Linux |
+| `sharpfactory-cli-*` | The command line, `sharpfactory`, for the same systems |
+
+---
+
 ## 1.2.2.3 — 2026-11-16
 
 ### Changes

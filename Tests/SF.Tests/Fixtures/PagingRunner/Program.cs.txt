@@ -93,6 +93,10 @@ internal static class Program
 
         Console.WriteLine("PASS navigation properties from a collection initializer");
 
+        //two levels of navigation properties under TOP and paging: the second level wraps the first, which already holds
+        //the limited main select, so it must not repeat the ORDER BY (an error without TOP) or the OFFSET (wrong rows)
+        CheckTwoLevels(stores, regions);
+
         //a to-one navigation property on a paged query, sync and async
         var storePage = StorePage();
         CheckStores("page with a to-one navigation property", stores.ToList(storePage));
@@ -364,6 +368,88 @@ internal static class Program
             .BeginPredicate().Where(RegionProperty.CountryCode).Equals(_country).EndPredicate()
             .BeginSorting().OrderBy(RegionProperty.RegionCode).EndSorting()
             .BeginPagination().PageSize(10).PageNumber(pageNumber).ReturnTotalCount(returnTotal).EndPagination();
+    }
+
+    private static void CheckTwoLevels(SFTest.Repository.Interfaces.TestDb.Coverage.IStoreRepository stores, SFTest.Repository.Interfaces.TestDb.Coverage.IRegionRepository regions)
+    {
+        //First: the store, its region, and the region's stores (a child two levels down)
+        var first = stores.First(StoresWithRegionStores());
+        if(first.Region == null || first.Region.Stores == null || first.Region.Stores.Count != _storesPerRegion)
+            throw new InvalidOperationException($"First with two levels of navigation properties: {first.Region?.Stores?.Count ?? 0} stores in the region, expected {_storesPerRegion}");
+
+        Console.WriteLine("PASS First with two levels of navigation properties");
+
+        var top = stores.Top(3, StoresWithRegionStores());
+        CheckStoresWithRegionStores("Top with two levels of navigation properties", top, 3);
+
+        //a page of regions, their stores, and each store's region
+        var regionPage = RegionPage(2, true).BeginNavProps().Append(RegionNavProperty.Stores).Then(StoreNavProperty.Region).EndNavProps();
+        var regionRows = regions.ToList(regionPage);
+        CheckRegions("page with two levels of navigation properties, a parent below a child", regionRows, 11);
+        foreach(var region in regionRows)
+        {
+            if(region.Stores == null || region.Stores.Count != _storesPerRegion)
+                throw new InvalidOperationException($"page with two levels of navigation properties: {region.RegionCode} has {region.Stores?.Count ?? 0} stores, expected {_storesPerRegion}");
+
+            foreach(var store in region.Stores)
+            {
+                if(store.Region == null || !string.Equals(store.Region.RegionCode, region.RegionCode, StringComparison.Ordinal))
+                    throw new InvalidOperationException($"page with two levels of navigation properties: store {store.Name} has no region or the wrong one");
+            }
+        }
+
+        Console.WriteLine("PASS page with two levels of navigation properties, every store's region");
+
+        //a page of stores, their regions, and the regions' stores: each region once, so its stores are not repeated
+        var storePage = StoresWithRegionStores().BeginPagination().PageSize(10).PageNumber(2).ReturnTotalCount(true).EndPagination();
+        CheckStoresWithRegionStores("page with two levels of navigation properties, a child below a parent", stores.ToList(storePage), 10);
+
+        //three levels with a WHERE: the main select's WHERE names its alias, which only the first level below can see
+        //(the third level here, a store's region, is below a child, where the WHERE was repeated)
+        var threeLevels = new Query<StoreProperty>()
+            .BeginPredicate().Where(StoreProperty.CountryCode).Equals(_country).EndPredicate()
+            .BeginNavProps().Append(StoreNavProperty.Region).Then(RegionNavProperty.Stores).Then(StoreNavProperty.Region).EndNavProps();
+        var deep = stores.ToList(threeLevels);
+        if(deep == null || deep.Count != _regionCount * _storesPerRegion)
+            throw new InvalidOperationException($"three levels of navigation properties with a WHERE: {deep?.Count ?? 0} stores, expected {_regionCount * _storesPerRegion}");
+
+        foreach(var store in deep)
+        {
+            if(store.Region == null || store.Region.Stores == null || store.Region.Stores.Count != _storesPerRegion)
+                throw new InvalidOperationException($"three levels of navigation properties with a WHERE: the region of {store.Name} has {store.Region?.Stores?.Count ?? 0} stores, expected {_storesPerRegion}");
+
+            foreach(var sibling in store.Region.Stores)
+            {
+                if(sibling.Region == null || !string.Equals(sibling.Region.RegionCode, store.RegionCode, StringComparison.Ordinal))
+                    throw new InvalidOperationException($"three levels of navigation properties with a WHERE: store {sibling.Name} has no region or the wrong one");
+            }
+        }
+
+        Console.WriteLine("PASS three levels of navigation properties with a WHERE");
+    }
+
+    private static Query<StoreProperty> StoresWithRegionStores()
+    {
+        return new Query<StoreProperty>()
+            .BeginPredicate().Where(StoreProperty.CountryCode).Equals(_country).EndPredicate()
+            .BeginSorting().OrderBy(StoreProperty.Name).EndSorting()
+            .BeginNavProps().Append(StoreNavProperty.Region).Then(RegionNavProperty.Stores).EndNavProps();
+    }
+
+    private static void CheckStoresWithRegionStores(string name, List<Store> rows, int expected)
+    {
+        if(rows == null || rows.Count != expected)
+            throw new InvalidOperationException($"{name}: {rows?.Count ?? 0} rows, expected {expected}");
+
+        foreach(var store in rows)
+        {
+            if(store.Region == null || !string.Equals(store.Region.RegionCode, store.RegionCode, StringComparison.Ordinal))
+                throw new InvalidOperationException($"{name}: store {store.Name} has no region or the wrong one");
+            if(store.Region.Stores == null || store.Region.Stores.Count != _storesPerRegion)
+                throw new InvalidOperationException($"{name}: the region of {store.Name} has {store.Region.Stores?.Count ?? 0} stores, expected {_storesPerRegion}");
+        }
+
+        Console.WriteLine("PASS " + name);
     }
 
     private static Query<StoreProperty> StorePage()

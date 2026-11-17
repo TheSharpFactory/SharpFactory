@@ -822,7 +822,11 @@ public static partial class Database
                 var navPropSelect = string.Create(measure.Length, text, _writeNavProp);
 
                 statements[index++] = navPropSelect;
-                ComposeNavProps(statements, ref index, subEntity, alias, depth + 1, paginationSettings, navProp.NavProps, navPropSelect, where, predicateSuffix, predicateSuffixForParentNavProperty, topOrPagingEnabled, navProp.IsParent);
+
+                //the levels below wrap this statement, which already holds the main select with its WHERE, TOP, ORDER BY
+                //and paging: repeating the ORDER BY there is an error without TOP, a second OFFSET returns the wrong rows,
+                //and the WHERE names the main select's alias, which only the level right below the main select can see
+                ComposeNavProps(statements, ref index, subEntity, alias, depth + 1, paginationSettings, navProp.NavProps, navPropSelect, depth == 1 ? where : string.Empty, string.Empty, string.Empty, false, navProp.IsParent);
             }
         }
 
@@ -873,6 +877,33 @@ public static partial class Database
                 }
 
                 w.Append(text.PredicateSuffix);
+                w.Append(')');
+                return;
+            }
+
+            if(text.NavProp.IsParent && text.NavProp.NavProps?.Count > 0)
+            {
+                //a paged parent with nav props of its own: each parent once, or the level below repeats its rows
+                //    SELECT ... WHERE EXISTS (SELECT 1 FROM (the main select) AS owner WHERE nav prop predicate)
+                w.Append(_whereExists);
+                w.Append("(SELECT 1");
+                w.Append(_from);
+                w.Append('(');
+                w.Append(text.Select);
+                if(!string.IsNullOrWhiteSpace(text.Where))
+                {
+                    w.Append(_where);
+                    w.Append('(');
+                    w.Append(text.Where);
+                    w.Append(')');
+                }
+
+                w.Append(text.PredicateSuffix);
+                w.Append(')');
+                w.Append(_as);
+                w.Append(text.OwnerAlias);
+                w.Append(_where);
+                WriteNavPredicate(ref w, entityInfo, otherEntityInfo, text);
                 w.Append(')');
                 return;
             }

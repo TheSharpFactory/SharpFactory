@@ -5,6 +5,65 @@ release gives them its version. Version rules: see [BACKLOG.md](BACKLOG.md).
 
 ---
 
+## Unreleased
+
+### Navigation properties two or more levels deep (SF-231)
+
+Changes
+- `DatabaseSelect.cs` (the generated `SQLEngine`), `ComposeNavProps`. Each level below the first wraps the statement
+  of the level above, which already holds the main select with its WHERE, TOP, ORDER BY and paging.
+  - The levels below no longer repeat the ORDER BY and paging:
+    - without `TOP` in that statement, the `ORDER BY` was an error in SQL Server (`First`, `FirstOrDefault`, `Single`
+      and `Top` with two levels);
+    - a second `OFFSET … FETCH` paged the joined rows of the level above instead of the main rows, so rows went
+      missing with no error.
+  - The main select's WHERE goes only to the level right below it. It names the main select's alias, which deeper
+    levels cannot see ("The multi-part identifier … could not be bound" with a `Where` and three levels).
+- `WriteNavProp`: a paged to-one navigation property that has navigation properties of its own now selects each parent
+  once, `WHERE EXISTS (SELECT 1 FROM (the main select) AS owner WHERE predicate)`. The `INNER JOIN (SELECT DISTINCT
+  [x].* …)` form returned a parent once per row of the page, and the level below repeated its rows for each copy.
+  Paged to-one properties with nothing below them keep the join.
+- `GeneratedPagingTests` (its runner, `Fixtures/PagingRunner`) checks, against the test database:
+  - `First` and `Top` with Store → Region → Stores;
+  - a page of regions with Stores → Region;
+  - a page of stores with Region → Stores;
+  - Store → Region → Stores → Region with a `Where`.
+
+Verification
+- Each new check fails without its fix:
+  - the `ORDER BY` error without the first;
+  - "M.CountryCode could not be bound" without the WHERE change;
+  - a region with 4 stores instead of 2 without the paged-parent change.
+- With the fixes, all of them pass.
+- Code generated before and after the change, compared on a test database with customers, orders, lines, products
+  and cities:
+  - the setup: 183 queries (about 20 navigation property shapes of one to three levels, child and parent, mixed,
+    against `ToList` with and without `Where` and sorting, `Top` sorted and unsorted, `First`, `FirstOrDefault`,
+    `Single`, two pages, and `ByPK`);
+  - 122 send the same SQL and load the same rows as before;
+  - the other 61 failed or loaded the wrong rows before, and now load the right ones (each loaded entity's tree equals
+    the one from the same query without TOP or paging, and TOP and paging choose the same rows as the sorted list);
+  - in the generated code, only `DatabaseSelect.cs` changes.
+- `SF.Tests` 163 passed, `SF.CSharpWriter.Tests` 242 passed, `SF.App.Tests` 120 passed, with the database tests on.
+
+Commit details
+
+```
+Fix navigation properties two or more levels deep
+
+The levels below the first wrap the statement above them, which already
+holds the main select: they no longer repeat its ORDER BY and paging
+(an error with First, Single and Top; wrong rows with paging), and the
+WHERE goes only one level down, where its alias is in scope. A paged
+to-one navigation property with navigation properties of its own selects
+each parent once, so the level below does not load its rows twice.
+GeneratedPagingTests checks each case against the test database.
+
+Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>
+```
+
+---
+
 ## 1.2.2.3 — 2026-11-16
 
 ### Microsoft.Data.SqlClient 7.1.2 (SF-230)

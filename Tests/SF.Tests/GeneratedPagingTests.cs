@@ -73,6 +73,11 @@ public sealed class GeneratedPagingTests
             Assert.Contains("PASS page with a to-many navigation property, the total", output, StringComparison.Ordinal);
             Assert.Contains("PASS page with a to-one navigation property, async", output, StringComparison.Ordinal);
             Assert.Contains("PASS navigation properties from a collection initializer", output, StringComparison.Ordinal);
+            Assert.Contains("PASS First with two levels of navigation properties", output, StringComparison.Ordinal);
+            Assert.Contains("PASS Top with two levels of navigation properties", output, StringComparison.Ordinal);
+            Assert.Contains("PASS page with two levels of navigation properties, every store's region", output, StringComparison.Ordinal);
+            Assert.Contains("PASS page with two levels of navigation properties, a child below a parent", output, StringComparison.Ordinal);
+            Assert.Contains("PASS three levels of navigation properties with a WHERE", output, StringComparison.Ordinal);
             Assert.Contains("PASS update from GetChanges", output, StringComparison.Ordinal);
             Assert.Contains("PASS update from CreateChange", output, StringComparison.Ordinal);
             Assert.Contains("PASS date comparisons, date column", output, StringComparison.Ordinal);
