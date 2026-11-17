@@ -13,9 +13,6 @@ release on GitHub, with its downloads.
     `.Append(CustomerNavProperty.Orders).Then(OrderNavProperty.Lines)` failed in SQL Server with "The ORDER BY clause
     is invalid in … subqueries".
   - With paging, the second level skipped rows (an order came back without its lines).
-  - A query with a `Where` and three levels failed with "The multi-part identifier … could not be bound".
-  - With paging, a to-many property under a to-one property (a page of customers with
-    `.Append(CustomerNavProperty.City).Then(CityNavProperty.Customers)`) loaded its rows twice.
 
   Queries with one level, or without `Top`, `First`, `Single` or paging, send the same SQL as before.
 

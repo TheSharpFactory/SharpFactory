@@ -10,54 +10,56 @@ release gives them its version. Version rules: see [BACKLOG.md](BACKLOG.md).
 ### Navigation properties two or more levels deep (SF-231)
 
 Changes
-- `DatabaseSelect.cs` (the generated `SQLEngine`), `ComposeNavProps`. Each level below the first wraps the statement
-  of the level above, which already holds the main select with its WHERE, TOP, ORDER BY and paging.
-  - The levels below no longer repeat the ORDER BY and paging:
-    - without `TOP` in that statement, the `ORDER BY` was an error in SQL Server (`First`, `FirstOrDefault`, `Single`
-      and `Top` with two levels);
-    - a second `OFFSET … FETCH` paged the joined rows of the level above instead of the main rows, so rows went
-      missing with no error.
-  - The main select's WHERE goes only to the level right below it. It names the main select's alias, which deeper
-    levels cannot see ("The multi-part identifier … could not be bound" with a `Where` and three levels).
-- `WriteNavProp`: a paged to-one navigation property that has navigation properties of its own now selects each parent
-  once, `WHERE EXISTS (SELECT 1 FROM (the main select) AS owner WHERE predicate)`. The `INNER JOIN (SELECT DISTINCT
-  [x].* …)` form returned a parent once per row of the page, and the level below repeated its rows for each copy.
-  Paged to-one properties with nothing below them keep the join.
-- `GeneratedPagingTests` (its runner, `Fixtures/PagingRunner`) checks, against the test database:
+- `DatabaseSelect.cs` (the generated `SQLEngine`), `ComposeNavProps`: each level below the first wraps the statement
+  of the level above, which already holds the main select with its TOP, ORDER BY and paging. The levels below no
+  longer repeat the ORDER BY and paging:
+  - without `TOP` in that statement, the `ORDER BY` was an error in SQL Server (`First`, `FirstOrDefault`, `Single`
+    and `Top` with two levels);
+  - a second `OFFSET … FETCH` paged the joined rows of the level above instead of the main rows, so rows went missing
+    with no error.
+- `GeneratedPagingTests` (its runner, `Fixtures/PagingRunner`) checks against the test database:
   - `First` and `Top` with Store → Region → Stores;
-  - a page of regions with Stores → Region;
-  - a page of stores with Region → Stores;
-  - Store → Region → Stores → Region with a `Where`.
+  - a page of regions with Stores → Region.
+- The first commit of this change also changed two older cases nobody had reported: the WHERE with three levels, and
+  each to-one parent once on paged queries. Together they broke a paged query with a `Where` and a to-one property
+  under a to-one property, which worked before, so the second commit takes them out. Both older cases stay as they
+  were in 1.2.2.3.
 
 Verification
-- Each new check fails without its fix:
-  - the `ORDER BY` error without the first;
-  - "M.CountryCode could not be bound" without the WHERE change;
-  - a region with 4 stores instead of 2 without the paged-parent change.
-- With the fixes, all of them pass.
-- Code generated before and after the change, compared on a test database with customers, orders, lines, products
-  and cities:
-  - the setup: 183 queries (about 20 navigation property shapes of one to three levels, child and parent, mixed,
-    against `ToList` with and without `Where` and sorting, `Top` sorted and unsorted, `First`, `FirstOrDefault`,
-    `Single`, two pages, and `ByPK`);
-  - 122 send the same SQL and load the same rows as before;
-  - the other 61 failed or loaded the wrong rows before, and now load the right ones (each loaded entity's tree equals
-    the one from the same query without TOP or paging, and TOP and paging choose the same rows as the sorted list);
-  - in the generated code, only `DatabaseSelect.cs` changes.
-- `SF.Tests` 163 passed, `SF.CSharpWriter.Tests` 242 passed, `SF.App.Tests` 120 passed, with the database tests on.
+- Compared with 1.2.2.3 on generated code that differs only in this line of `DatabaseSelect.cs`, against two
+  databases, 11,188 cases in all:
+  - a customer and order schema: 190 navigation property shapes (every chain one to four levels deep from each of
+    five tables, and pairs of chains);
+  - the test schema: 224 shapes over a self-referencing table, two foreign keys to one table, a two-column foreign key
+    and one-to-one tables;
+  - each shape through 27 query kinds: `ToList` with and without `Where` and sorting, `Top` (1, 3, 100; sorted and
+    not), `First`, `FirstOrDefault`, `Single`, pages (first, middle, last, past the end, page size 1, with and without
+    the total, with and without `Where`), the async forms, and `ByPK`.
+- Each case's right answer comes from the same query without TOP or paging, sorted, cut and paged in the program.
+  Those queries send the same SQL as in 1.2.2.3 (1,656 of 1,656).
+- Results:
+  - nothing that worked in 1.2.2.3 changed: 0 cases right before and wrong now, 0 cases that ran before and return
+    something else now without a right answer to compare;
+  - 1,644 cases are right in both versions;
+  - 4,118 cases are right now and were wrong before: 3,869 failed and 249 loaded the wrong rows.
+  - What stays wrong was wrong in 1.2.2.3 too:
+    - the WHERE with three levels still fails;
+    - a page of a to-many property under a to-one property repeats rows. Page 2 and later used to come back with that
+      property empty; they now repeat rows like the first page always did.
+- `SF.Tests`, `SF.CSharpWriter.Tests` and `SF.App.Tests` passed, with the database tests on.
 
 Commit details
 
 ```
-Fix navigation properties two or more levels deep
+Take out the two extra navigation property changes
 
-The levels below the first wrap the statement above them, which already
-holds the main select: they no longer repeat its ORDER BY and paging
-(an error with First, Single and Top; wrong rows with paging), and the
-WHERE goes only one level down, where its alias is in scope. A paged
-to-one navigation property with navigation properties of its own selects
-each parent once, so the level below does not load its rows twice.
-GeneratedPagingTests checks each case against the test database.
+Keep only the fix for TOP, First, Single and paging with two or more
+levels. The WHERE change for three levels and the WHERE EXISTS form for
+paged to-one properties come out: together they broke a paged query
+with a Where and a to-one property under a to-one property, which
+worked before. Compared with 1.2.2.3 on every navigation property shape
+up to four levels deep through 27 query kinds, 11,188 cases on two
+schemas: nothing that worked before changed.
 
 Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>
 ```

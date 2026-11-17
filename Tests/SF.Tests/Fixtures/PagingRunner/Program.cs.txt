@@ -399,33 +399,6 @@ internal static class Program
         }
 
         Console.WriteLine("PASS page with two levels of navigation properties, every store's region");
-
-        //a page of stores, their regions, and the regions' stores: each region once, so its stores are not repeated
-        var storePage = StoresWithRegionStores().BeginPagination().PageSize(10).PageNumber(2).ReturnTotalCount(true).EndPagination();
-        CheckStoresWithRegionStores("page with two levels of navigation properties, a child below a parent", stores.ToList(storePage), 10);
-
-        //three levels with a WHERE: the main select's WHERE names its alias, which only the first level below can see
-        //(the third level here, a store's region, is below a child, where the WHERE was repeated)
-        var threeLevels = new Query<StoreProperty>()
-            .BeginPredicate().Where(StoreProperty.CountryCode).Equals(_country).EndPredicate()
-            .BeginNavProps().Append(StoreNavProperty.Region).Then(RegionNavProperty.Stores).Then(StoreNavProperty.Region).EndNavProps();
-        var deep = stores.ToList(threeLevels);
-        if(deep == null || deep.Count != _regionCount * _storesPerRegion)
-            throw new InvalidOperationException($"three levels of navigation properties with a WHERE: {deep?.Count ?? 0} stores, expected {_regionCount * _storesPerRegion}");
-
-        foreach(var store in deep)
-        {
-            if(store.Region == null || store.Region.Stores == null || store.Region.Stores.Count != _storesPerRegion)
-                throw new InvalidOperationException($"three levels of navigation properties with a WHERE: the region of {store.Name} has {store.Region?.Stores?.Count ?? 0} stores, expected {_storesPerRegion}");
-
-            foreach(var sibling in store.Region.Stores)
-            {
-                if(sibling.Region == null || !string.Equals(sibling.Region.RegionCode, store.RegionCode, StringComparison.Ordinal))
-                    throw new InvalidOperationException($"three levels of navigation properties with a WHERE: store {sibling.Name} has no region or the wrong one");
-            }
-        }
-
-        Console.WriteLine("PASS three levels of navigation properties with a WHERE");
     }
 
     private static Query<StoreProperty> StoresWithRegionStores()
