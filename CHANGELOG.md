@@ -3,6 +3,16 @@
 What changed in each published release of The Sharp Factory, newest first. Each section is also the text of that
 release on GitHub, with its downloads.
 
+## Unreleased
+
+### Fixes
+
+- **A query before the connection string is registered** says what to do. The generated code threw
+  "KeyNotFoundException: The given key '1' was not present in the dictionary"; now it throws an
+  `InvalidOperationException`: "No connection string is registered for the model with id 1. Call
+  Database.RegisterModelConnectionString with that model's RepoLookup.ModelId and its connection string once, when
+  the application starts, before the first query." Regenerate with Sync to get it.
+
 ## 1.2.2.4 — 2026-11-17
 
 ### Fixes

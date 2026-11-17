@@ -5,6 +5,41 @@ release gives them its version. Version rules: see [BACKLOG.md](BACKLOG.md).
 
 ---
 
+## Unreleased
+
+### A clear error when no connection string is registered (SF-232)
+
+Changes
+- `Database.cs` (the generated `SQLEngine`): the seven places that read a model's connection string go through one
+  private method, `ConnectionString(modelId)`. When the model has none, it throws an `InvalidOperationException` that
+  names `Database.RegisterModelConnectionString` and `RepoLookup.ModelId`, instead of the dictionary's
+  "KeyNotFoundException: The given key '1' was not present in the dictionary". Found while writing the website's
+  Troubleshooting page. The public surface and the SQL sent do not change.
+- `GeneratedPagingTests` (its runner, `Fixtures/PagingRunner`): a query before the runner registers its connection
+  string must throw that message.
+
+Verification
+- SF.Tests 164 passed, none skipped (with the test database variables set, so `PagedReadsWorkOnSqlServer` ran the new
+  check); SF.CSharpWriter.Tests 242 passed; SF.App.Tests 121 passed.
+- A solution synced with the command line built from this commit (Sync changed only `Database.cs`): its console app
+  without the registration stops with the new message; with it, the app prints the same rows as before.
+
+Commit
+```
+Say how to register the connection string when it is missing
+
+The generated Database class read each model's connection string with a
+dictionary indexer, so a query before RegisterModelConnectionString
+failed with "The given key '1' was not present in the dictionary". The
+seven reads go through one method that throws an InvalidOperationException
+naming RegisterModelConnectionString and RepoLookup.ModelId.
+GeneratedPagingTests checks the message before its runner registers.
+
+Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>
+```
+
+---
+
 ## 1.2.2.4 — 2026-11-17
 
 ### Navigation properties two or more levels deep (SF-231)

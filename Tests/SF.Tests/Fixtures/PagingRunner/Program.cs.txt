@@ -30,6 +30,7 @@ internal static class Program
     {
         //in the environment, not on the command line, so a password does not show in the process list
         var connectionString = Environment.GetEnvironmentVariable("SF_PAGING_CONNECTION");
+        CheckUnregisteredModel();
         Database.RegisterModelConnectionString(RepoLookup.ModelId.TestDb, connectionString);
         try
         {
@@ -48,6 +49,22 @@ internal static class Program
         {
             DeleteTestRows(connectionString);
         }
+    }
+
+    //before the connection string is registered, a query says how to register it (it used to be "key not found")
+    private static void CheckUnregisteredModel()
+    {
+        try
+        {
+            new RepositoryContainer().TestDb.Coverage.Region.ToList();
+        }
+        catch(InvalidOperationException ex) when(ex.Message.Contains("Database.RegisterModelConnectionString", StringComparison.Ordinal))
+        {
+            Console.WriteLine("PASS a query before the connection string is registered");
+            return;
+        }
+
+        throw new InvalidOperationException("A query before the connection string was registered did not say how to register it");
     }
 
     private static async Task RunAsync()

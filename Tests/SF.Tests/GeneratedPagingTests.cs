@@ -83,6 +83,7 @@ public sealed class GeneratedPagingTests
             Assert.Contains("PASS logging", output, StringComparison.Ordinal);
             Assert.Contains("PASS values longer than the column", output, StringComparison.Ordinal);
             Assert.Contains("PASS comparisons on every type", output, StringComparison.Ordinal);
+            Assert.Contains("PASS a query before the connection string is registered", output, StringComparison.Ordinal);
             Assert.Contains("ALL PASSED", output, StringComparison.Ordinal);
         }
     }

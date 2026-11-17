@@ -117,6 +117,15 @@ public static partial class Database
             throw new ArgumentException($"A connection string for model with id {modelId} already exists");
     }
 
+    //the model's connection string, or an error that says how to register it (a missing key would only say "key not found")
+    private static string ConnectionString(int modelId)
+    {
+        if(!_conStrings.TryGetValue(modelId, out var connectionString))
+            throw new InvalidOperationException($"No connection string is registered for the model with id {modelId}. Call Database.RegisterModelConnectionString with that model's RepoLookup.ModelId and its connection string once, when the application starts, before the first query.");
+
+        return connectionString;
+    }
+
     internal static DateTime GetStoreDateTime(int modelId)
     {
         return SqlExecute.Scalar<DateTime>(modelId, "StoreQuery", _getDateSql, null, FinishBehavior.DisposeCommand);
@@ -146,7 +155,7 @@ public static partial class Database
 
     internal static bool GetDataBaseHeartBeat(int modelId)
     {
-        var heartBeatConnString = _conStrings[modelId].Replace(";multipleactiveresultsets=True", "") + ";Connect Timeout=1";
+        var heartBeatConnString = ConnectionString(modelId).Replace(";multipleactiveresultsets=True", "") + ";Connect Timeout=1";
         var sqlCon = (SqlConnection)null;
 
         try
@@ -732,7 +741,7 @@ public static partial class Database
                 if(LogEnabled)
                     Logger(dbFQName, query);
 
-                con = new SqlConnection(_conStrings[modelId]);
+                con = new SqlConnection(ConnectionString(modelId));
                 cmd = new SqlCommand(query, con) { CommandType = cmdType };
                 if(param != null)
                     cmd.Parameters.AddRange(param);
@@ -755,7 +764,7 @@ public static partial class Database
                 if(LogEnabled)
                     Logger(dbFQName, query);
 
-                con = new SqlConnection(_conStrings[modelId]);
+                con = new SqlConnection(ConnectionString(modelId));
                 cmd = new SqlCommand(query, con) { CommandType = cmdType };
                 if(param != null)
                     cmd.Parameters.AddRange(param);
@@ -780,7 +789,7 @@ public static partial class Database
                 if(LogEnabled)
                     Logger(table, query);
 
-                con = new SqlConnection(_conStrings[modelId]);
+                con = new SqlConnection(ConnectionString(modelId));
                 cmd = new SqlCommand(query, con) { CommandType = cmdType };
                 if(param != null)
                     cmd.Parameters.AddRange(param);
@@ -801,7 +810,7 @@ public static partial class Database
                 if(LogEnabled)
                     Logger(table, query);
 
-                con = new SqlConnection(_conStrings[modelId]);
+                con = new SqlConnection(ConnectionString(modelId));
                 cmd = new SqlCommand(query, con) { CommandType = cmdType };
                 if(param != null)
                     cmd.Parameters.AddRange(param);
@@ -824,7 +833,7 @@ public static partial class Database
                 if(LogEnabled)
                     Logger(table, query);
 
-                con = new SqlConnection(_conStrings[modelId]);
+                con = new SqlConnection(ConnectionString(modelId));
                 cmd = new SqlCommand(query, con) { CommandType = cmdType };
 
                 if(param != null)
@@ -852,7 +861,7 @@ public static partial class Database
                 if(LogEnabled)
                     Logger(table, query);
 
-                con = new SqlConnection(_conStrings[modelId]);
+                con = new SqlConnection(ConnectionString(modelId));
                 cmd = new SqlCommand(query, con) { CommandType = cmdType };
 
                 if(param != null)
