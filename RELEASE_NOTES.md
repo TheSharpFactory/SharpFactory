@@ -5,7 +5,7 @@ release gives them its version. Version rules: see [BACKLOG.md](BACKLOG.md).
 
 ---
 
-## Unreleased
+## 1.2.2.8 — 2026-11-18
 
 ### .NET 10 or .NET 11, and existing projects follow the choice (SF-235)
 
