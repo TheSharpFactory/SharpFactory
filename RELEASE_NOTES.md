@@ -5,7 +5,7 @@ release gives them its version. Version rules: see [BACKLOG.md](BACKLOG.md).
 
 ---
 
-## Unreleased
+## 1.2.2.9 — 2026-11-18
 
 ### GitHub Actions on Node.js 24 (SF-236)
 
