@@ -1,11 +1,26 @@
-# The Sharp Factory
+<p align="center">
+  <img src="docs/images/logo.png" alt="The Sharp Factory logo" width="96">
+</p>
+
+<h1 align="center">The Sharp Factory</h1>
+
+<p align="center">
+  C# data access generated from your SQL Server database.<br>
+  Free and open source, forever. For Windows, macOS and Linux.
+</p>
+
+<p align="center">
+  <a href="https://github.com/TheSharpFactory/SharpFactory/releases/latest"><strong>Download</strong></a> ·
+  <a href="https://www.thesharpfactory.com/QuickStart"><strong>Quick Start</strong></a> ·
+  <a href="https://www.thesharpfactory.com/Documentation/GettingStarted/Walkthroughs">Walkthroughs</a> ·
+  <a href="https://www.thesharpfactory.com/Documentation">Documentation</a> ·
+  <a href="https://github.com/TheSharpFactory/SharpFactory/discussions">Questions</a>
+</p>
 
 The Sharp Factory is a database-first tool for SQL Server. It reverse engineers your tables, views, stored procedures,
 functions and sequences into plain C# data access code in your solution: entities, repositories, typed queries
 (filtering, sorting, paging, navigation properties) and a repository container. When the database changes, Update
 reads it again, and Sync shows you a diff of the generated files and writes only the ones that changed.
-
-Free and open source, forever. A desktop app and a command line for Windows, macOS and Linux.
 
 ## Try it
 
@@ -16,6 +31,23 @@ Free and open source, forever. A desktop app and a command line for Windows, mac
    five steps.
 3. **No database to try it on?** The [sample database](https://www.thesharpfactory.com/Documentation/GettingStarted/SampleDatabase)
    is a script for a small shop database (customers, orders, products), the one the documentation uses.
+
+Prefer to watch first? The [walkthroughs](https://www.thesharpfactory.com/Documentation/GettingStarted/Walkthroughs)
+play the real app and code that ran against a real database, with the SQL it sent.
+
+## A quick look
+
+**Pick what to generate.** Connect to your database and choose the tables, views, procedures, functions and
+sequences you want.
+
+![The New model file wizard, Choose objects step: the sample database's tables, views and stored procedures, all ticked](docs/images/choose-objects.png)
+
+**Browse the model and the code it generates,** before anything is written to your solution.
+
+![The Models page: the sample database's tables, views, procedures, functions and sequence on the left, and the generated Customer.cs on the right](docs/images/models.png)
+
+**Sync.** Every file that would change, with a diff, then one click writes them. Here the database gained an
+`Email` column, and only the files that change are written.
 
 ![The Sync page after an Email column was added to the Customer table: six generated files to write, and the diff of Customer.cs with the new Email property](docs/images/sync.png)
 
@@ -68,6 +100,11 @@ SELECT [B].[Id],[B].[Name],[B].[LastName],[B].[CityId],[B].[Balance],[B].[Status
 - Point the app at development or test databases: to discover a stored procedure's result columns it may run the
   procedure when SQL Server cannot describe it.
 - Documentation: https://www.thesharpfactory.com/Documentation
+
+## Questions, ideas and bugs
+
+Questions and ideas are welcome in [Discussions](https://github.com/TheSharpFactory/SharpFactory/discussions), and
+bugs in [Issues](https://github.com/TheSharpFactory/SharpFactory/issues).
 
 ## The app
 

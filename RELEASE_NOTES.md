@@ -5,6 +5,40 @@ release gives them its version. Version rules: see [BACKLOG.md](BACKLOG.md).
 
 ---
 
+## Unreleased
+
+### A welcoming README (SF-234)
+
+Changes
+- `README.md`, at the user's request (2026-11-18):
+  - a centered logo (`docs/images/logo.png`, a copy of the app's 128-pixel logo) and title, with one line on what it
+    is;
+  - a row of links: the download, the Quick Start, the walkthroughs, the documentation and Discussions;
+  - under Try it, a pointer to the walkthroughs;
+  - "A quick look": three screenshots from the headless harness at 1.2.2.5, each with one line. They show choosing
+    objects, the Models page with the generated code, and Sync with a new column's diff
+    (`docs/images/choose-objects.png`, `models.png`, `sync.png`);
+  - "Questions, ideas and bugs": Discussions and Issues.
+
+Verification
+- A preview of the Markdown, rendered locally: the logo, the three pictures and the centered blocks show. Every
+  link answers 200.
+- The screenshots show only the sample database and `localhost`. The Sync shot's temporary path stays blanked.
+
+Commit
+```
+Make the README's top welcoming
+
+A centered logo and title with links to the download, the Quick Start,
+the walkthroughs, the documentation and Discussions; a three-screenshot
+tour (choose objects, the model and its code, Sync); and where to ask
+questions and report bugs.
+
+Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>
+```
+
+---
+
 ## 1.2.2.6 — 2026-11-18
 
 ### The README for a visitor (SF-233)
