@@ -157,6 +157,7 @@ change the generated code.
 
 | ID | Area | Item | Status |
 |----|------|------|--------|
+| SF-237 | Simplify / modernize | macOS in its own CI workflow (user, 2026-11-18): a macOS job GitHub never gives a runner no longer fails CI and its badge; ci.yml is Windows + Linux with their byte-identical check, ci-macos.yml builds and tests on macOS | Done (1.2.2.9) |
 | SF-236 | Simplify / modernize | GitHub Actions on Node.js 24 (user, 2026-11-18): checkout v7, setup-dotnet v6, upload-artifact v7, download-artifact v8, action-gh-release v3; GitHub warned that the v4/v2 lines run on Node.js 20, which it is retiring | Done (1.2.2.9) |
 | SF-235 | Simplify / modernize | .NET 10 or .NET 11 (user, 2026-11-18): the choice is always visible on the Sync page (next to Change target), and switching it moves the existing generated projects to that version, shown in Sync's diff first; the user's own projects are not changed. Checked on the released .NET 11 SDK: generated code builds clean, 63 doc samples and the SQL Server checks pass | Done (1.2.2.8) |
 | SF-234 | Open-source preparation | A welcoming README (user, 2026-11-18): logo and title, links to the download, Quick Start, walkthroughs, documentation and Discussions, a three-screenshot tour, and where to ask questions | Done (1.2.2.7) |

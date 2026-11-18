@@ -7,6 +7,20 @@ release gives them its version. Version rules: see [BACKLOG.md](BACKLOG.md).
 
 ## 1.2.2.9 — 2026-11-18
 
+### macOS in its own CI workflow (SF-237)
+
+Changes
+- GitHub's macOS runners are often all busy at peak hours. A macOS job that gets none is cancelled after about 15
+  minutes ("The job was not acquired by Runner of type hosted even after multiple attempts"), and that failed the CI
+  workflow and its README badge four times in two days, with no test failing.
+- `ci.yml` builds and tests on Windows and Linux and compares the generated files of the two.
+- The new `ci-macos.yml` runs the same build, the three test projects and the generation of the public test model on
+  macOS, in a workflow of its own: its runs show in the Actions tab, and one that gets no runner can be re-run there.
+- `TESTING.md` says so (the user chose this over keeping the three-system comparison, 2026-11-18).
+
+Verification
+- Both workflow files parse as YAML; they run on the push of this change.
+
 ### GitHub Actions on Node.js 24 (SF-236)
 
 Changes

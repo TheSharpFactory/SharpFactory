@@ -1,5 +1,7 @@
 name: CI
 
+# Windows and Linux, and the check that both generate the same bytes. macOS runs the same build and tests in its own
+# workflow (ci-macos.yml): GitHub's macOS runners are often all busy, and a job that never gets one would fail this one
 on:
   push:
   pull_request:
@@ -9,7 +11,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        os: [windows-latest, ubuntu-latest, macos-latest]
+        os: [windows-latest, ubuntu-latest]
     runs-on: ${{ matrix.os }}
     defaults:
       run:
@@ -39,7 +41,7 @@ jobs:
       - name: UI tests (headless)
         run: dotnet test Tests/SF.App.Tests/SF.App.Tests.csproj -c Release --no-build ${{ runner.os == 'Linux' && '-- xUnit.FailSkips=true' || '' }}
 
-      # every OS must generate the same bytes: hash every generated file, compared in the next job
+      # both systems must generate the same bytes: hash every generated file, compared in the next job
       - name: Generate the public test model
         run: dotnet run --project App/SF.Cli -c Release --no-build -- generate Tests/SF.Tests/Fixtures/Coverage.edmj "${{ runner.temp }}/generated"
 
@@ -68,8 +70,7 @@ jobs:
           pattern: hashes-*
           merge-multiple: true
 
-      - name: Compare the generated files across Windows, Linux and macOS
+      - name: Compare the generated files of Windows and Linux
         run: |
           diff hashes-windows-latest.txt hashes-ubuntu-latest.txt
-          diff hashes-windows-latest.txt hashes-macos-latest.txt
-          echo "$(wc -l < hashes-windows-latest.txt) generated files are byte-identical on all three"
+          echo "$(wc -l < hashes-windows-latest.txt) generated files are byte-identical on both"

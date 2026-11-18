@@ -92,7 +92,7 @@ dotnet run --project App/SF.Cli -- generate <model.edmj> <output folder>
 6. If the change touches the website: run it and check the pages and response headers.
 7. If the change touches the generated SQL engine (`Dependencies/SF.CodeGenerator/Database*.cs`): run the engine check below.
 
-CI (`.github/workflows/ci.yml`) builds and runs both test projects on Windows, Linux and macOS, generates the public test model on each, and fails when the generated files differ between them.
+CI (`.github/workflows/ci.yml`) builds and runs the test projects on Windows and Linux, generates the public test model on each, and fails when the generated files differ between them. `.github/workflows/ci-macos.yml` builds and runs the same tests on macOS in a workflow of its own, so a macOS job that GitHub never gives a runner (it cancels it after about 15 minutes) does not fail CI.
 
 If a check fails, the change is not done: either fix it or, if the difference is intended, agree on it explicitly before replacing a baseline.
 
