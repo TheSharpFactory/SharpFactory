@@ -58,6 +58,42 @@ public sealed class SyncFlowTests
     }
 
     [AvaloniaFact]
+    public async Task ChoosingDotNet11MovesTheGeneratedProjects()
+    {
+        using(var app = new AppHarness())
+        {
+            var page = await SyncedNewSolution(app);
+
+            //the choice is in the strip, with the target closed
+            Assert.False(page.IsTargetPanelOpen);
+            var box = app.Find<ComboBox>("TargetFrameworkBox");
+            Assert.True(box.IsEffectivelyVisible);
+            Assert.Equal(".NET 10", page.SelectedTargetFramework.Name);
+
+            //.NET 11: the check lists the five project files, with their diffs, and the file is unsaved
+            page.SelectedTargetFramework = page.FrameworkOptions[1];
+            await page.CheckAsync();
+            Assert.True(app.ViewModel.Document.IsDirty);
+            Assert.Equal(5, page.Report.TargetFrameworksChanged.Count);
+            Assert.Equal(5, page.FileChanges.Count);
+            Assert.Equal("Sync 5 files", page.SyncButtonText);
+            Assert.Contains("5 projects to .NET 11", page.SummaryRest, StringComparison.Ordinal);
+            foreach(var change in page.Report.FileChanges)
+                Assert.EndsWith(".csproj", change.RelativePath, StringComparison.Ordinal);
+
+            //Sync writes them, and then nothing is left to do
+            await page.SyncCommand.ExecuteAsync(null);
+            app.Pump();
+            Assert.True(page.LastSync.Succeeded, page.LastSync.Text);
+            foreach(var projectFile in Directory.GetFiles(Path.Combine(app.Folder, "DataAccess"), "*.csproj", SearchOption.AllDirectories))
+                Assert.Contains("<TargetFramework>net11.0</TargetFramework>", File.ReadAllText(projectFile), StringComparison.Ordinal);
+
+            await page.CheckAsync();
+            Assert.True(page.Report.IsUpToDate);
+        }
+    }
+
+    [AvaloniaFact]
     public async Task AFileSharpFactoryDidNotWriteStopsSyncBeforeItRuns()
     {
         using(var app = new AppHarness())

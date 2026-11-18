@@ -49,6 +49,38 @@ public sealed class EngineUnitTests
     }
 
     [Fact]
+    public void TheTargetFrameworkChangesOnlyWhenItIsAPlainOtherVersion()
+    {
+        var net10 = ProjectFileTemplate.Compose(TargetFrameworks.NET10, false);
+
+        //a plain version moves, and nothing else in the file changes
+        var moved = ProjectFileEditor.SetTargetFramework(net10, "net11.0", out var changed, out var old);
+        Assert.True(changed);
+        Assert.Equal("net10.0", old);
+        Assert.Equal(net10.Replace("<TargetFramework>net10.0</TargetFramework>", "<TargetFramework>net11.0</TargetFramework>"), moved);
+
+        //the same version: nothing to do
+        Assert.Same(net10, ProjectFileEditor.SetTargetFramework(net10, "net10.0", out changed, out old));
+        Assert.False(changed);
+
+        //set up by hand: several frameworks, a platform version, two elements, a property
+        var several = net10.Replace("<TargetFramework>net10.0</TargetFramework>", "<TargetFrameworks>net10.0;net11.0</TargetFrameworks>");
+        var platform = net10.Replace("net10.0", "net10.0-windows");
+        var twice = net10.Replace("<TargetFramework>net10.0</TargetFramework>", "<TargetFramework>net10.0</TargetFramework>\r\n    <TargetFramework>net10.0</TargetFramework>");
+        var property = net10.Replace("net10.0", "$(MyFramework)");
+        foreach(var content in new[] { several, platform, twice, property })
+        {
+            Assert.Same(content, ProjectFileEditor.SetTargetFramework(content, "net11.0", out changed, out old));
+            Assert.False(changed);
+        }
+
+        //one inside a comment does not count
+        var commented = net10.Replace("<PropertyGroup>", "<!-- <TargetFrameworks>net9.0</TargetFrameworks> -->\r\n  <PropertyGroup>");
+        Assert.Contains("net11.0", ProjectFileEditor.SetTargetFramework(commented, "net11.0", out changed, out old));
+        Assert.True(changed);
+    }
+
+    [Fact]
     public void ReferencesInsideCommentsDoNotCount()
     {
         var content = "<Project Sdk=\"Microsoft.NET.Sdk\">\r\n  <!-- <ProjectReference Include=\"..\\B\\B.csproj\" /> -->\r\n  <ItemGroup>\r\n    <ProjectReference Include=\"..\\C\\C.csproj\" />\r\n  </ItemGroup>\r\n</Project>\r\n";

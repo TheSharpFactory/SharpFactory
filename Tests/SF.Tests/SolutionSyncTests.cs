@@ -85,6 +85,63 @@ public sealed class SolutionSyncTests
     }
 
     [Fact]
+    public void SwitchingTheDotNetVersionMovesTheGeneratedProjectsOnly()
+    {
+        using(var folder = new TestFolder())
+        {
+            //a solution with the user's own .NET 10 project, synced with .NET 10
+            var appProject = folder.Combine("MyApp", "MyApp.csproj");
+            Directory.CreateDirectory(Path.GetDirectoryName(appProject));
+            File.WriteAllText(appProject, ProjectFileTemplate.Compose(TargetFrameworks.NET10, false));
+            var appBefore = File.ReadAllText(appProject);
+            var solution = folder.Combine("App.slnx");
+            var start = SolutionFile.OpenOrCreate(solution);
+            start.AddProject(appProject, null);
+            start.Save();
+            Assert.True(Sync(Fixtures.LoadCoverage(), solution, false).Success);
+
+            var container = Fixtures.LoadCoverage();
+            container.CommonSettings.TargetFramework = TargetFrameworks.NET11;
+
+            //the preview lists each generated project file, with both contents, and writes nothing
+            var preview = Sync(container, solution, true);
+            Assert.True(preview.Success, preview.ErrorMessage);
+            Assert.False(preview.IsUpToDate);
+            Assert.Equal(5, preview.TargetFrameworksChanged.Count);
+            Assert.Contains("SFTest.Entity: net10.0 -> net11.0", preview.TargetFrameworksChanged);
+            Assert.Equal(5, preview.FileChanges.Count);
+            foreach(var change in preview.FileChanges)
+            {
+                Assert.Equal(SyncFileChangeKind.Changed, change.Kind);
+                Assert.EndsWith(".csproj", change.RelativePath);
+                Assert.Equal(change.OldContent, File.ReadAllText(change.FullPath));
+                Assert.Contains("<TargetFramework>net10.0</TargetFramework>", change.OldContent);
+                Assert.Equal(change.OldContent.Replace("net10.0", "net11.0"), change.NewContent);
+            }
+
+            //Sync changes only the version in the generated projects
+            var report = Sync(container, solution, false);
+            Assert.True(report.Success, report.ErrorMessage);
+            Assert.Equal(5, report.TargetFrameworksChanged.Count);
+            Assert.Empty(report.ProjectsCreated);
+
+            foreach(var projectFile in Directory.GetFiles(folder.Combine("DataAccess"), "*.csproj", SearchOption.AllDirectories))
+            {
+                Assert.Contains("<TargetFramework>net11.0</TargetFramework>", File.ReadAllText(projectFile));
+                AssertCrlfOnly(projectFile);
+            }
+
+            Assert.Equal(appBefore, File.ReadAllText(appProject));
+            Assert.True(Sync(container, solution, true).IsUpToDate);
+
+            //and back
+            var back = Sync(Fixtures.LoadCoverage(), solution, true);
+            Assert.Equal(5, back.TargetFrameworksChanged.Count);
+            Assert.Contains("SFTest.Entity: net11.0 -> net10.0", back.TargetFrameworksChanged);
+        }
+    }
+
+    [Fact]
     public void AReadOnlyFileStopsSyncBeforeAnythingIsWritten()
     {
         using(var folder = new TestFolder())

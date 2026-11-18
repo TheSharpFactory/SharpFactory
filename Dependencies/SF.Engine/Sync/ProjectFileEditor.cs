@@ -7,11 +7,16 @@ using System.Text.RegularExpressions;
 namespace SF.Engine.Sync;
 
 /// <summary>
-/// Reads and adds project references in a project file's text, keeping the rest of the file exactly as it is.
+/// Reads and adds project references, and sets the target framework, in a project file's text, keeping the rest of
+/// the file exactly as it is.
 /// </summary>
 public static class ProjectFileEditor
 {
     private static readonly Regex _projectReference = new Regex("<ProjectReference\\s+Include\\s*=\\s*\"(?<path>[^\"]*)\"", RegexOptions.Compiled | RegexOptions.IgnoreCase);
+    private static readonly Regex _targetFramework = new Regex("<TargetFramework>\\s*(?<tfm>[^<\\s]*)\\s*</TargetFramework>", RegexOptions.Compiled | RegexOptions.IgnoreCase);
+    private static readonly Regex _targetFrameworks = new Regex("<TargetFrameworks>", RegexOptions.Compiled | RegexOptions.IgnoreCase);
+    //"net10.0", "net11.0": not "net10.0-windows", not a property like "$(MyFramework)"
+    private static readonly Regex _plainNetVersion = new Regex("^net[0-9]+\\.[0-9]+$", RegexOptions.Compiled | RegexOptions.IgnoreCase);
 
     /// <summary>
     /// The project name (file name without extension) of each project reference, with its Include path.
@@ -60,6 +65,46 @@ public static class ProjectFileEditor
 
         changed = true;
         return AddProjectReference(projectFileContent, relativePath);
+    }
+
+    /// <summary>
+    /// Makes the project target <paramref name="moniker"/> ("net11.0"): changes the value of its one
+    /// &lt;TargetFramework&gt; when that is a plain .NET version ("net10.0") and a different one. A project with
+    /// several frameworks (&lt;TargetFrameworks&gt;), a platform version ("net10.0-windows") or more than one
+    /// &lt;TargetFramework&gt; was set up that way on purpose and is left as it is. Returns the new content;
+    /// <paramref name="oldMoniker"/> is the version it had.
+    /// </summary>
+    public static string SetTargetFramework(string projectFileContent, string moniker, out bool changed, out string oldMoniker)
+    {
+        changed = false;
+        oldMoniker = null;
+        var comments = GetCommentRanges(projectFileContent);
+        var plurals = _targetFrameworks.Matches(projectFileContent);
+        for(var i = 0; i < plurals.Count; i++)
+        {
+            if(!IsInside(comments, plurals[i].Index))
+                return projectFileContent;
+        }
+
+        var found = (Group)null;
+        var matches = _targetFramework.Matches(projectFileContent);
+        for(var i = 0; i < matches.Count; i++)
+        {
+            if(IsInside(comments, matches[i].Index))
+                continue;
+
+            if(found != null)
+                return projectFileContent;
+
+            found = matches[i].Groups["tfm"];
+        }
+
+        if(found == null || !_plainNetVersion.IsMatch(found.Value) || string.Equals(found.Value, moniker, StringComparison.OrdinalIgnoreCase))
+            return projectFileContent;
+
+        changed = true;
+        oldMoniker = found.Value;
+        return projectFileContent.Substring(0, found.Index) + moniker + projectFileContent.Substring(found.Index + found.Length);
     }
 
     private static string AddProjectReference(string projectFileContent, string relativePath)

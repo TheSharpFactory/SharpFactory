@@ -759,6 +759,9 @@ internal sealed partial class SyncPageViewModel : PageViewModel
             if(Report.ReferencesAdded.Count > 0)
                 parts.Add(ModelTreeBuilder.Plural(Report.ReferencesAdded.Count, "project reference"));
 
+            if(Report.TargetFrameworksChanged.Count > 0)
+                parts.Add(ModelTreeBuilder.Plural(Report.TargetFrameworksChanged.Count, "project") + " to " + ProjectFileTemplate.GetDisplayName(Shell.Document?.Container.CommonSettings.TargetFramework ?? Models.TargetFrameworks.NET10));
+
             if(Report.UnchangedFileCount > 0)
                 parts.Add($"{Report.UnchangedFileCount} unchanged");
 

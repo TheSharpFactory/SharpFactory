@@ -90,6 +90,12 @@ public sealed class SyncReport
     /// References (in any project of the solution) pointed at a project's new place after it moved.
     /// </summary>
     public List<string> ReferencesUpdated { get; set; } = new List<string>();
+
+    /// <summary>
+    /// Generated projects moved to the model file's .NET version: "MyApp.Entity: net10.0 -> net11.0". Each one's project
+    /// file is also in <see cref="FileChanges"/>, so its diff can be reviewed.
+    /// </summary>
+    public List<string> TargetFrameworksChanged { get; set; } = new List<string>();
     public List<SyncFileChange> FileChanges { get; set; } = new List<SyncFileChange>();
     public int UnchangedFileCount { get; set; }
     public List<ProjectFileCount> ProjectFileCounts { get; set; } = new List<ProjectFileCount>();
@@ -120,7 +126,8 @@ public sealed class SyncReport
         get
         {
             return FileChanges.Count == 0 && ProjectsCreated.Count == 0 && ExistingProjectsAdded.Count == 0 && ProjectsMoved.Count == 0
-                && ReferencesAdded.Count == 0 && ReferencesUpdated.Count == 0 && !SolutionChanged && UnmarkedFiles.Count == 0;
+                && ReferencesAdded.Count == 0 && ReferencesUpdated.Count == 0 && TargetFrameworksChanged.Count == 0 && !SolutionChanged
+                && UnmarkedFiles.Count == 0;
         }
     }
 }

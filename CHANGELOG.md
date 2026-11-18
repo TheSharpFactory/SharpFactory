@@ -3,6 +3,27 @@
 What changed in each published release of The Sharp Factory, newest first. Each section is also the text of that
 release on GitHub, with its downloads.
 
+## Unreleased
+
+### Changes
+
+- **.NET 10 or .NET 11 for the generated code, always on the Sync page.** The choice sits next to Change target
+  (it was inside the new-solution panel). Switching it moves the generated projects that already exist to that
+  version: Sync shows each project file's change in its list and diff before it writes them, and the command line
+  prints one line per project. Only the version changes in those files. Projects you created yourself are not
+  changed, so a project of yours that references the generated ones needs the same .NET version to build.
+
+### Downloads
+
+| Download | What |
+|---|---|
+| `TheSharpFactory-win-x64.zip`, `TheSharpFactory-win-arm64.zip` | The app for Windows |
+| `TheSharpFactory-osx-arm64.zip`, `TheSharpFactory-osx-x64.zip` | The app for macOS (Apple silicon, Intel) |
+| `TheSharpFactory-linux-x64.tar.gz` | The app for Linux |
+| `sharpfactory-cli-*` | The command line, `sharpfactory`, for the same systems |
+
+---
+
 ## 1.2.2.7 — 2026-11-18
 
 ### Changes

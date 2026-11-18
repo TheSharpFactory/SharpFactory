@@ -25,6 +25,8 @@ internal sealed class SolutionProjectHost : IProjectHost
     //the common Repository project (the SQL engine) is created with the Microsoft.Data.SqlClient package
     private readonly string _sqlClientProjectTemplate;
     private readonly string _commonRepositoryProject;
+    //the model file's .NET version as a project file writes it: "net11.0"
+    private readonly string _targetMoniker;
     private readonly IProgressLog _log;
 
     //project files read or created during this run, by full path; written at the end
@@ -32,6 +34,10 @@ internal sealed class SolutionProjectHost : IProjectHost
     private readonly HashSet<string> _changedProjectFiles = new HashSet<string>(PathComparer);
     //project files that start with a UTF-8 BOM: written back with it
     private readonly HashSet<string> _projectFilesWithBom = new HashSet<string>(PathComparer);
+    //each project file's text as it was on disk, before this run changed it
+    private readonly Dictionary<string, string> _originalProjectFiles = new Dictionary<string, string>(PathComparer);
+    //project files whose target framework this run changes: they show in the report's file changes, with a diff
+    private readonly HashSet<string> _targetFrameworkChanged = new HashSet<string>(PathComparer);
     //the folder returned for each project already prepared in this run
     private readonly Dictionary<string, string> _preparedProjects = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
     //projects moved in this run: name -> new project file
@@ -47,6 +53,7 @@ internal sealed class SolutionProjectHost : IProjectHost
         var targetFramework = modelContainer.CommonSettings.TargetFramework ?? TargetFrameworks.NET10;
         _projectTemplate = ProjectFileTemplate.Compose(targetFramework, false);
         _sqlClientProjectTemplate = ProjectFileTemplate.Compose(targetFramework, true);
+        _targetMoniker = ProjectFileTemplate.GetMoniker(targetFramework);
         _commonRepositoryProject = modelContainer.CommonLayers.Repository.FullProjectName(modelContainer.CommonSettings);
     }
 
@@ -89,6 +96,10 @@ internal sealed class SolutionProjectHost : IProjectHost
             folder = existing.ProjectFolder;
         else
             folder = MoveProject(existing, expectedFolder);
+
+        //a project of this solution (not another solution's) follows the model file's .NET version
+        if(existing == null || IsInFolder(existing.ProjectFolder, _solution.Folder))
+            EnsureTargetFramework(projectName, Path.Combine(folder, existing == null ? projectName + ".csproj" : Path.GetFileName(existing.ProjectFile)));
 
         _preparedProjects.Add(projectName, folder);
         return folder;
@@ -165,12 +176,37 @@ internal sealed class SolutionProjectHost : IProjectHost
             }
 
             _report.ProjectFilesChanged.Add(Path.GetRelativePath(_solution.Folder, projectFile));
+            if(_targetFrameworkChanged.Contains(projectFile))
+                AddProjectFileChange(projectFile);
+
             if(_preview)
                 continue;
 
             Directory.CreateDirectory(Path.GetDirectoryName(projectFile));
             File.WriteAllText(projectFile, _projectFiles[projectFile], new UTF8Encoding(_projectFilesWithBom.Contains(projectFile)));
         }
+    }
+
+    /// <summary>
+    /// A project file whose .NET version changes is listed with the generated files, so the change can be reviewed
+    /// (and counted) before Sync writes it.
+    /// </summary>
+    private void AddProjectFileChange(string projectFile)
+    {
+        var change = new SyncFileChange
+        {
+            FullPath = projectFile,
+            RelativePath = Path.GetRelativePath(_solution.Folder, projectFile),
+            Kind = SyncFileChangeKind.Changed,
+        };
+
+        if(_preview)
+        {
+            change.OldContent = _originalProjectFiles[projectFile];
+            change.NewContent = _projectFiles[projectFile];
+        }
+
+        _report.FileChanges.Add(change);
     }
 
     private string CreateProject(string projectName, string projectFolder)
@@ -254,6 +290,27 @@ internal sealed class SolutionProjectHost : IProjectHost
 
         //in a preview the files are still in the old folder: compare against those
         return _preview ? existing.ProjectFolder : newProjectFolder;
+    }
+
+    /// <summary>
+    /// Moves a generated project to the model file's .NET version when its project file names another plain one
+    /// (see <see cref="ProjectFileEditor.SetTargetFramework"/>).
+    /// </summary>
+    private void EnsureTargetFramework(string projectName, string projectFile)
+    {
+        var content = GetProjectFileContent(projectFile);
+        if(content == null)
+            return;
+
+        var newContent = ProjectFileEditor.SetTargetFramework(content, _targetMoniker, out var changed, out var oldMoniker);
+        if(!changed)
+            return;
+
+        _projectFiles[projectFile] = newContent;
+        _changedProjectFiles.Add(projectFile);
+        _targetFrameworkChanged.Add(projectFile);
+        _report.TargetFrameworksChanged.Add($"{projectName}: {oldMoniker} -> {_targetMoniker}");
+        _log.Info($"{projectName}: {oldMoniker} -> {_targetMoniker}");
     }
 
     private void EnsureReference(string projectName, string referencedProjectName)
@@ -340,7 +397,9 @@ internal sealed class SolutionProjectHost : IProjectHost
         if(hasBom)
             _projectFilesWithBom.Add(projectFile);
 
-        return hasBom ? Encoding.UTF8.GetString(bytes, 3, bytes.Length - 3) : Encoding.UTF8.GetString(bytes);
+        var content = hasBom ? Encoding.UTF8.GetString(bytes, 3, bytes.Length - 3) : Encoding.UTF8.GetString(bytes);
+        _originalProjectFiles[projectFile] = content;
+        return content;
     }
 
     private string GetProjectFolder(string projectName)

@@ -5,6 +5,56 @@ release gives them its version. Version rules: see [BACKLOG.md](BACKLOG.md).
 
 ---
 
+## Unreleased
+
+### .NET 10 or .NET 11, and existing projects follow the choice (SF-235)
+
+Changes
+- The Sync page's .NET version box moves from the new-solution panel to the "Sync into" strip, next to Change target,
+  so it shows for an existing solution too (`SyncPage.axaml`). It still edits the model file's
+  `CommonSettings.TargetFramework` and checks again.
+- `ProjectFileEditor.SetTargetFramework`: changes the value of a project file's one `<TargetFramework>` when it is a
+  plain other version (`net10.0`), keeping the rest of the file as it is. A file with `<TargetFrameworks>`, a platform
+  version (`net10.0-windows`), a property or two `<TargetFramework>` elements is left alone, and so is one inside a
+  comment.
+- `SolutionProjectHost`: every generated project of the solution (not another solution's) moves to the model file's
+  version. Each such project file is listed in the report's `FileChanges`, with its old and new content in a preview,
+  and in the new `TargetFrameworksChanged`. `IsUpToDate` counts it.
+- The Sync page's summary says "5 projects to .NET 11". The command line prints `.NET version: MyApp.Entity: net10.0 -> net11.0`.
+- The user's own projects are not changed (the user's call). One that references the generated projects needs the same
+  version to build (`NU1201` otherwise).
+- Tests:
+  - `TheTargetFrameworkChangesOnlyWhenItIsAPlainOtherVersion`;
+  - `SwitchingTheDotNetVersionMovesTheGeneratedProjectsOnly`: preview with diffs, nothing written; Sync; the user's
+    project untouched; up to date afterwards; and back to .NET 10;
+  - `ChoosingDotNet11MovesTheGeneratedProjects` (headless): the box in the strip, the check, Sync, up to date.
+
+Verification
+- SF.Tests 166, SF.CSharpWriter.Tests 242, SF.App.Tests 122: all passed, none skipped (with the test database
+  variables).
+- On the released .NET 11 SDK (11.0.100), the generated code for .NET 11 builds with no warnings. All 63 website doc
+  samples pass on it, each alone on a fresh copy of the sample database. The 25 checks of the SQL Server test's runner,
+  built for `net11.0`, all pass. Apart from the project files, the generated C# is byte-identical for both versions.
+- End to end with the command line from this change: an existing .NET 10 solution switched to .NET 11. The preview
+  lists the five project files, and Sync moves them. The user's console app still on .NET 10 fails with `NU1201`; moved
+  to .NET 11, the solution builds with no warnings and the app prints the sample database's rows.
+
+Commit
+```
+.NET version on the Sync page; existing generated projects follow it
+
+The .NET 10 / .NET 11 choice moves out of the new-solution panel to the
+Sync into strip, so it shows for existing solutions. Switching it moves
+the generated projects that already exist to that version: Sync lists
+each project file with its diff before writing it, and the command line
+prints one line per project. Only a plain <TargetFramework> in generated
+projects changes; the user's own projects are not touched.
+
+Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>
+```
+
+---
+
 ## 1.2.2.7 — 2026-11-18
 
 ### A welcoming README (SF-234)

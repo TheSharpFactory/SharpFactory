@@ -157,6 +157,7 @@ change the generated code.
 
 | ID | Area | Item | Status |
 |----|------|------|--------|
+| SF-235 | Simplify / modernize | .NET 10 or .NET 11 (user, 2026-11-18): the choice is always visible on the Sync page (next to Change target), and switching it moves the existing generated projects to that version, shown in Sync's diff first; the user's own projects are not changed. Checked on the released .NET 11 SDK: generated code builds clean, 63 doc samples and the SQL Server checks pass | Done (unreleased) |
 | SF-234 | Open-source preparation | A welcoming README (user, 2026-11-18): logo and title, links to the download, Quick Start, walkthroughs, documentation and Discussions, a three-screenshot tour, and where to ask questions | Done (1.2.2.7) |
 | SF-233 | Open-source preparation | README for a visitor (Product Owner task A8): what it is, a picture of Sync (`docs/images/sync.png`), Try it, the generated code in use, good to know; three stale statements corrected (Sync targets, SqlClient added by Sync, `--version`) | Done (1.2.2.6) |
 | SF-232 | Bugs | A query before the connection string is registered threw "KeyNotFoundException: The given key '1' was not present in the dictionary" (found 2026-11-17 while writing the website's Troubleshooting page). The generated `Database` class now throws an `InvalidOperationException` that says to call `Database.RegisterModelConnectionString` with the model's `RepoLookup.ModelId`; `GeneratedPagingTests` checks it | Done (1.2.2.5) |

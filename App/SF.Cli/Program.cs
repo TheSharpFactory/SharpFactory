@@ -390,6 +390,9 @@ internal static class Program
         foreach(var moved in report.ProjectsMoved)
             Console.WriteLine($"   moved: {moved}");
 
+        foreach(var framework in report.TargetFrameworksChanged)
+            Console.WriteLine($"   .NET version: {framework}");
+
         foreach(var unmarked in report.UnmarkedFiles)
             Console.WriteLine($"   not a Sharp Factory file (Sync will stop): {unmarked}");
     }

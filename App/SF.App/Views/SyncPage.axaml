@@ -29,6 +29,15 @@
             <TextBlock Classes="subtle" FontSize="12" Text="{Binding TargetFolder, FallbackValue='Pick a solution below, browse for one, or create a new one.'}" TextTrimming="PathSegmentEllipsis" ToolTip.Tip="{Binding TargetFolder}" />
           </StackPanel>
           <StackPanel Grid.Column="3" Orientation="Horizontal" Spacing="8" VerticalAlignment="Center">
+            <!-- the .NET version of the generated projects: new ones are created with it, existing ones move to it -->
+            <ComboBox Name="TargetFrameworkBox" Width="104" ItemsSource="{Binding FrameworkOptions}" SelectedItem="{Binding SelectedTargetFramework}" IsEnabled="{Binding !IsRunning}"
+                      ToolTip.Tip=".NET version of the generated projects: Sync creates new projects with it and moves existing ones to it">
+              <ComboBox.ItemTemplate>
+                <DataTemplate x:DataType="vm:TargetFrameworkOption">
+                  <TextBlock Text="{Binding Name}" />
+                </DataTemplate>
+              </ComboBox.ItemTemplate>
+            </ComboBox>
             <ToggleButton Name="ChangeTargetButton" Classes="secondary" IsChecked="{Binding IsTargetPanelOpen}" IsEnabled="{Binding !IsRunning}">
               <StackPanel Orientation="Horizontal" Spacing="6"><PathIcon Data="{StaticResource IconChevronDown}" Width="12" Height="12" /><TextBlock Text="Change target" /></StackPanel>
             </ToggleButton>
@@ -116,19 +125,11 @@
                   <StackPanel Orientation="Horizontal" Spacing="6"><PathIcon Data="{StaticResource IconFolder}" Width="14" Height="14" /><TextBlock Text="Choose…" /></StackPanel>
                 </Button>
               </Grid>
-              <Grid ColumnDefinitions="*,8,96,8,120" RowDefinitions="Auto,Auto">
+              <Grid ColumnDefinitions="*,8,96" RowDefinitions="Auto,Auto">
                 <TextBlock Classes="label" Text="Name" />
                 <TextBlock Grid.Column="2" Classes="label" Text="Format" />
-                <TextBlock Grid.Column="4" Classes="label" Text="New projects use" />
                 <TextBox Grid.Row="1" Name="NewSolutionNameBox" Text="{Binding NewSolutionName}" PlaceholderText="Solution name" />
                 <ComboBox Grid.Row="1" Grid.Column="2" Name="NewSolutionFormatBox" ItemsSource="{Binding SolutionFormats}" SelectedItem="{Binding NewSolutionFormat}" HorizontalAlignment="Stretch" ToolTip.Tip="Solution file format" />
-                <ComboBox Grid.Row="1" Grid.Column="4" ItemsSource="{Binding FrameworkOptions}" SelectedItem="{Binding SelectedTargetFramework}" HorizontalAlignment="Stretch" ToolTip.Tip=".NET version of the projects Sync creates">
-                  <ComboBox.ItemTemplate>
-                    <DataTemplate x:DataType="vm:TargetFrameworkOption">
-                      <TextBlock Text="{Binding Name}" />
-                    </DataTemplate>
-                  </ComboBox.ItemTemplate>
-                </ComboBox>
               </Grid>
               <Button Name="UseNewSolutionButton" Command="{Binding UseNewSolutionCommand}" HorizontalAlignment="Left">
                 <StackPanel Orientation="Horizontal" Spacing="6"><PathIcon Data="{StaticResource IconAdd}" Width="14" Height="14" /><TextBlock Text="Use new solution" /></StackPanel>
