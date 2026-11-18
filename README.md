@@ -1,10 +1,73 @@
 # The Sharp Factory
 
-The Sharp Factory reads a SQL Server database's tables, views, stored procedures, functions and sequences and
-generates the C# data access for them: entities, repositories, query composition (filtering, sorting,
-pagination, navigation properties) and a repository container. Free and open source, forever.
+The Sharp Factory is a database-first tool for SQL Server. It reverse engineers your tables, views, stored procedures,
+functions and sequences into plain C# data access code in your solution: entities, repositories, typed queries
+(filtering, sorting, paging, navigation properties) and a repository container. When the database changes, Update
+reads it again, and Sync shows you a diff of the generated files and writes only the ones that changed.
 
-It runs on **Windows, macOS and Linux**, as a desktop app and from the command line.
+Free and open source, forever. A desktop app and a command line for Windows, macOS and Linux.
+
+![The Sync page after an Email column was added to the Customer table: six generated files to write, and the diff of Customer.cs with the new Email property](docs/images/sync.png)
+
+## Try it
+
+1. **Download** the [latest release](https://github.com/TheSharpFactory/SharpFactory/releases/latest):
+   `TheSharpFactory-win-x64.zip` (or `win-arm64`), `TheSharpFactory-osx-arm64.zip` (or `osx-x64` on Intel),
+   `TheSharpFactory-linux-x64.tar.gz`. Unzip it and run it: it is self-contained, so you do not need .NET to run it.
+2. **Follow the [Quick Start](https://www.thesharpfactory.com/QuickStart)**: from a database to working C# code in
+   five steps.
+3. **No database to try it on?** The [sample database](https://www.thesharpfactory.com/Documentation/GettingStarted/SampleDatabase)
+   is a script for a small shop database (customers, orders, products), the one the documentation uses.
+
+## The generated code in use
+
+After Sync, a console app that references the generated Repository project reads the sample database like this:
+
+```csharp
+using MyApp.Entity.AppDb.Sales;
+using MyApp.Query;
+using MyApp.Repository.Common;
+using MyApp.Repository.Container;
+
+Database.RegisterModelConnectionString(RepoLookup.ModelId.AppDb,
+    "Server=localhost;Database=SharpFactoryShop;Integrated Security=true;Encrypt=False");
+
+var repo = new RepositoryContainer();
+
+// customers with a balance over 300, the largest first
+var query = new Query<CustomerProperty>()
+    .BeginPredicate()
+        .Where(CustomerProperty.Balance).GreaterThan(300m)
+    .EndPredicate()
+    .BeginSorting()
+        .OrderByDescending(CustomerProperty.Balance)
+    .EndSorting();
+
+foreach (var customer in repo.AppDb.Sales.Customer.ToList(query))
+{
+    Console.WriteLine($"{customer.Name} {customer.LastName}: {customer.Balance}");
+}
+```
+
+`MyApp` is the root namespace you choose, `AppDb` the model, `Sales` the schema and `Customer` the table. The query
+is typed: a misspelled column or a value of the wrong type does not compile. It sends:
+
+```sql
+SELECT [B].[Id],[B].[Name],[B].[LastName],[B].[CityId],[B].[Balance],[B].[Status],[B].[CreatedDate] FROM [Sales].[Customer] AS [B] WHERE ([B].[Balance] > @B_Balance0) ORDER BY [B].[Balance] DESC
+```
+
+## Good to know
+
+- **SQL Server only.**
+- **Database first:** it reads your database; it does not create or migrate it.
+- The generated projects target **.NET 10 or .NET 11** (you choose on the Sync page). Sync adds the one package they
+  need, `Microsoft.Data.SqlClient`, to the Repository project it creates. A database with `geography` or `geometry`
+  columns also needs `Microsoft.SqlServer.Types` in the Entity project.
+- Files you add to the generated projects are never touched: Sync rewrites and removes only files that start with
+  the Sharp Factory marker.
+- Point the app at development or test databases: to discover a stored procedure's result columns it may run the
+  procedure when SQL Server cannot describe it.
+- Documentation: https://www.thesharpfactory.com/Documentation
 
 ## The app
 
@@ -13,8 +76,8 @@ It runs on **Windows, macOS and Linux**, as a desktop app and from the command l
 - **Models**: add a model from a database (choose the objects), update it, browse it, and preview the code
   generated for any table, view, procedure or function.
 - **Layers** and **Settings**: the project names and namespaces of the generated code.
-- **Sync**: generate everything into a solution. Pick one that is open in Visual Studio, Rider or VS Code, one
-  you synced to before, one next to the model file, any `.sln`/`.slnx`, or a new solution (`.slnx` by default).
+- **Sync**: generate everything into a solution. Pick one you synced this model to before, one near the model
+  file, any `.sln`/`.slnx`, or a new solution (`.slnx` by default).
   As soon as a solution is chosen, the page shows every file Sync would add, change or delete, with a diff, and
   works it out again when the model changes; **Sync N files** writes them.
 
@@ -35,16 +98,7 @@ sharpfactory --version
 `update` reads each model's objects again from its database and saves the file (objects the database no longer
 has drop out; new ones are not added). With `--check` it saves nothing and exits with 1 when a model would change,
 so a build can tell that the model is behind the database. `--version` prints one line, such as
-`sharpfactory 1.1.9.2`. Exit codes: 0 success, 1 failure, 2 usage error.
-
-## Using the generated code
-
-The generated projects target .NET 10 or .NET 11 (chosen on the Sync page). Add the `Microsoft.Data.SqlClient` NuGet package to the repository
-project, and `Microsoft.SqlServer.Types` if the database has `geography` or `geometry` columns. The
-documentation is at https://www.thesharpfactory.com/Documentation.
-
-Point the app at development or test databases: to discover a stored procedure's result columns it may run the
-procedure when SQL Server cannot describe it.
+`sharpfactory 1.2.2.5`. Exit codes: 0 success, 1 failure, 2 usage error.
 
 ## Building
 

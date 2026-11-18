@@ -5,6 +5,45 @@ release gives them its version. Version rules: see [BACKLOG.md](BACKLOG.md).
 
 ---
 
+## Unreleased
+
+### The README for a visitor (SF-233)
+
+Changes
+- `README.md`: the top is rewritten for someone who has never seen the app (Product Owner task A8):
+  - what it is, in the words people search with (database first, reverse engineers);
+  - a picture of Sync, `docs/images/sync.png`, outside the app's assets so it does not ship in the app;
+  - Try it (the downloads, the Quick Start, the sample database);
+  - the generated code in use, and the SQL it sends;
+  - what to know first.
+
+  The app, the command line, building, the repository, releases and the license follow, as before.
+- Three statements corrected against the code:
+  - Sync's target list does not include solutions open in an IDE (`TargetSolutionFinder` guesses nothing from
+    running programs).
+  - Sync adds `Microsoft.Data.SqlClient` itself when it creates the Repository project (`ProjectFileTemplate`).
+  - The `--version` example is `sharpfactory 1.2.2.5`, not the unpublished 1.1.9.2.
+
+Verification
+- The README's C# block, copied out exactly, compiles with no warnings against the code 1.2.2.5 generates for the
+  sample database, and prints the rows the website shows. The SQL in the README is the statement it sent.
+- The picture comes from the headless screenshot harness at 1.2.2.5, with the temporary folder's path blanked.
+- The four links answer 200.
+
+Commit
+```
+Rewrite the top of the README for a visitor
+
+What it is, a picture of Sync, how to try it, the generated code in use
+and what to know first, then the app, the command line and building.
+Corrects three stale statements: the Sync target list (no running IDEs),
+Sync adds Microsoft.Data.SqlClient itself, and the --version example.
+
+Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>
+```
+
+---
+
 ## 1.2.2.5 — 2026-11-17
 
 ### A clear error when no connection string is registered (SF-232)
