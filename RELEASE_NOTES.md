@@ -14,6 +14,8 @@ Changes
   - a centered logo (`docs/images/logo.png`, a copy of the app's 128-pixel logo) and title, with one line on what it
     is;
   - a row of links: the download, the Quick Start, the walkthroughs, the documentation and Discussions;
+  - badges under the title (user, 2026-11-18): the CI workflow's status on `main` (GitHub's own badge), the latest
+    release and the license (shields.io);
   - under Try it, a pointer to the walkthroughs;
   - "A quick look": three screenshots from the headless harness at 1.2.2.5, each with one line. They show choosing
     objects, the Models page with the generated code, and Sync with a new column's diff

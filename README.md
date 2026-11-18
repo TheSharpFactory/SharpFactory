@@ -5,6 +5,12 @@
 <h1 align="center">The Sharp Factory</h1>
 
 <p align="center">
+  <a href="https://github.com/TheSharpFactory/SharpFactory/actions/workflows/ci.yml"><img src="https://github.com/TheSharpFactory/SharpFactory/actions/workflows/ci.yml/badge.svg?branch=main" alt="CI"></a>
+  <a href="https://github.com/TheSharpFactory/SharpFactory/releases/latest"><img src="https://img.shields.io/github/v/release/TheSharpFactory/SharpFactory" alt="Latest release"></a>
+  <a href="LICENSE"><img src="https://img.shields.io/github/license/TheSharpFactory/SharpFactory" alt="MIT license"></a>
+</p>
+
+<p align="center">
   C# data access generated from your SQL Server database.<br>
   Free and open source, forever. For Windows, macOS and Linux.
 </p>
