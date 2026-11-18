@@ -1,4 +1,4 @@
-name: CI
+name: CI Windows + Linux
 
 # Windows and Linux, and the check that both generate the same bytes. macOS runs the same build and tests in its own
 # workflow (ci-macos.yml): GitHub's macOS runners are often all busy, and a job that never gets one would fail this one

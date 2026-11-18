@@ -9,7 +9,7 @@ release on GitHub, with its downloads.
 
 - **Build and release:** the workflows use the current GitHub Actions, which run on Node.js 24; GitHub is retiring
   Node.js 20. macOS builds and tests in a workflow of its own, so a day when GitHub has no free Mac no longer fails CI
-  and its badge. Nothing changes in the app, the command line or the generated code.
+  and its badge; the project page shows a badge for each. Nothing changes in the app, the command line or the generated code.
 
 ### Downloads
 

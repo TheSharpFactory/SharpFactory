@@ -17,6 +17,8 @@ Changes
 - The new `ci-macos.yml` runs the same build, the three test projects and the generation of the public test model on
   macOS, in a workflow of its own: its runs show in the Actions tab, and one that gets no runner can be re-run there.
 - `TESTING.md` says so (the user chose this over keeping the three-system comparison, 2026-11-18).
+- `ci.yml` is named "CI Windows + Linux", and the README shows a badge for each workflow (the user, 2026-11-18): "CI
+  Windows + Linux" and "CI macOS".
 
 Verification
 - Both workflow files parse as YAML; they run on the push of this change.
