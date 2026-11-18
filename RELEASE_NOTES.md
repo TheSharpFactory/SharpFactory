@@ -12,8 +12,9 @@ release gives them its version. Version rules: see [BACKLOG.md](BACKLOG.md).
 Changes
 - `README.md`: the top is rewritten for someone who has never seen the app (Product Owner task A8):
   - what it is, in the words people search with (database first, reverse engineers);
-  - a picture of Sync, `docs/images/sync.png`, outside the app's assets so it does not ship in the app;
   - Try it (the downloads, the Quick Start, the sample database);
+  - a picture of Sync, `docs/images/sync.png`, outside the app's assets so it does not ship in the app. It comes
+    after Try it, so the opening and Try it both show on a laptop's first screen of the README;
   - the generated code in use, and the SQL it sends;
   - what to know first.
 

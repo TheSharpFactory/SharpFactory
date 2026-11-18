@@ -7,8 +7,6 @@ reads it again, and Sync shows you a diff of the generated files and writes only
 
 Free and open source, forever. A desktop app and a command line for Windows, macOS and Linux.
 
-![The Sync page after an Email column was added to the Customer table: six generated files to write, and the diff of Customer.cs with the new Email property](docs/images/sync.png)
-
 ## Try it
 
 1. **Download** the [latest release](https://github.com/TheSharpFactory/SharpFactory/releases/latest):
@@ -18,6 +16,8 @@ Free and open source, forever. A desktop app and a command line for Windows, mac
    five steps.
 3. **No database to try it on?** The [sample database](https://www.thesharpfactory.com/Documentation/GettingStarted/SampleDatabase)
    is a script for a small shop database (customers, orders, products), the one the documentation uses.
+
+![The Sync page after an Email column was added to the Customer table: six generated files to write, and the diff of Customer.cs with the new Email property](docs/images/sync.png)
 
 ## The generated code in use
 
