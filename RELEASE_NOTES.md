@@ -5,6 +5,41 @@ release gives them its version. Version rules: see [BACKLOG.md](BACKLOG.md).
 
 ---
 
+## Unreleased
+
+### GitHub Actions on Node.js 24 (SF-236)
+
+Changes
+- GitHub warned on every run that `actions/checkout@v4` and `actions/setup-dotnet@v4` run on Node.js 20, which it is
+  retiring. All five actions in the two workflows move to their newest major versions, which run on Node.js 24:
+  - `actions/checkout` v4 -> v7 and `actions/setup-dotnet` v4 -> v6 (CI and release);
+  - `actions/upload-artifact` v4 -> v7 and `actions/download-artifact` v4 -> v8 (CI's cross-system comparison);
+  - `softprops/action-gh-release` v2 -> v3 (release).
+- Their breaking changes do not touch these workflows:
+  - download-artifact v5 changed downloads by ID, but CI downloads by name pattern;
+  - download-artifact v8 fails on a hash mismatch instead of warning;
+  - the rest only change the runtime.
+
+  Every input the workflows pass is still an input of the new versions. upload-artifact v7's new `archive` input
+  defaults to zipping, as before.
+
+Verification
+- Each new version's `action.yml` says `using: node24`; the release notes of every major version in between were read.
+- CI runs the new versions on the next push; the release workflow on the next tag.
+
+Commit
+```
+Move the GitHub Actions to their Node.js 24 versions
+
+checkout v7, setup-dotnet v6, upload-artifact v7, download-artifact v8
+and action-gh-release v3: GitHub is retiring Node.js 20, which the v4
+and v2 lines run on. The workflows' inputs are unchanged.
+
+Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>
+```
+
+---
+
 ## 1.2.2.8 — 2026-11-18
 
 ### .NET 10 or .NET 11, and existing projects follow the choice (SF-235)

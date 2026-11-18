@@ -14,7 +14,7 @@ jobs:
   publish:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
 
       # before the long build: the tag must match VERSION and CHANGELOG.md must have that version's section (CI and
       # the tests check the section on every push, so this only fails for a tag that does not match VERSION)
@@ -30,7 +30,7 @@ jobs:
           python3 .github/scripts/release_notes.py "$version" CHANGELOG.md > "$RUNNER_TEMP/release-notes.md"
           echo "version=$version" >> "$GITHUB_OUTPUT"
 
-      - uses: actions/setup-dotnet@v4
+      - uses: actions/setup-dotnet@v6
         with:
           dotnet-version: 10.0.x
 
@@ -110,7 +110,7 @@ jobs:
           openssl dgst -sha256 -verify App/SF.App/Packaging/update-signing-key.pem \
             -signature dist/SHA256SUMS.txt.sig dist/SHA256SUMS.txt
 
-      - uses: softprops/action-gh-release@v2
+      - uses: softprops/action-gh-release@v3
         with:
           name: The Sharp Factory ${{ steps.notes.outputs.version }}
           body_path: ${{ runner.temp }}/release-notes.md

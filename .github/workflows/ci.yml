@@ -15,9 +15,9 @@ jobs:
       run:
         shell: pwsh
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
 
-      - uses: actions/setup-dotnet@v4
+      - uses: actions/setup-dotnet@v6
         with:
           dotnet-version: 10.0.x
 
@@ -54,7 +54,7 @@ jobs:
           # LF between lines on every OS, so the files compare byte for byte
           Set-Content -Path "${{ runner.temp }}/hashes-${{ matrix.os }}.txt" -Value (($lines -join "`n") + "`n") -NoNewline
 
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@v7
         with:
           name: hashes-${{ matrix.os }}
           path: ${{ runner.temp }}/hashes-${{ matrix.os }}.txt
@@ -63,7 +63,7 @@ jobs:
     needs: build-and-test
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/download-artifact@v4
+      - uses: actions/download-artifact@v8
         with:
           pattern: hashes-*
           merge-multiple: true
