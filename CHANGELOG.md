@@ -3,6 +3,25 @@
 What changed in each published release of The Sharp Factory, newest first. Each section is also the text of that
 release on GitHub, with its downloads.
 
+## 1.2.2.7 — 2026-11-18
+
+### Changes
+
+- **The project page** on GitHub welcomes a visitor: the logo, links to the download, the Quick Start, the
+  walkthroughs, the documentation and Discussions, three screenshots of the app, and where to ask questions and
+  report bugs. Nothing changes in the app, the command line or the generated code.
+
+### Downloads
+
+| Download | What |
+|---|---|
+| `TheSharpFactory-win-x64.zip`, `TheSharpFactory-win-arm64.zip` | The app for Windows |
+| `TheSharpFactory-osx-arm64.zip`, `TheSharpFactory-osx-x64.zip` | The app for macOS (Apple silicon, Intel) |
+| `TheSharpFactory-linux-x64.tar.gz` | The app for Linux |
+| `sharpfactory-cli-*` | The command line, `sharpfactory`, for the same systems |
+
+---
+
 ## 1.2.2.6 — 2026-11-18
 
 ### Changes

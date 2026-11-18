@@ -5,7 +5,7 @@ release gives them its version. Version rules: see [BACKLOG.md](BACKLOG.md).
 
 ---
 
-## Unreleased
+## 1.2.2.7 — 2026-11-18
 
 ### A welcoming README (SF-234)
 
