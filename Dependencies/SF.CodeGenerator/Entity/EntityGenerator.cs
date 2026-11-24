@@ -21,6 +21,7 @@ public static class EntityGenerator
     new UsingNamespace { Name = "System.Collections.Generic" },
   };
 
+        AddJsonUsing(commonSettings, usingNamespaces);
         if(entity.HXml)
         {
             usingNamespaces.Add(new UsingNamespace { Name = "System.Xml.Linq" });
@@ -60,7 +61,8 @@ public static class EntityGenerator
                     Summary = null,
                     Kind = PropertyKind.Auto,
                     ReturnType = GeneratePropType(p),
-                    DefaultValue = GeneratePropDefaultValue(p)
+                    DefaultValue = GeneratePropDefaultValue(p),
+                    Attributes = GenerateJsonAttributes(commonSettings, p.JN),
                 };
                 CSharpFile.Property(prop);
             }
@@ -100,6 +102,7 @@ public static class EntityGenerator
     new UsingNamespace { Name = "System.Collections.Generic" },
   };
 
+        AddJsonUsing(commonSettings, usingNamespaces);
         var requestType = (ClassDeclaration)null;
         var responseType = (ClassDeclaration)null;
 
@@ -135,14 +138,14 @@ public static class EntityGenerator
         if(proc.HPar)
         {
             CSharpFile.OpenClass(requestType);
-            GenerateRoutineBody(proc.Par, "Parameters", true);
+            GenerateRoutineBody(commonSettings, proc.Par, "Parameters", true);
             CSharpFile.CloseType();
         }
 
         if(proc.REn)
         {
             CSharpFile.OpenClass(responseType);
-            GenerateRoutineBody(proc.En.Ps, "Simple Properties", false);
+            GenerateRoutineBody(commonSettings, proc.En.Ps, "Simple Properties", false);
             CSharpFile.CloseType();
         }
 
@@ -168,6 +171,7 @@ public static class EntityGenerator
     new UsingNamespace { Name = "System.Collections.Generic" },
   };
 
+        AddJsonUsing(commonSettings, usingNamespaces);
         var requestType = (ClassDeclaration)null;
         var responseType = (ClassDeclaration)null;
 
@@ -201,14 +205,14 @@ public static class EntityGenerator
         if(hasParameters)
         {
             CSharpFile.OpenClass(requestType);
-            GenerateRoutineBody(func.Par, "Parameters", true);
+            GenerateRoutineBody(commonSettings, func.Par, "Parameters", true);
             CSharpFile.CloseType();
         }
 
         if(hasReturn)
         {
             CSharpFile.OpenClass(responseType);
-            GenerateRoutineBody(func.En.Ps, "Simple Properties", false);
+            GenerateRoutineBody(commonSettings, func.En.Ps, "Simple Properties", false);
             CSharpFile.CloseType();
         }
 
@@ -219,7 +223,7 @@ public static class EntityGenerator
     }
     #endregion
 
-    private static void GenerateRoutineBody(PropertyCollection props, string regionName, bool isParamContainer)
+    private static void GenerateRoutineBody(CommonSettings commonSettings, PropertyCollection props, string regionName, bool isParamContainer)
     {
         CSharpFile.OpenRegion(regionName);
         foreach(var p in props)
@@ -243,13 +247,36 @@ public static class EntityGenerator
                 Summary = summary,
                 Kind = PropertyKind.Auto,
                 ReturnType = GeneratePropType(p),
-                DefaultValue = GeneratePropDefaultValue(p)
+                DefaultValue = GeneratePropDefaultValue(p),
+                Attributes = GenerateJsonAttributes(commonSettings, p.JN),
             };
             CSharpFile.Property(prop);
         }
 
         CSharpFile.CloseRegion();
     }
+
+    #region JSON
+    /// <summary>
+    /// Optimize JSON: the attributes need System.Text.Json.Serialization
+    /// </summary>
+    private static void AddJsonUsing(CommonSettings commonSettings, List<UsingNamespace> usingNamespaces)
+    {
+        if(commonSettings.OptimizeJson == YesOrNo.Yes)
+            usingNamespaces.Add(new UsingNamespace { Name = "System.Text.Json.Serialization" });
+    }
+
+    /// <summary>
+    /// Optimize JSON: the property's short name in JSON, or none when the setting is off or the property has no name
+    /// </summary>
+    private static List<string> GenerateJsonAttributes(CommonSettings commonSettings, string jsonName)
+    {
+        if(commonSettings.OptimizeJson != YesOrNo.Yes || string.IsNullOrEmpty(jsonName))
+            return null;
+
+        return new List<string>(1) { "JsonPropertyName(\"" + jsonName + "\")" };
+    }
+    #endregion
 
     #region Generate Properties  
 
@@ -477,6 +504,7 @@ public static class EntityGenerator
             SetterModifier = AccessModifiers.None,
             Summary = EnumExtensions.NavPropXmlComment(model, prop, fk),
             ReturnType = new TypeInfo(GenerateNavPropType(commonSettings, model, prop)),
+            Attributes = GenerateJsonAttributes(commonSettings, prop.JN),
         };
 
         CSharpFile.Property(propDeclaration);

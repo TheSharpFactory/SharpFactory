@@ -44,6 +44,20 @@ public static class CodeGenUtils
             var content = EntityGenerator.Generate(commonSettings, model, entity, schema);
             FileWriter(filesInModel, folder, CodeGeneration.Common.GenerateTypeName(entity) + ".cs", content);
         }
+        /// <summary>
+        /// Enable System.Text.Json: the database's context (and the XDocument converter when it has xml columns), in the
+        /// database folder of the Entities project.
+        /// </summary>
+        public static void ProcessJsonContext(List<CodeFile> filesInModel, CommonSettings commonSettings, Model model, string folder)
+        {
+            var content = JsonContextGenerator.Generate(commonSettings, model);
+            if(string.IsNullOrEmpty(content))
+                return;
+
+            FileWriter(filesInModel, folder, JsonContextGenerator.GenerateContextName(model) + ".cs", content);
+            if(JsonContextGenerator.HasXml(model))
+                FileWriter(filesInModel, folder, JsonContextGenerator.GenerateXDocumentConverterName() + ".cs", JsonContextGenerator.GenerateXDocumentConverter(commonSettings, model));
+        }
         public static void ProcessStoredProcEntity(List<CodeFile> filesInModel, CommonSettings commonSettings, Model model, StoredProc proc, Schema schema, string folder)
         {
             if(!(proc.Par?.Count > 0) && proc.En == null)

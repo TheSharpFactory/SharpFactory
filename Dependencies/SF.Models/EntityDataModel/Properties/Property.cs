@@ -34,6 +34,7 @@ public sealed class Property : ModelBase, IModelMember
     private YesOrNo _generated = YesOrNo.No;
     private ParamMode? _mode = null;//by default is in parameter.
     private int? _size = null;
+    private string _jsonName = null;
 
     /// <summary>
     /// Property Name
@@ -294,6 +295,25 @@ public sealed class Property : ModelBase, IModelMember
         }
     }
 
+    /// <summary>
+    /// JSON Name: the short name Optimize JSON gives this property in JSON. Kept once given, so the name never changes
+    /// </summary>
+    public string JN
+    {
+        get
+        {
+            return _jsonName;
+        }
+        set
+        {
+            if(_jsonName != value)
+            {
+                _jsonName = value;
+                OnPropertyChanged(nameof(JN));
+            }
+        }
+    }
+
     public void FixNameInModel()
     {
         N = "_" + N;
@@ -313,7 +333,8 @@ public sealed class Property : ModelBase, IModelMember
             IsComp = _computed,
             IsGen = _generated,
             M = _mode,
-            S = _size
+            S = _size,
+            JN = _jsonName,
         };
 
         return result;

@@ -525,7 +525,7 @@ internal sealed partial class SyncPageViewModel : PageViewModel
         {
             //the list says what Sync would do to the model as it was: it goes, and is worked out again
             ClearReport();
-            if(CanCheck)
+            if(CanCheck && !_givingJsonNames)
                 _ = CheckAsync();
         }
 
@@ -791,6 +791,9 @@ internal sealed partial class SyncPageViewModel : PageViewModel
     private DiffViewModel _diffShown;
     private Task _checkLoop;
     private bool _checkAgain;
+
+    //the check or Sync that gives the JSON names runs itself: the change they make starts no other check
+    private bool _givingJsonNames;
     private bool _isLogTabSelected;
 
     [RelayCommand]
@@ -960,6 +963,7 @@ internal sealed partial class SyncPageViewModel : PageViewModel
             return;
 
         var document = Shell.Document;
+        GiveJsonNames(document);
         var target = TargetPath;
         var changeCount = document.ChangeCount;
         Progress.Clear();
@@ -1058,6 +1062,26 @@ internal sealed partial class SyncPageViewModel : PageViewModel
         Shell.SetNavBadge(this, badge, tip);
     }
 
+    /// <summary>
+    /// Optimize JSON: new properties get their short names here, on the UI thread before the run, and the file then
+    /// has a change to save so the names stay the same.
+    /// </summary>
+    private void GiveJsonNames(ModelDocument document)
+    {
+        if(JsonNames.Assign(document.Container) < 1)
+            return;
+
+        _givingJsonNames = true;
+        try
+        {
+            document.MarkDirty();
+        }
+        finally
+        {
+            _givingJsonNames = false;
+        }
+    }
+
     private static string Now()
     {
         return DateTime.Now.ToString("HH:mm", CultureInfo.CurrentCulture);
@@ -1130,6 +1154,7 @@ internal sealed partial class SyncPageViewModel : PageViewModel
             return;
 
         var document = Shell.Document;
+        GiveJsonNames(document);
         var target = TargetPath;
         var changeCount = document.ChangeCount;
         Progress.Clear();

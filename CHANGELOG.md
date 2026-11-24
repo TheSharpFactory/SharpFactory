@@ -3,6 +3,24 @@
 What changed in each published release of The Sharp Factory, newest first. Each section is also the text of that
 release on GitHub, with its downloads.
 
+## Unreleased
+
+### Changes
+
+- **Two JSON settings for the generated Entities project**, on the Settings page (both off, so nothing changes
+  until you turn one on):
+  - **Enable System.Text.Json:** each database gets a System.Text.Json source generation context, such as
+    `AppDbJsonContext`, listing every class of the Entities project (tables, views, and the request and result
+    classes of procedures and functions), each also as a List. Use it as
+    `JsonSerializer.Serialize(customer, AppDbJsonContext.Default.dboCustomer)`, or add `AppDbJsonContext.Default` to
+    your `JsonSerializerOptions`. xml columns are written as their XML text.
+  - **Optimize JSON:** every property gets a short JSON name with `[JsonPropertyName]`: A to Z, then A0 to A9, AA to
+    AZ, B0 and so on. The model file keeps each name, so a property keeps its name when columns are added or
+    removed; a new column gets the next name, and a removed column's name is not given again. Sync gives the new names
+    (the app then has a change to save; the command line saves the model file itself).
+
+---
+
 ## 1.2.2.9 — 2026-11-18
 
 ### Changes

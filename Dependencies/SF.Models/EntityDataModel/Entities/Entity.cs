@@ -15,6 +15,7 @@ public sealed class Entity : ModelBase, IModelMember
     private PropertyCollection _properties = null;
     private NavPropertyCollection _navProperties = null;
     private KeyCollection _uniqueKeys = null;
+    private string _jsonLast = null;
 
     /// <summary>
     /// Entity Name
@@ -191,13 +192,33 @@ public sealed class Entity : ModelBase, IModelMember
         FullyQualify = true;
     }
 
+    /// <summary>
+    /// JSON Last: the last short JSON name given in this class. A new property gets the next one, so a name is never given twice
+    /// </summary>
+    public string JL
+    {
+        get
+        {
+            return _jsonLast;
+        }
+        set
+        {
+            if(_jsonLast != value)
+            {
+                _jsonLast = value;
+                OnPropertyChanged(nameof(JL));
+            }
+        }
+    }
+
     public Entity Clone()
     {
         var result = new Entity
         {
             SN = _storeName,
             HId = _hasIdentity,
-            HTr = _hasTriggers
+            HTr = _hasTriggers,
+            JL = _jsonLast,
         };
 
         if(_primaryKey != null)

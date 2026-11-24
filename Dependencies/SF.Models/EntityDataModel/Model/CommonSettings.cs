@@ -11,6 +11,8 @@ public sealed class CommonSettings : ModelBase
     private int _indentSize = 0;
     private YesOrNo _useRootNSInProjectName = YesOrNo.Yes;
     private TargetFrameworks? _targetFramework = null;
+    private YesOrNo _enableSystemTextJson = YesOrNo.No;
+    private YesOrNo _optimizeJson = YesOrNo.No;
 
     public YesOrNo UseRootNSInProjectName
     {
@@ -94,6 +96,43 @@ public sealed class CommonSettings : ModelBase
         }
     }
 
+    /// <summary>
+    /// Enable System.Text.Json: the Entities project gets a System.Text.Json source generation context for each database, so its classes serialize and deserialize fast
+    /// </summary>
+    public YesOrNo EnableSystemTextJson
+    {
+        get
+        {
+            return _enableSystemTextJson;
+        }
+        set
+        {
+            if(_enableSystemTextJson != value)
+            {
+                _enableSystemTextJson = value;
+                OnPropertyChanged(nameof(EnableSystemTextJson));
+            }
+        }
+    }
+    /// <summary>
+    /// Optimize JSON: each property of the Entities project's classes gets a short JSON name (A..Z, A0..A9, AA..) with [JsonPropertyName]
+    /// </summary>
+    public YesOrNo OptimizeJson
+    {
+        get
+        {
+            return _optimizeJson;
+        }
+        set
+        {
+            if(_optimizeJson != value)
+            {
+                _optimizeJson = value;
+                OnPropertyChanged(nameof(OptimizeJson));
+            }
+        }
+    }
+
     public CommonSettings Clone()
     {
         var result = new CommonSettings
@@ -103,6 +142,8 @@ public sealed class CommonSettings : ModelBase
             RootNamespace = _rootNamespace,
             UseRootNSInProjectName = _useRootNSInProjectName,
             TargetFramework = _targetFramework,
+            EnableSystemTextJson = _enableSystemTextJson,
+            OptimizeJson = _optimizeJson,
         };
         return result;
     }

@@ -14,6 +14,7 @@ public sealed class Function : ModelBase, IModelMember
 
     //private bool _hasParams = false;
     private PropertyCollection _parameters = null;
+    private string _jsonLast = null;
 
     /// <summary>
     /// Function Name
@@ -138,6 +139,24 @@ public sealed class Function : ModelBase, IModelMember
     {
         return _parameters?.Count > 0;
     }
+    /// <summary>
+    /// JSON Last: the last short JSON name given in the request class (the parameters). A new parameter gets the next one, so a name is never given twice
+    /// </summary>
+    public string JL
+    {
+        get
+        {
+            return _jsonLast;
+        }
+        set
+        {
+            if(_jsonLast != value)
+            {
+                _jsonLast = value;
+                OnPropertyChanged(nameof(JL));
+            }
+        }
+    }
     public Function Clone()
     {
         var result = new Function
@@ -145,6 +164,7 @@ public sealed class Function : ModelBase, IModelMember
             SN = _storeName,
             Sc = _scalar != null ? _scalar.Clone() : null,
             En = _entity != null ? _entity.Clone() : null,
+            JL = _jsonLast,
         };
 
         if(_parameters?.Count > 0)

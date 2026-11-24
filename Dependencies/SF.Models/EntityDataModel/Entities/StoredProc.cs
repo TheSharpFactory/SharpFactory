@@ -13,6 +13,7 @@ public sealed class StoredProc : ModelBase, IModelMember
 
     //private bool _hasParams = false;
     private PropertyCollection _parameters = null;
+    private string _jsonLast = null;
 
     /// <summary>
     /// Stored Proc Name
@@ -113,12 +114,31 @@ public sealed class StoredProc : ModelBase, IModelMember
             return _parameters.Count;
         }
     }
+    /// <summary>
+    /// JSON Last: the last short JSON name given in the request class (the parameters). A new parameter gets the next one, so a name is never given twice
+    /// </summary>
+    public string JL
+    {
+        get
+        {
+            return _jsonLast;
+        }
+        set
+        {
+            if(_jsonLast != value)
+            {
+                _jsonLast = value;
+                OnPropertyChanged(nameof(JL));
+            }
+        }
+    }
     public StoredProc Clone()
     {
         var result = new StoredProc
         {
             SN = _storeName,
             En = _entity?.Clone(),
+            JL = _jsonLast,
         };
 
         if(_parameters?.Count > 0)

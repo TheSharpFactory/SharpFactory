@@ -5,6 +5,61 @@ release gives them its version. Version rules: see [BACKLOG.md](BACKLOG.md).
 
 ---
 
+## Unreleased
+
+### Enable System.Text.Json and Optimize JSON (SF-238)
+
+Changes
+- Two settings of the model file (`CommonSettings.EnableSystemTextJson`, `CommonSettings.OptimizeJson`, both
+  `YesOrNo`, default No, so a file without them reads as before and is saved without them), two checkboxes on the
+  Settings page. They change only the Entities project.
+- Enable System.Text.Json: `JsonContextGenerator` writes `<Model>JsonContext.cs` in the database folder of the
+  Entities project, one context per database (the user chose it over one per class or one for the whole project:
+  navigation properties connect the classes, so a context per class would generate nearly the whole database for every
+  class). It has a `[JsonSerializable]` for each class and its List, named with the schema (`dboCustomer`,
+  `ListdboCustomer`) so two tables with the same name in different schemas both get one. When the database has xml
+  columns it also writes `XDocumentJsonConverter.cs` (the XML text as a JSON string) and lists it in the context's
+  options; System.Text.Json cannot serialize `XDocument` by itself.
+- Optimize JSON: each property of the Entities project's classes gets `[JsonPropertyName("A")]`, the columns in
+  order, then the navigation properties. The names are kept in the model: `JN` on each property and navigation
+  property, and `JL` (the last name the class gave) on each table, view, result class, procedure and function.
+  `JsonNames.Assign` gives the missing names, after `JL` and skipping names in use, so a removed column's name is
+  never given again; `JsonNames.CarryOver` keeps the names through Update (`ModelBuilder.Update`).
+- Where names are given: at the start of every generation (`GenerationRunner.Run`, on the model itself, before the
+  sql_variant copy); the Sync page gives them on the UI thread before Check and Sync and marks the file changed;
+  the command line's `sync` and `generate` save the model file when they gave names.
+- `IdGenerator` (the table aliases of the generated SQL) is now a static wrapper over one `IdSequence`, the same
+  algorithm as an instance class, so each class's JSON names start at A without touching the aliases.
+- The C# writer writes a property's attributes (`PropertyDeclaration.Attributes` was ignored for properties).
+
+Verification
+- With both settings off, the released 1.2.2.9 command line and this build generate byte-identical files for the
+  Coverage model (174) and the full test model (1424), SQL aliases included.
+- New `GeneratedJsonTests` (7): the id sequence (A..Z, A0..A9, AA..AZ, B0 ... ZZ, A00); nothing changes with both
+  off; names in order and none given twice; a new column gets the next name and a removed one's name is not reused;
+  Update keeps the names; generation gives names in the model itself; the Entities project generated with both on
+  compiles with a small program that round-trips a class with a navigation property, a List and an xml column
+  through the context, with no SYSLIB warning.
+- New UI test `TheJsonSettingsGiveShortNamesAndAContext`: the two boxes set the settings, Check marks the file
+  changed and lists the context, Sync writes it, and the next Check is up to date without changing the file again.
+- The full test model synced with both on: the Entities project builds with no warning.
+- The command line's `sync` saved 119 names into a copy of the Coverage model; a second run saved nothing and changed
+  no file.
+- Independent code review (one finding, confirmed and fixed): giving the names marked the file changed before the
+  check had started, and that change started a second check, so two generations ran at once through the shared
+  static writer (or a preview ran beside a Sync). The Sync page now gives the names without starting another check
+  (`_givingJsonNames`). New UI test `GivingTheJsonNamesStartsOneCheck`: one check per setting change; it fails
+  without the fix (two checks started).
+- The documentation's sample (the docs model with both settings on) compiles and prints
+  `{"A":1,"B":"Ana","C":"Mora",...}` through `AppDbJsonContext`.
+
+Commit message
+```
+Enable System.Text.Json and Optimize JSON settings for the Entities project (SF-238)
+```
+
+---
+
 ## 1.2.2.9 — 2026-11-18
 
 ### macOS in its own CI workflow (SF-237)

@@ -189,6 +189,38 @@ internal sealed partial class SettingsPageViewModel : PageViewModel
         }
     }
 
+    public bool EnableSystemTextJson
+    {
+        get
+        {
+            return Settings != null && Settings.EnableSystemTextJson == YesOrNo.Yes;
+        }
+        set
+        {
+            if(Settings == null)
+                return;
+
+            Settings.EnableSystemTextJson = value ? YesOrNo.Yes : YesOrNo.No;
+            OnPropertyChanged();
+        }
+    }
+
+    public bool OptimizeJson
+    {
+        get
+        {
+            return Settings != null && Settings.OptimizeJson == YesOrNo.Yes;
+        }
+        set
+        {
+            if(Settings == null)
+                return;
+
+            Settings.OptimizeJson = value ? YesOrNo.Yes : YesOrNo.No;
+            OnPropertyChanged();
+        }
+    }
+
     public override void OnShown()
     {
         Rebuild();
@@ -220,6 +252,8 @@ internal sealed partial class SettingsPageViewModel : PageViewModel
 
         OnPropertyChanged(nameof(Settings));
         OnPropertyChanged(nameof(UseRootNamespaceInProjectName));
+        OnPropertyChanged(nameof(EnableSystemTextJson));
+        OnPropertyChanged(nameof(OptimizeJson));
     }
 
     partial void OnIndentSizeTextChanged(string value)

@@ -32,6 +32,19 @@
                      Classes.invalid="{Binding IndentSizeError, Converter={x:Static ObjectConverters.IsNotNull}}" />
             <TextBlock Classes="fieldError" Text="{Binding IndentSizeError}" IsVisible="{Binding IndentSizeError, Converter={x:Static ObjectConverters.IsNotNull}}" />
           </StackPanel>
+          <StackPanel Spacing="8">
+            <TextBlock Classes="label" Text="JSON (the Entities project)" />
+            <StackPanel>
+              <CheckBox Name="EnableSystemTextJsonBox" IsChecked="{Binding EnableSystemTextJson}" Content="Enable System.Text.Json" />
+              <TextBlock Classes="subtle" FontSize="12" Margin="28,0,0,0" TextWrapping="Wrap"
+                         Text="A source generation context for each database, so System.Text.Json reads and writes the classes without reflection." />
+            </StackPanel>
+            <StackPanel>
+              <CheckBox Name="OptimizeJsonBox" IsChecked="{Binding OptimizeJson}" Content="Optimize JSON" />
+              <TextBlock Classes="subtle" FontSize="12" Margin="28,0,0,0" TextWrapping="Wrap"
+                         Text="Short JSON names (A, B, C...) for every property. The model file keeps them, so a property's name never changes." />
+            </StackPanel>
+          </StackPanel>
         </StackPanel>
       </Border>
 

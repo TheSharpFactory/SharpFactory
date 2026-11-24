@@ -1,0 +1,42 @@
+using System;
+using System.Collections.Generic;
+using System.Text.Json;
+using System.Xml.Linq;
+using SFTest.Entity.TestDb;
+using SFTest.Entity.TestDb.Coverage;
+
+//GeneratedJsonTests: the Entities project generated with Enable System.Text.Json and Optimize JSON, through its context
+public static class Program
+{
+    public static int Main()
+    {
+        var failures = 0;
+
+        //a class with a to-many navigation property: the short names, and the values back
+        var region = new Region { CountryCode = "CR", RegionCode = "SJ", Name = "San Jose", Stores = new List<Store> { new Store() } };
+        var json = JsonSerializer.Serialize(region, TestDbJsonContext.Default.CoverageRegion);
+        Console.WriteLine(json);
+        failures += Check("short names", json.StartsWith("{\"A\":\"CR\",\"B\":\"SJ\",\"C\":\"San Jose\",\"D\":[", StringComparison.Ordinal));
+        var back = JsonSerializer.Deserialize(json, TestDbJsonContext.Default.CoverageRegion);
+        failures += Check("round trip", back.CountryCode == "CR" && back.RegionCode == "SJ" && back.Name == "San Jose" && back.Stores.Count == 1);
+
+        //a list
+        var list = JsonSerializer.Serialize(new List<Region> { region, region }, TestDbJsonContext.Default.ListCoverageRegion);
+        failures += Check("list", JsonSerializer.Deserialize(list, TestDbJsonContext.Default.ListCoverageRegion).Count == 2);
+
+        //an xml column: the XML text as a string
+        var allTypes = new AllType { XmlCol = XDocument.Parse("<a x=\"1\"><b /></a>") };
+        var xmlJson = JsonSerializer.Serialize(allTypes, TestDbJsonContext.Default.CoverageAllType);
+        var xmlBack = JsonSerializer.Deserialize(xmlJson, TestDbJsonContext.Default.CoverageAllType);
+        failures += Check("xml column", xmlBack.XmlCol.Root.Name == "a" && xmlBack.XmlCol.Root.Attribute("x").Value == "1");
+
+        Console.WriteLine(failures == 0 ? "ALL PASSED" : failures + " FAILED");
+        return failures == 0 ? 0 : 1;
+    }
+
+    private static int Check(string name, bool passed)
+    {
+        Console.WriteLine((passed ? "PASS " : "FAIL ") + name);
+        return passed ? 0 : 1;
+    }
+}

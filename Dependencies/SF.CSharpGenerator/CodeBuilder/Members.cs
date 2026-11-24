@@ -29,6 +29,12 @@ public static partial class CSharpFileDeclarations
         public static void Property(PropertyDeclaration prop)
         {
             CSharpFile.PropXmlComment(prop);
+            if(prop.Attributes?.Count > 0)
+            {
+                foreach(var attribute in prop.Attributes)
+                    CSharpFile.Attribute(attribute);
+            }
+
             MemberSignature(prop);
             CSharpFile.Append(" {");
             switch(prop.Kind)

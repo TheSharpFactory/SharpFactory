@@ -4,6 +4,8 @@ using Avalonia.Headless.XUnit;
 using SF.App.Services;
 using SF.App.Services.Updates;
 using SF.App.ViewModels;
+using SF.Engine.Sync;
+using SF.Models;
 using System;
 using System.IO;
 using System.Threading.Tasks;
@@ -90,6 +92,99 @@ public sealed class SyncFlowTests
 
             await page.CheckAsync();
             Assert.True(page.Report.IsUpToDate);
+        }
+    }
+
+    [AvaloniaFact]
+    public async Task TheJsonSettingsGiveShortNamesAndAContext()
+    {
+        using(var app = new AppHarness())
+        {
+            var page = await SyncedNewSolution(app);
+            var document = app.ViewModel.Document;
+            var settings = document.Container.CommonSettings;
+
+            //the two boxes on the Settings page, both off
+            app.ViewModel.Navigate(app.ViewModel.SettingsPage);
+            app.Pump();
+            var enableBox = app.Find<CheckBox>("EnableSystemTextJsonBox");
+            var optimizeBox = app.Find<CheckBox>("OptimizeJsonBox");
+            Assert.False(enableBox.IsChecked);
+            Assert.False(optimizeBox.IsChecked);
+            enableBox.IsChecked = true;
+            optimizeBox.IsChecked = true;
+            app.Pump();
+            Assert.Equal(YesOrNo.Yes, settings.EnableSystemTextJson);
+            Assert.Equal(YesOrNo.Yes, settings.OptimizeJson);
+
+            //the check gives the names (the file has them to save) and lists the entities and the new context
+            app.ViewModel.Navigate(page);
+            await page.CheckAsync();
+            Assert.True(document.IsDirty);
+            Assert.True(page.CanSync);
+            var contextFile = Path.Combine(app.Folder, "DataAccess", "SFTest.Entity", "TestDb", "TestDbJsonContext.cs");
+            Assert.Contains(page.Report.FileChanges, IsTheContext);
+
+            //Sync writes them; the next check has nothing to do, and gives no names again
+            await page.SyncCommand.ExecuteAsync(null);
+            app.Pump();
+            Assert.True(page.LastSync.Succeeded, page.LastSync.Text);
+            Assert.True(File.Exists(contextFile));
+            var region = File.ReadAllText(Path.Combine(app.Folder, "DataAccess", "SFTest.Entity", "TestDb", "Coverage", "Region.cs"));
+            Assert.Contains("[JsonPropertyName(\"A\")]", region, StringComparison.Ordinal);
+
+            var changeCount = document.ChangeCount;
+            await page.CheckAsync();
+            Assert.True(page.Report.IsUpToDate);
+            Assert.Equal(changeCount, document.ChangeCount);
+        }
+    }
+
+    private static bool IsTheContext(SyncFileChange change)
+    {
+        return change.RelativePath.EndsWith("TestDbJsonContext.cs", StringComparison.Ordinal);
+    }
+
+    [AvaloniaFact]
+    public async Task GivingTheJsonNamesStartsOneCheck()
+    {
+        using(var app = new AppHarness())
+        {
+            var page = await SyncedNewSolution(app);
+            var run = page.Progress.Run;
+
+            //on the Sync page: the setting starts a check, which gives the names; their change starts no second one
+            //(two at once would generate through the same static writer)
+            app.ViewModel.Document.Container.CommonSettings.OptimizeJson = YesOrNo.Yes;
+            app.PumpUntil(new CheckWait(page).IsDone);
+
+            Assert.Equal(run + 1, page.Progress.Run);
+            Assert.True(page.CanSync);
+            Assert.Equal("A", FindRegionCountryCode(app).JN);
+        }
+    }
+
+    private static Property FindRegionCountryCode(AppHarness app)
+    {
+        var schema = app.ViewModel.Document.Container.Models[0].Categories.GetByName(CategoryNames.Entities).Schemas.GetByName("Coverage");
+        return schema.Entities.GetByName("Region").Ps.GetByName("CountryCode");
+    }
+
+    /// <summary>
+    /// Done when a check ran and none is running, its report in.
+    /// </summary>
+    private sealed class CheckWait
+    {
+        private readonly SyncPageViewModel _page;
+
+        public CheckWait(SyncPageViewModel page)
+        {
+            _page = page;
+        }
+
+        public bool IsDone()
+        {
+            return !_page.IsChecking && _page.Report != null && !_page.Report.IsUpToDate;
         }
     }
 

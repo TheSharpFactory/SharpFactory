@@ -26,6 +26,12 @@ public sealed class GenerationResult
     /// The folder of each project, keyed by upper-case name.
     /// </summary>
     public Dictionary<string, string> ProjectFolders { get; set; } = new Dictionary<string, string>();
+
+    /// <summary>
+    /// How many short JSON names the run gave to properties that had none (Optimize JSON): the model changed and is
+    /// worth saving, so the names stay the same.
+    /// </summary>
+    public int JsonNamesGiven { get; set; }
 }
 
 /// <summary>
@@ -36,11 +42,14 @@ public static class GenerationRunner
 {
     public static GenerationResult Run(ModelContainer modelContainer, IProjectHost host, IProgressLog log)
     {
+        //on the model itself, not on the filtered copy: the names are kept in the model
+        var jsonNamesGiven = JsonNames.Assign(modelContainer);
         modelContainer = SqlVariantFilter.Apply(modelContainer, log);
 
         var result = new GenerationResult
         {
-            Files = new List<CodeFile>((modelContainer.ObjectCount * 6) + 50)
+            Files = new List<CodeFile>((modelContainer.ObjectCount * 6) + 50),
+            JsonNamesGiven = jsonNamesGiven,
         };
 
         //the generator writes through a static delegate: point it at this host for the run only, so a finished host
@@ -203,6 +212,12 @@ public static class GenerationRunner
         {
             log.Info($"Processing Model {m.Name} Database Sequences....");
             GenerateSequences(modelContainer, m, seqCat, folders, log, filesInModel);
+        }
+
+        if(commonSettings.EnableSystemTextJson == YesOrNo.Yes)
+        {
+            log.Info($"Processing Model {m.Name} System.Text.Json Context....");
+            CodeGenUtils.ModelProjects.ProcessJsonContext(filesInModel, commonSettings, m, folders.Entities);
         }
     }
 

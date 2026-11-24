@@ -3,6 +3,7 @@ using SF.Common.Logging;
 using SF.Engine;
 using SF.Engine.Settings;
 using SF.Engine.Sync;
+using SF.Models;
 using SF.Utils;
 using System;
 using System.Collections.Generic;
@@ -101,6 +102,8 @@ internal static class Program
             return 1;
         }
 
+        //Optimize JSON: names given now are saved below, so they stay the same on the next run
+        var jsonNamesGiven = JsonNames.Assign(modelContainer);
         var report = SolutionSync.Run(new SyncRequest { ModelContainer = modelContainer, SolutionPath = solutionPath, Preview = preview }, new ConsoleProgressLog());
         if(!report.Success)
             return 1;
@@ -109,6 +112,7 @@ internal static class Program
 
         if(!preview)
         {
+            SaveJsonNames(modelContainer, modelFile, jsonNamesGiven);
             var settings = AppSettingsStore.Load();
             AppSettingsStore.RecordSyncTarget(settings, modelFile, solutionPath);
             AppSettingsStore.Save(settings);
@@ -144,6 +148,7 @@ internal static class Program
             return 1;
         }
 
+        var jsonNamesGiven = JsonNames.Assign(modelContainer);
         var outputFolder = Path.GetFullPath(args[2]);
         var host = new FolderProjectHost(outputFolder);
         try
@@ -158,7 +163,20 @@ internal static class Program
         }
 
         Console.WriteLine($"Generated {host.FilesWritten} files into {outputFolder}");
+        SaveJsonNames(modelContainer, args[1], jsonNamesGiven);
         return 0;
+    }
+
+    /// <summary>
+    /// Optimize JSON gave short names to new properties: the model file keeps them, so a property's name never changes.
+    /// </summary>
+    private static void SaveJsonNames(ModelContainer modelContainer, string modelFile, int jsonNamesGiven)
+    {
+        if(jsonNamesGiven < 1)
+            return;
+
+        ModelUtils.Save(modelContainer, modelFile);
+        Console.WriteLine($"Saved {modelFile} with {jsonNamesGiven} new JSON names");
     }
 
     /// <summary>

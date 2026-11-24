@@ -18,6 +18,7 @@ public sealed class NavProperty : ModelBase, IModelMember
     private string _name = null;//name of the property. plural or singular depending on the multiplicity. also might have a suffix if there is more than one pointing to the same entity.
     private string _multi = null;//this can be Single or Many represented by 1 or *, asterisk being many
     private NavPropertyEnd _end = NavPropertyEnd.None;
+    private string _jsonName = null;
 
     /// <summary>
     /// Id of the FK in the model
@@ -88,6 +89,24 @@ public sealed class NavProperty : ModelBase, IModelMember
             }
         }
     }
+    /// <summary>
+    /// JSON Name: the short name Optimize JSON gives this property in JSON. Kept once given, so the name never changes
+    /// </summary>
+    public string JN
+    {
+        get
+        {
+            return _jsonName;
+        }
+        set
+        {
+            if(_jsonName != value)
+            {
+                _jsonName = value;
+                OnPropertyChanged(nameof(JN));
+            }
+        }
+    }
     public NavProperty Clone()
     {
         var resul = new NavProperty
@@ -96,6 +115,7 @@ public sealed class NavProperty : ModelBase, IModelMember
             N = _name,
             Mul = _multi,
             End = _end,
+            JN = _jsonName,
         };
         return resul;
     }

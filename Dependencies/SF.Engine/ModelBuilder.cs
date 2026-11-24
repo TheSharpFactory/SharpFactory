@@ -164,12 +164,17 @@ public static class ModelBuilder
     }
 
     /// <summary>
-    /// Rebuilds an existing model from the selected database objects, keeping its connection and layers; the objects
-    /// left out as not supported go to <paramref name="notSupported"/> when it is given, otherwise to the log.
+    /// Rebuilds an existing model from the selected database objects, keeping its connection, its layers and its short
+    /// JSON names; the objects left out as not supported go to <paramref name="notSupported"/> when it is given,
+    /// otherwise to the log.
     /// </summary>
     public static Model Update(Model currentModel, DBObjectCategoryCollection dbCategories, IProgressLog log, List<string> notSupported)
     {
-        return Populate(currentModel.Name, currentModel.ConInfo.Clone(), currentModel.Layers.Clone(), dbCategories, log, notSupported);
+        var updated = Populate(currentModel.Name, currentModel.ConInfo.Clone(), currentModel.Layers.Clone(), dbCategories, log, notSupported);
+
+        //the short JSON names stay with their columns
+        JsonNames.CarryOver(currentModel, updated);
+        return updated;
     }
 
     /// <summary>

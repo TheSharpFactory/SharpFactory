@@ -3,25 +3,94 @@
 
 namespace SF.Models;
 
+/// <summary>
+/// One shared sequence of compact ids (the table aliases of the generated SQL). Each call goes to one
+/// <see cref="IdSequence"/>, so the ids are the same as ever.
+/// </summary>
 public static class IdGenerator
 {
-    private static char _minChar = 'A';
-    private static char _maxChar = 'Z';
-    private static int _minDigit = 0;
-    private static int _maxDigit = 9;
-    private static int _minLength = 1;
-    private static int _currentLength = 0;
-
-    //start at 25 characters which is more than enough for most autoids
-    private static char[] _currentBuffer = new char[25];
-
-    private static int _minNumId = 0;
+    private static readonly IdSequence _shared = new IdSequence();
 
     /// <summary>
     /// Get the next Id in the sequence
     /// </summary>
     /// <returns>The Next Alphanumeric Id</returns>
     public static string NextId()
+    {
+        return _shared.NextId();
+    }
+
+    /// <summary>
+    /// Get the next numeric id. This is just an incremental integer
+    /// </summary>
+    /// <returns>Next integer</returns>
+    public static int NextNumericID()
+    {
+        return _shared.NextNumericID();
+    }
+
+    /// <summary>
+    /// Seeds the generator. It can be used to restart a sequence where it left off.
+    /// </summary>
+    /// <param name="seedId">Must contain A-Z and 0-9</param>
+    public static void Seed(string seedId)
+    {
+        _shared.Seed(seedId);
+    }
+
+    /// <summary>
+    /// Restarts the id sequence from the beginning
+    /// </summary>
+    public static void Reset()
+    {
+        _shared.Reset();
+    }
+
+    /// <summary>
+    /// Configures the id generation parameters used and restarts the id sequence.
+    /// </summary>
+    /// <param name="minChar">Character from A-Z</param>
+    /// <param name="maxChar">Character from A-Z</param>
+    /// <param name="minDigit">Digit from 0-9</param>
+    /// <param name="maxDigit">Digit from 0-9</param>
+    /// <param name="minLength">Any number greater than 0</param>
+    public static void Configure(char minChar, char maxChar, int minDigit, int maxDigit, int minLength)
+    {
+        _shared.Configure(minChar, maxChar, minDigit, maxDigit, minLength);
+    }
+
+    /// <summary>
+    /// Resets to the default configuration: A-Z, 0-9, min length 2 and restarts the id sequence.
+    /// </summary>
+    public static void ResetConfiguration()
+    {
+        _shared.ResetConfiguration();
+    }
+}
+
+/// <summary>
+/// Generates compact sequential Ids: A..Z, A0..A9, AA..AZ, B0..B9, BA..BZ, ... ZZ, A00 and on. Each instance is its
+/// own sequence.
+/// </summary>
+public sealed class IdSequence
+{
+    private char _minChar = 'A';
+    private char _maxChar = 'Z';
+    private int _minDigit = 0;
+    private int _maxDigit = 9;
+    private int _minLength = 1;
+    private int _currentLength = 0;
+
+    //start at 25 characters which is more than enough for most autoids
+    private char[] _currentBuffer = new char[25];
+
+    private int _minNumId = 0;
+
+    /// <summary>
+    /// Get the next Id in the sequence
+    /// </summary>
+    /// <returns>The Next Alphanumeric Id</returns>
+    public string NextId()
     {
         //if the current length is less than 1 it means the generator was reset
         if(_currentLength < 1)
@@ -103,7 +172,7 @@ public static class IdGenerator
     /// Get the next numeric id. This is just an incremental integer
     /// </summary>
     /// <returns>Next integer</returns>
-    public static int NextNumericID()
+    public int NextNumericID()
     {
         _minNumId++;
         return _minNumId;
@@ -113,7 +182,7 @@ public static class IdGenerator
     /// Seeds the generator. It can be used to restart a sequence where it left off.
     /// </summary>
     /// <param name="seedId">Must contain A-Z and 0-9</param>
-    public static void Seed(string seedId)
+    public void Seed(string seedId)
     {
         ResetConfiguration();
 
@@ -129,7 +198,7 @@ public static class IdGenerator
     /// <summary>
     /// Restarts the id sequence from the beginning
     /// </summary>
-    public static void Reset()
+    public void Reset()
     {
         _minNumId = 0;
         _currentLength = 0;
@@ -143,7 +212,7 @@ public static class IdGenerator
     /// <param name="minDigit">Digit from 0-9</param>
     /// <param name="maxDigit">Digit from 0-9</param>
     /// <param name="minLength">Any number greater than 0</param>
-    public static void Configure(char minChar, char maxChar, int minDigit, int maxDigit, int minLength)
+    public void Configure(char minChar, char maxChar, int minDigit, int maxDigit, int minLength)
     {
         _minChar = minChar;
         _maxChar = maxChar;
@@ -156,7 +225,7 @@ public static class IdGenerator
     /// <summary>
     /// Resets to the default configuration: A-Z, 0-9, min length 2 and restarts the id sequence.
     /// </summary>
-    public static void ResetConfiguration()
+    public void ResetConfiguration()
     {
         _minChar = 'A';
         _maxChar = 'Z';
@@ -167,7 +236,7 @@ public static class IdGenerator
     }
 
     #region Helpers
-    private static void ResetSequenceAndIncreaseLength()
+    private void ResetSequenceAndIncreaseLength()
     {
         _currentLength++;
 
@@ -207,7 +276,7 @@ public static class IdGenerator
     {
         return c - '0';
     }
-    private static string CreateString()
+    private string CreateString()
     {
         return new string(_currentBuffer, 0, _currentLength);
     }
