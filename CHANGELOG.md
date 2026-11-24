@@ -3,7 +3,7 @@
 What changed in each published release of The Sharp Factory, newest first. Each section is also the text of that
 release on GitHub, with its downloads.
 
-## Unreleased
+## 1.2.3.0 — 2026-11-24
 
 ### Changes
 
@@ -18,6 +18,15 @@ release on GitHub, with its downloads.
     AZ, B0 and so on. The model file keeps each name, so a property keeps its name when columns are added or
     removed; a new column gets the next name, and a removed column's name is not given again. Sync gives the new names
     (the app then has a change to save; the command line saves the model file itself).
+
+### Downloads
+
+| Download | What |
+|---|---|
+| `TheSharpFactory-win-x64.zip`, `TheSharpFactory-win-arm64.zip` | The app for Windows |
+| `TheSharpFactory-osx-arm64.zip`, `TheSharpFactory-osx-x64.zip` | The app for macOS (Apple silicon, Intel) |
+| `TheSharpFactory-linux-x64.tar.gz` | The app for Linux |
+| `sharpfactory-cli-*` | The command line, `sharpfactory`, for the same systems |
 
 ---
 

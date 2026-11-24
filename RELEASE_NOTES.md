@@ -5,7 +5,7 @@ release gives them its version. Version rules: see [BACKLOG.md](BACKLOG.md).
 
 ---
 
-## Unreleased
+## 1.2.3.0 — 2026-11-24
 
 ### Enable System.Text.Json and Optimize JSON (SF-238)
 
